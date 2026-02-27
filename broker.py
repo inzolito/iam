@@ -12,6 +12,9 @@ exchange = ccxt.bitget({
     'secret': os.getenv('BITGET_API_SECRET'),
     'password': os.getenv('BITGET_PASSWORD'),
     'enableRateLimit': True,
+    'options': {
+        'defaultType': 'swap',  # Para operar contratos de futuros/perpetuos
+    }
 })
 # Activar la testnet de Bitget
 exchange.set_sandbox_mode(True)
@@ -22,8 +25,8 @@ def check_connection():
     """
     try:
         print("Intentando conectar con Bitget Testnet...")
-        # Intentamos obtener el balance para confirmar que la API Key funciona
-        balance = exchange.fetch_balance()
+        # Intentamos obtener el balance de la cuenta de futuros (swap)
+        balance = exchange.fetch_balance({'type': 'swap'})
         usdt_free = balance.get('USDT', {}).get('free', 0)
         print(f"[OK] Conexión exitosa. Balance disponible en Testnet: {usdt_free} USDT")
         return True
