@@ -1,4 +1,7 @@
 ccxt
-numpy
-pandas
 python-dotenv
+pandas
+numpy
+ta
+Flask
+google-genai

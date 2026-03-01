@@ -1,0 +1,22 @@
+{
+  "crypto": {
+    "trading_mode": "algoritmico",
+    "anti_bot": false,
+    "risk_rules": {
+      "min_stop_loss_pct": 0.8,
+      "risk_reward_ratio": 3.0,
+      "max_leverage": 20,
+      "trailing_activation_pct": 1.5
+    }
+  },
+  "metals": {
+    "trading_mode": "híbrido",
+    "anti_bot": false,
+    "risk_rules": {
+      "min_stop_loss_pct": 1.5,
+      "risk_reward_ratio": 3.0,
+      "max_leverage": 50,
+      "trailing_activation_pct": 0.8
+    }
+  }
+}

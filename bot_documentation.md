@@ -1,57 +1,126 @@
-# Documentación del Bot de Arbitraje Matemático (Oro/Plata)
+# Documentación Técnica: MaikBotTrade V9.0 (IA-Optimized)
 
-## 1. Naturaleza de la Estrategia
+Esta documentación describe la arquitectura, los modos de trading, y la construcción de la página web (Dashboard) que controla el Scalping Bot de XAU/XAG.
 
-El presente bot es un algoritmo de **Arbitraje Estadístico por Reversión a la Media (Statistical Arbitrage - Mean Reversion)**. Está diseñado específicamente para operar el "spread" o "ratio" entre dos activos altamente cointegrados financieramente: el **Oro (XAUUSDT)** y la **Plata (XAGUSDT)**.
+---
 
-En lugar de intentar predecir la dirección general del mercado (análisis direccional), el bot analiza puramente la relación proporcional entre ambos metales. Parte del fundamento de que ambos activos están apalancados por las mismas variables macroeconómicas globales.
+## 1. Resumen de Cambios Recientes (V8.2 -> V9.0)
 
-## 2. Lógica Matemática (Z-Score)
+Se ha integrado un motor de optimización basado en los diagnósticos proactivos de Gemini AI:
+- **Asymmetrical Trailing Stop**: Protección agresiva de beneficios específicamente para posiciones SHORT (Sell).
+- **Dynamic Sizing (Mini-Kelly)**: El bot ahora escala su lotaje un **+20%** en setups de alta probabilidad (Win Rate > 75%).
+- **Adaptive Strategy Switching**: El Plan B (Momentum) ahora se activa automáticamente si el Plan A (Reversión) falla.
+- **Dashboard Full-Width**: El panel de IA se expandió para facilitar la lectura de informes técnicos.
+- **Absolute Real-Margin Display**: El dashboard muestra la **Garantía Real** aportada en cada posición.
 
-El bot no utiliza indicadores técnicos tradicionales como RSI o MACD, sino estadística inferencial pura:
+---
 
-* **Paso 1 (Extracción):** El bot toma el precio exacto del Oro ($X$) y de la Plata ($Y$) cada 10 segundos directamente desde Bitget (Testnet).
-* **Paso 2 (Ratio):** Calcula la relación $R = \frac{X}{Y}$.
-* **Paso 3 (Memoria):** Alimenta un array (`deque`) limitándolo estrictamente a los últimos 20 datos computados ($R_1, R_2 ... R_{20}$).
-* **Paso 4 (Parámetros Poblacionales):** Calcula la Media Aritmética ($\mu$) y la Desviación Estándar ($\sigma$) precisa del Ratio poblacional (la ventana de 20 datos) usando la librería `numpy` para evitar errores de coma flotante.
-* **Paso 5 (Z-Score):** Obtiene la medida de desviación estándar actual en tiempo real a través de la fórmula de estandarización:
-  $$ Z = \frac{R_{actual} - \mu}{\sigma} $$
+## 2. Arquitectura de los "Bots" (Modos de Trading)
 
-## 3. Condiciones de Entrada y Salida (Gatillos)
+El sistema ahora soporta múltiples perfiles de riesgo gestionables desde el panel superior del Dashboard.
 
-El umbral de Z=2.0 en estadística normal (Campana de Gauss) indica que el valor actual se encuentra en el 95% probabilístico externo de alejamiento del promedio; es decir, es un comportamiento excepcionalmente anómalo que, por naturaleza, tiende a volver a la media (0).
+### A. Modo Algorítmico Puro
+- **Características**: Se basa **estrictamente** en el valor del Z-Score (-1.5 / +1.5) y las bandas de cointegración estadística.
+- **Funcionamiento**: Ignora por completo cualquier indicador técnico "clásico" (como el RSI o las Medias Móviles). Si hay desviación entre Plata y Oro, entra.
+- **Uso**: Útil en mercados laterales de altísima frecuencia.
 
-* **Gatillo de COMPRA PLATA (+2.0):** El precio del Oro está anormalmente "caro" en proporción a la Plata. Se ejecuta la orden de compra apalancada en **XAGUSDT**, esperando que la plata suba de precio para cerrar la brecha del ratio y volver a su media.
-* **Gatillo de COMPRA ORO (-2.0):** El precio del Oro está anormalmente "barato" respecto a la Plata. Se ejecuta la orden de compra apalancada en **XAUUSDT**, asumiendo que es su turno de subir para acortar el spread histórico.
+### B. Modo Híbrido (Por Defecto)
+- **Características**: Añade un filtro técnico al Z-Score.
+- **Funcionamiento**: Combina la reversión a la media (Z-Score estadístico) con filtros clásicos. El `TradeEngine` define un "Régimen de Mercado" (Tendencia o Reversión). Si el Z-Score indica compra pura, pero el MACD muestra divergencia bajista profunda, el bot **bloquea la orden** (Filtro Activo).
 
-### Gestión de Riesgo (Risk Management)
-Las órdenes son introducidas "a mercado" (`market`) a través de la API, acoplándolas automáticamente con topes de contención en fracciones porcentuales (Scalping):
-* **Take Profit:** `0.4%` por encima del precio de entrada (buscando salir rápido de la anomalía matemática).
-* **Stop Loss:** `0.2%` por debajo (Relación Riesgo/Beneficio asimétrica de 1:2, asumiendo que si el mercado decide "romper" su cointegración general y separarse más, el robot prefiere asumir pérdida corta antes de atraparse en una divergencia persistente de largo plazo).
+### C. Modo Inteligente (Trailing Stop)
+- **Características**: Modifica el manejo de los Take Profits (Tolerancia al Riesgo).
+- **Funcionamiento**: En vez de cerrar una operación al llegar a su ganancia esperada, el motor calcula dinámicamente:
+  1. Si el mercado sube, cancela el *Take Profit* de Bitget.
+  2. Sube el *Stop Loss* por encima del punto de entrada (asegurando el Break-Even más comisiones).
+  3. Comienza a perseguir el precio cada pocos tics.
+- **Uso**: Diseñado para exprimir al máximo corridas de tendencia no previstas (Flash Crash / Liquidaciones Largas).
 
-## 4. Eficiencia y Contexto de Mercado ideal
+### D. Modo Anti-Bot (Switch Secundario)
+- **Características**: Defensa contra alta manipulación.
+- **Funcionamiento**: Invierte el sentido del `TradeEngine`. Si la máquina ordena comprar Oro y vender BTC porque estadísticamente están "baratos", el script Anti-Bot asume que es una trampa de liquidez, y vende Oro comprando BTC. Los valores de Stop Loss y Take Profit también se recalculan a la inversa.
 
-**¿En qué escenarios el bot es más agresivo y certero?**
+---
 
-1. **Mercados Laterales de Alta Volatilidad ("Choppy Markets"):** El modelo brilla estelarmente en días donde no hay noticias de alto impacto, y donde el Oro y la Plata consolidan sus precios en un canal ruidoso. El bot operará el ruido microscópico del spread.
-2. **Mercados Maduros:** Esta estrategia no funciona en criptomonedas alternativas ("Memecoins" o "Altcoins") ya que tienen poca capitalización de mercado y sus precios se separan aleatoriamente sin volver a juntarse nunca (ausencia de cointegración). Por eso los metales nobles y pares de divisas masivos ($EUR/USD$ vs $GBP/USD$) son sus hábitats.
-3. **Peligro (Tail-Risk):** El "Cisne Negro" temporal de este bot es que se presente un catalizador económico que modifique bruscamente el modelo de una materia prima, pero no de la otra (Ej. Se descubre el depósito de Plata más masivo de la historia; el precio de la plata colapsa y el oro no). En ese escenario, el ratio histórico se rompe orgánicamente. El agresivo Stop Loss (`0.2%`) funge de airbag contra esta anomalía extrema.
+## 3. Construcción del Dashboard (Maik Control)
 
-## 5. Arquitectura del Software (Documentación Técnica)
+La interfaz se creó utilizando el micro-framework **Flask (Python)** combinado con una estructura **Vanilla JS y CSS Avanzado** en el lado del cliente, garantizando la máxima compatibilidad y rapidez sin frameworks pesados como React/Next.js.
 
-El entorno se programó en **Python 3.11** y está fragmentado modularmente bajo el patrón Orientado a Objetos funcional.
+### Motor de Backend (`app.py`)
+- **Arquitectura REST**: Levanta un servidor web interno en el puerto 5000 (`0.0.0.0:5000` via GCP).
+- Desarrollado con 2 Endpoints Críticos:
+  - `GET /api/status`: Reúne un ecosistema de archivos (`active_positions.json`, Base de Datos SQLite, `trades_history.txt` invirtiendo su orden cronológico y `ai_output.txt`) y lo envía como un solo bloque comprimido al navegador del usuario cada 5 segundos.
+  - `POST /api/config`: Recibe la señal del usuario ("Clic" en Inteligente) y escribe el `config.json` para que el `main.py` de atrás lo lea en el próximo milisegundo.
 
-### A) El Motor Analítico (`engine.py`)
-Clase aislada e independiente llamada `TradeEngine`. 
-* **Input:** Precios crudos del broker.
-* **Componente Analítico:** Mantiene estado interno en variable `self.ratios`. Convierte los arrays dinámicos a estructuras optimizadas en C subyacente (usando `numpy.array()`) para un cálculo inmediato de $\mu$ (`np.mean`) y $\sigma$ (`np.std`).
-* **Manejo de Excepciones:** Contiene lógica para lidiar con el factor "División por Zero" en el caso matemático teórico de que todos los valores del array sean los mismos y el desvío estándar decaiga a cero puro.
+### Interfaz Frontend (`templates/index.html`)
+Diseñada bajo el patrón **"Light SaaS Minimalist"** (V10), orientado a plataformas B2B y Fintech de alto nivel, priorizando el espacio en blanco, el alto contraste y la legibilidad extrema.
 
-### B) El Router / Broker Gateway (`broker.py`)
-Utiliza la interfaz universal **CCXT** para conectarse al Exchange (Bitget). 
-* **Modulación:** Abstrae la API del Exchange por completo. Si en un futuro el equipo cambia de Bitget a Binance o Bybit, **el motor central no requiere reescritura**; basta con reencapular las llaves de este archivo puntual.
-* **Testnet Binding:** Parámetro embebido `exchange.set_sandbox_mode(True)` para canalizar operaciones al entorno Demo, y configuración contextual `{'options': {'defaultType': 'swap'}}` que fuerza la API a revisar la billetera de *Futuros Perpetuos Margenizados* en lugar de Spot.
+* **Layout Base**:
+  - Un Header limpio con tipografía oscura, estado visual y botones estilo píldora (`rounded-full`).
+  - El **Control Center**, agrupando los botones `mode-btn` con estados activos claros (`bg-slate-900 text-white`) e inactivos.
+  - Una grilla de tarjetas blancas puras (`bg-white`) con bordes sutiles (`border-slate-100`) y sombras suaves (`shadow-sm`) sobre un fondo general súper claro (`bg-slate-50`). Los colores vivos (`emerald-600` y `red-600`) se usan estrictamente de forma semántica para demarcar ganancias (LONG) o pérdidas (SHORT).
 
-### C) El Bucle Central (`main.py`)
-* Control de latido temporal condicionado por `time.sleep(10)` (Ciclo 10seg).
-* Control Asincrónico Silencioso (`try/except` global): Las peticiones API son propensas a errores momentáneos por latencia de la red, mantenimientos de IP o rechazo por Tasa Límite (Rate Limits). El lazo continuo "engulle" estas excepciones y simplemente reintenta a los 10 segundos, previendo el "Death of Execution" o congelabilidad del bot desatendida.
+* **Componentes JS Dinámicos**:
+  - `updateDashboard()`: La función en JavaScript consume `/api/status`. Repinta dinámicamente usando DOM `innerHTML`. Usa selectores específicos para pintar de Verde (`var(--green)`) las variables positivas y Rojo neón (`var(--red)`) si el PnL entra en negativo o la Inteligencia Artificial registra errores.
+  - Los cálculos no se hacen en la página, se hacen en el servidor. La página web es **100% tonta** (solo dibuja lo que el servidor ordena), lo que la hace ultra-rapida.
+
+### 4. Módulos de Datos (Divs del Dashboard)
+La cuadrícula principal (`.dashboard-grid`) está compuesta por las siguientes 7 Tarjetas (Cards) de datos que se actualizan en tiempo real:
+
+1. **BALANCE TESTNET (`#card-balance`)**
+   - Muestra el capital disponible (`$396.70`).
+   - Muestra el **PnL Neto Estimado** total descontando comisiones abiertas.
+   - En el pie del div, calcula el Promedio de Ganancia (`Prom. Ganancia`) vs. Promedio de Pérdida (`Prom. Pérdida`) exacto por ticket.
+
+2. **MOTOR OPERATIVO (`#card-engine`)**
+   - **Nombre del Plan Activo**: Imprime en texto gigante morado si el bot está corriendo la rutina `PLAN_A` o `PLAN_B`.
+   - **WinRate Algorítmico vs Métricas Reales**: Compara el % de probabilidad teórica que el script le asigna a ese plan, versus el WinRate real (W/L ratio de Base de Datos).
+   - **Señal Actual**: (Texto holográfico que respira) Imprime literalmente la intención actual de la máquina (Ej: `SCALE_IN_SHORT_ORO`).
+
+3. **ACUMULADO GLOBAL (`#card-global`)**
+   - **Trades con Profit VS Fallidos**: Contador en vivo de los aciertos vs errores historicos de todo el bot (`2 / 2`).
+   - Sub-divisiones exactas: Desglosa cuántas victorias (W) y derrotas (L) tuvo específicamente operando LONG o operando SHORT desde que se inició.
+
+4. **PLAN A: TENDENCIA (`#card-plana`)**
+   - Panel de tracking especifico para operaciones de Momentum/Tendencia.
+   - Cuenta cuántos `LONG PROFIT` exitosos y cuántos `SHORT PROFIT` exitosos ha logrado usando la lógica de seguimiento tendencial, evaluando la asertividad matemática de dicha estrategia en vivo.
+
+5. **PLAN B: REVERSIÓN (`#card-planb`)**
+   - Idéntico al Plan A, pero evalúa los resultados de las estrategias creadas cuando las medias móviles o RSI buscan cruces a contraflujo (Rebotes al soporte).
+
+6. **ANÁLISIS IA (GEMINI) (`#ai-analysis`)**
+   - Este módulo de doble ancho de columnas lee el archivo de salida del analista experto generado por `ai_analyst.py`. Interpreta la métrica del bot como un Director de Trading Humano y ofrece consejos estratégicos.
+
+7. **POSICIÓN ACTIVA (`#active-positions`)**
+   - Escucha el `active_positions.json`. 
+   - Genera Tarjetas dinámicas con bordes según el color del trade (Rosa = SHORT, Verde = LONG). 
+   - Imprime nombre del Activo (`XAU`), Volumen (`Contratos`), el Precio de Entrada exacto (`Entry`), y el **PnL Flotante en tiempo real** en formato gigante.
+
+8. **Historial de Operaciones (Estilo Bitget)**
+   - Al final de la página, fuera de la grilla principal, se construyó una tabla visual ancha (estilo plataforma Exchange/Bitget) en lugar de una simple consola de código.
+   - **Registro Explícito del "Por qué"**: Cada línea no solo muestra si se "abrió" o "cerró" una posición, sino la razón matemática exacta fundamentada por el **Modo Actual**. 
+     - *Ejemplo Algorítmico*: `[CERRADO LONG ORO] Motivo: Z-Score cruzó 0.0`
+     - *Ejemplo Inteligente*: `[ACTUALIZACIÓN] Subiendo Trailing Stop a Break-Even +0.5%`
+     - *Ejemplo Anti-Bot*: `[SEÑAL INVERTIDA] Comprando ORO por detección de manipulación institucional de Venta.`
+   - A nivel de JavaScript, el listado se **invierte cronológicamente** (Reversed array) para que la última acción ejecutada por el script o el broker salte a la parte superior de la vista de Inmediato, evitando tener que hacer scroll hacia abajo constantemente.
+  - Se eliminaron los estilos de "cristal" en favor de fondos sólidos ultra rápidos que renderizan instantáneamente en teléfonos de gama baja o pantallas de `1366x768`.
+
+---
+
+---
+
+## 5. Gestión de Sesiones y Horarios (UTC-3)
+
+El sistema opera bajo un concepto de **Sesión Diaria**, sincronizada con el tiempo local del usuario para garantizar que las métricas de la IA y el Dashboard sean coherentes con la actividad real.
+
+### Sincronización de Datos
+- **Reset de Estadísticas**: El `supervisor.py` calcula automáticamente el inicio del día local (**00:00:00 UTC-3**) en cada ciclo de actualización. Los trades anteriores a ese momento son ignorados en los cálculos de Win Rate, Ganancia Promedio y PnL de la sesión.
+- **Análisis IA**: El Analista IA (`ai_analyst.py`) heredada esta lógica a través de la base de datos, enfocando sus diagnósticos únicamente en el rendimiento de la ventana de tiempo actual.
+- **Desfase de Servidor**: Aunque el servidor físico pueda operar en UTC, la lógica interna aplica un offset de **-3 horas** para alinearse con el cierre de sesión del usuario.
+
+### Comportamiento a Medianoche
+- A las 00:00:01 local, el bot limpia sus contadores internos de la sesión anterior.
+- Los trades abiertos que crucen la medianoche seguirán siendo monitoreados, pero su resultado final se contabilizará en la sesión del día en que se cierren.
+
+---
+> **Despliegue General**: Todos estos procesos se alojan finalmente en instancias `systemctl` (SystemD) dentro de Google Cloud, asegurando de que si Python tira algún error de memoria, el servicio se reinicia de manera transparente en 3 segundos sin que el usuario de la web note que algo pasó.

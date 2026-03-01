@@ -1,0 +1,18 @@
+{
+    "BTC": {
+        "symbol": "BTC/USDT:USDT",
+        "trade_size": 0.001
+    },
+    "ETH": {
+        "symbol": "ETH/USDT:USDT",
+        "trade_size": 0.02
+    },
+    "ORO": {
+        "symbol": "XAU/USDT:USDT",
+        "trade_size": 0.01
+    },
+    "PLATA": {
+        "symbol": "XAG/USDT:USDT",
+        "trade_size": 1.0
+    }
+}

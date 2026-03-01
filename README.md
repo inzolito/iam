@@ -1,4 +1,7 @@
-# Bot de Scalping Oro/Plata
+# 🛡️ PROYECTO MAIKBOT TRADE
+> **CRITICAL:** Antes de realizar cualquier cambio, es obligatorio leer y cumplir con las [Reglas de Oro](MAIK_SYSTEM_RULES.md).
+
+ Scalping Oro/Plata
 
 Este es un bot de Scalping diseñado para operar las divergencias en el ratio entre Oro (XAUUSDT) y Plata (XAGUSDT). 
 

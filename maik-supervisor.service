@@ -1,0 +1,15 @@
+[Unit]
+Description=MaikBotTrade - Supervisor Bot
+After=network.target
+
+[Service]
+User=maikol_salas_m
+Group=maikol_salas_m
+WorkingDirectory=/home/maikol_salas_m/maikBotTrade
+ExecStart=/home/maikol_salas_m/maikBotTrade/venv/bin/python /home/maikol_salas_m/maikBotTrade/supervisor.py
+Environment="PYTHONUNBUFFERED=1"
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

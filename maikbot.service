@@ -1,0 +1,24 @@
+[Unit]
+Description=MaikBotTrade - Scalping Bot XAU/XAG
+After=network.target
+
+[Service]
+# Reemplaza 'usuario' con tu nombre de usuario en el VPS (ej. ubuntu, root, maik)
+User=maikol_salas_m
+Group=maikol_salas_m
+
+# El directorio donde subiste la carpeta maikBotTrade
+WorkingDirectory=/home/maikol_salas_m/maikBotTrade
+
+# Ruta absoluta al Python del entorno virtual y al script main.py
+ExecStart=/home/maikol_salas_m/maikBotTrade/venv/bin/python /home/maikol_salas_m/maikBotTrade/main.py
+
+# Evita que Python guarde los prints en buffer (permite ver los logs en tiempo real)
+Environment="PYTHONUNBUFFERED=1"
+
+# Reiniciar siempre (si el bot crashea por un error inesperado, Systemd lo levanta en 5 segundos)
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
