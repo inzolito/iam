@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+venv/
+.venv/
+env/
+.pytest_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+*.log
+
+# Alembic
+alembic.ini.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env.*
+!.env.example
