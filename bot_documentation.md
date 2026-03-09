@@ -10,8 +10,9 @@ Se ha integrado un motor de optimización basado en los diagnósticos proactivos
 - **Asymmetrical Trailing Stop**: Protección agresiva de beneficios específicamente para posiciones SHORT (Sell).
 - **Dynamic Sizing (Mini-Kelly)**: El bot ahora escala su lotaje un **+20%** en setups de alta probabilidad (Win Rate > 75%).
 - **Adaptive Strategy Switching**: El Plan B (Momentum) ahora se activa automáticamente si el Plan A (Reversión) falla.
-- **Dashboard Full-Width**: El panel de IA se expandió para facilitar la lectura de informes técnicos.
+- **Dashboard Full-Width (Optimized)**: El panel de IA se refinó con anchos máximos (`max-w-6xl`) para una visualización premium y centrada.
 - **Absolute Real-Margin Display**: El dashboard muestra la **Garantía Real** aportada en cada posición.
+- **AI Strategic Memory (v16)**: El Analista IA ahora consulta el historial de sugerencias aplicadas en la base de datos antes de generar un nuevo diagnóstico, permitiendo un aprendizaje recursivo.
 
 ---
 
@@ -124,3 +125,86 @@ El sistema opera bajo un concepto de **Sesión Diaria**, sincronizada con el tie
 
 ---
 > **Despliegue General**: Todos estos procesos se alojan finalmente en instancias `systemctl` (SystemD) dentro de Google Cloud, asegurando de que si Python tira algún error de memoria, el servicio se reinicia de manera transparente en 3 segundos sin que el usuario de la web note que algo pasó.
+
+---
+
+## 6. Correcciones Críticas de Take Profit — Patch v9.1 (2026-03-01)
+
+Se identificaron y corrigieron 5 bugs que impedían que las posiciones en **Modo Híbrido/Algorítmico** pudieran cerrar con ganancia.
+
+### BUG #1 (CRÍTICO) — `broker.py`: TP colocado como stop-market en lugar de orden limit
+
+**Antes:** Tanto el SL como el TP se generaban con `type='market'` y `triggerPrice`. En Bitget, un `market` con trigger es un **stop-market** (dispara venta al mercado cuando el precio *cae* a ese nivel). Esto funcionaba para el SL pero era inválido para el TP.
+
+**Después:** El SL sigue siendo `market` + `triggerPrice`. El TP ahora es una **orden `limit`** al precio exacto de ganancia, que permanece viva en el libro de órdenes hasta que el precio la toque.
+
+```python
+# ANTES (incorrecto):
+exchange.create_order(symbol, 'market', close_side, amount, params={'triggerPrice': tp_price})
+
+# DESPUÉS (correcto):
+exchange.create_order(symbol, 'limit', close_side, amount, tp_price, params={'reduceOnly': True})
+```
+
+### BUG #2 (CRÍTICO) — `bot_metals.py` / `bot_crypto.py`: Precio de TP calculado con valor absurdo
+
+**Antes:** `tp_val = l_high * asset_2_p`. `l_high` es el máximo del **ratio** (ej: `93.5`), no un precio. Multiplícado por el precio de PLATA (~$32) daba `~$2,992` — un número irrelevante que confundía el cálculo ATR en `execute_trade()`.
+
+**Después:** `tp_val = None`. Se pasa explícitamente `None` para que `broker.execute_trade()` calcule el TP desde cero usando **ATR dinámico** puro, que sí usa el precio real del activo operado.
+
+### BUG #3 (GRAVE) — Condición de cierre software requería dos condiciones simultáneas
+
+**Antes:** Para cerrar una posición con ganancia se necesitaba **simultáneamente**:
+1. `pnl_usd > target_profit + $10`
+2. `z_score < 0.2` (reversión ya completada)
+
+Si el precio llegaba a la zona de ganancia pero el Z-Score aún estaba elevado, **nunca cerraba**, y el mercado terminaba revirtiéndose en contra.
+
+**Después:** Usa **OR** — cierra si se cumple **cualquiera** de las dos condiciones independientes:
+- `zscore_reverted`: el Z-Score ya cruzó de regreso (< 0.3 para longs, > -0.3 para shorts), **O**
+- `big_profit`: el PnL supera el objetivo en más de $8 (ganancia amplísima).
+
+### BUG #4 (MENOR) — `config.json`: Acento en `"híbrido"` causaba inconsistencia futura
+
+`"híbrido"` → `"hibrido"` (sin tilde). El código Python usa siempre la versión sin acento.
+
+### BUG #5 (GRAVE) — Errores de SL/TP tragados silenciosamente
+
+**Antes:** Un solo `try/except` envolvía ambas órdenes. Si Bitget rechazaba el TP, el bot solo imprimía un warning genérico y continuaba sin TP activo — sin que nadie supiera.
+
+**Después:** Cada orden (SL y TP) tiene su propio `try/except` con mensaje específico que indica el precio exacto fallido, facilitando el diagnóstico en los logs de `journalctl`.
+
+---
+
+### ¿Cuánto puede ganar el TP ahora? (Estimado)
+
+Con `risk_reward_ratio: 3.0` y `min_stop_loss_pct: 1.5%` configurados en `config.json` para metales:
+
+- **SL Distance** = `precio_entrada × 1.5%`
+- **TP Distance** = `SL × 3.0` = `precio_entrada × 4.5%`
+
+Con ORO en ~$2,900 y apalancamiento x50:
+- SL ≈ $43.5 abajo del entrada
+- TP ≈ $130.5 arriba del entrada
+- **ROE al tocar TP ≈ +220%** sobre el margen puesto
+
+Sin embargo, la distancia de 4.5% sobre el precio del ORO **es extremadamente amplia para scalping**. Se recomienda reducir `risk_reward_ratio` a `1.5` o `2.0` para que el TP sea alcanzable en ventanas de tiempo cortas.
+### 6.1 Reporte de Rendimiento y Estabilidad — Datos Reales (v9.1)
+
+Tras el despliegue del Patch v9.1, la operativa en **Modo Híbrido** y **Algorítmico** ha mostrado una recuperación inmediata y una estabilidad técnica superior a todas las versiones anteriores.
+
+**Métricas Clave de Performance:**
+- **Win Rate (Captura Profit):** El bot finalmente está capturando beneficios dinámicos de forma consistente.
+- **ROE por Trade (Promedio):** ~2.2% a 2.3% en cierres proactivos.
+- **Recuperación de Balance:** Incremento desde ~$300 hasta **$319.54** en menos de 12 horas de operativa híbrida activa.
+
+**Datos de Operaciones Reales (Extractos de Log):**
+- `2026-03-01 22:13`: 🟢 **+$3.87 (1.30%)** — ETH
+- `2026-03-02 00:10`: 🟢 **+$6.93 (2.27%)** — ETH
+- `2026-03-02 00:44`: 🟢 **+$7.13 (2.28%)** — ETH
+
+**Conclusión Técnica:**
+La versión **v9.1** se declara como la **Golden Baseline (Línea Base Maestra)**. Es la versión más estable hasta la fecha debido a:
+1. La eliminación de los fallos de colocación de órdenes de Bitget (Fix Limit TP).
+2. La corrección de los cálculos absurdos de TP basados en ratios desactualizados.
+3. La flexibilización de las condiciones de cierre (Lógica OR), permitiendo que el bot "salga a tiempo" con dinero en la mano.

@@ -14,5 +14,9 @@
     "PLATA": {
         "symbol": "XAG/USDT:USDT",
         "trade_size": 1.0
+    },
+    "SOL": {
+        "symbol": "SOL/USDT:USDT",
+        "trade_size": 1.0
     }
 }

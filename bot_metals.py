@@ -102,6 +102,11 @@ def main():
 
             if not is_active:
                 print(f"[⏸️] {ciclo} | MOTOR METALES PAUSADO (STANDBY)")
+                # Reportar estado pausado a la web
+                try:
+                    with open("bot_metals_snapshot.json", "w") as f:
+                        json.dump({"strategy": "PAUSADO (STANDBY)", "z_score": 0, "win_rate_a": 0.5, "win_rate_b": 0.5}, f)
+                except: pass
                 time.sleep(10)
                 continue
 
@@ -134,7 +139,7 @@ def main():
 
                     # Reporte de Terminal
                     icon = "⚡" if anti_bot_mode else ("🤖" if trading_mode == "algoritmico" else ("🧠" if trading_mode == "inteligente" else "🔄"))
-                    print(f"{icon} {regime:<7} | ${balance:<9.2f} | {z_score:<8.2f} | {signal:<15}")
+                    print(f"{icon} {trading_mode.upper():<11} ({regime}) | ${balance:<9.2f} | {z_score:<8.2f} | {signal:<15}")
 
                     # Reporte de 'Pensamiento'
                     if ciclo % 6 == 0:
@@ -204,13 +209,18 @@ def main():
                                     
                         else:
                             # === LOGICA HIBRIDA/ALGORITMICA STANDARD (Hard Close) ===
+                            # FIX v9.1 BUG #3: Se separan las dos condiciones de cierre con OR.
+                            # Antes: necesitaba AMBAS (Z revierta + PnL alto) → nunca cerraba.
+                            # Ahora: cierra si el Z-Score revirtió (señal de mean-reversion completada)
+                            #        O si el PnL supera ampliamente el objetivo (ganancia segura).
                             if pnl_usd > target_profit:
-                                should_close = False
-                                if side == 'long' and z_score < 0.2: should_close = True
-                                if side == 'short' and z_score > -0.2: should_close = True
+                                zscore_reverted = (side == 'long' and z_score < 0.3) or \
+                                                  (side == 'short' and z_score > -0.3)
+                                big_profit = pnl_usd > (target_profit + 8.0)
                                 
-                                if pnl_usd > (target_profit + 10.0) or should_close:
-                                    print(f"    [!] CIERRE PROACTIVO: Profit Seguro (${pnl_usd:.2f})")
+                                if zscore_reverted or big_profit:
+                                    reason = "Z-Score Revertido" if zscore_reverted else "Profit Amplio"
+                                    print(f"    [!] CIERRE PROACTIVO [{reason}]: ${pnl_usd:.2f} | Z: {z_score:.2f}")
                                     broker.close_position(symbol, contracts, side)
                                     if symbol in trailing_memory: del trailing_memory[symbol]
 
@@ -219,16 +229,18 @@ def main():
                         # es_long evalúa la señal FINAL (que ya fue invertida si Anti-Bot está activo)
                         es_long = any(x in signal for x in ['COMPRA', 'LONG', 'BUY'])
                         
-                        # Targets dinámicos: Si la orden final es LONG, TP va arriba (l_high) y SL abajo (l_low).
-                        tp_val = l_high * asset_2_p if es_long else l_low * asset_2_p
-                        sl_val = l_low * 0.99 * asset_2_p if es_long else l_high * 1.01 * asset_2_p
+                        # FIX v9.1 BUG #2: tp_val y sl_val en dólares REALES del activo operado.
+                        # El ratio (ORO/PLATA) NO es un precio: multiplicarlo por asset_2_p generaba
+                        # valores absurdos (~$3000). Pasamos None para que broker calcule con ATR puro.
+                        tp_val = None
+                        sl_val = None
                         
                         last_asset = "ORO" if "ORO" in signal else "PLATA"
                         last_side = "SHORT" if "SHORT" in signal else "LONG"
                         active_strat_at_trade = regime
                         
                         final_sig = signal.replace("ANTI_", "").replace("COMPRA ", "BUY ").replace("VENTA ", "SELL ")
-                        print(f"    └─ [ORDEN] {signal} | TP {tp_val:.2f} | SL {sl_val:.2f}")
+                        print(f"    └─ [ORDEN] {signal} | SL/TP vía ATR dinámico")
 
                         # Definir asset name explícito
                         target_asset_internal = 'ORO' if (es_long and last_asset == 'ORO') or (not es_long and last_asset != 'ORO') else 'PLATA'

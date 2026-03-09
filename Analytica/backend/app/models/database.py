@@ -27,9 +27,11 @@ class TradingAccount(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     name = Column(String, nullable=False)
     platform = Column(String, nullable=False) # MT5, BINANCE
+    connection_type = Column(String(20), server_default="PASSIVE", nullable=False)  # PASSIVE | DIRECT
     connection_details = Column(JSONB, nullable=True)
     currency = Column(String(3), server_default="USD", nullable=False)
     balance_initial = Column(Numeric(18, 2), nullable=False)
+    investor_password_encrypted = Column(Text, nullable=True)  # AES-256-GCM, only for DIRECT connections
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Trade(Base):
@@ -88,3 +90,13 @@ class DailySnapshot(Base):
     __table_args__ = (
         UniqueConstraint("account_id", "date", name="uq_account_date"),
     )
+
+class ApiKey(Base):
+    __tablename__ = "api_keys"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id", ondelete="CASCADE"), nullable=False, unique=True)
+    client_id = Column(String, unique=True, nullable=False)
+    hashed_secret = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    account = relationship("TradingAccount", backref="api_key")

@@ -3,14 +3,20 @@
     "trading_mode": "algoritmico",
     "anti_bot": false,
     "risk_rules": {
-      "min_stop_loss_pct": 0.8,
-      "risk_reward_ratio": 3.0,
+      "min_stop_loss_pct": 0.5,
+      "risk_reward_ratio": 1.5,
       "max_leverage": 20,
-      "trailing_activation_pct": 1.5
+      "trailing_activation_pct": 0.5,
+      "offset_trigger_roe": -5.0,
+      "offset_asset": "SOL",
+      "offset_tp_pct": 20.0,
+      "offset_sl_pct": 0.5,
+      "aggressive_mode": false,
+      "recovery_target_profit_pct": 2.0
     }
   },
   "metals": {
-    "trading_mode": "híbrido",
+    "trading_mode": "hibrido",
     "anti_bot": false,
     "risk_rules": {
       "min_stop_loss_pct": 1.5,

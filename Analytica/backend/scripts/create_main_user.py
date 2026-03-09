@@ -20,7 +20,7 @@ engine = create_engine(SYNC_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def create_main_user():
-    email = "msalas"
+    email = "maikol.salas.m@gmail.com"
     password = "Singluten2!"
     password_hash = get_password_hash(password)
 

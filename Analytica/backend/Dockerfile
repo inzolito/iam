@@ -13,5 +13,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Application
 COPY . .
 
-# Cloud Run uses the PORT environment variable
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Use shell form for CMD to allow environment variable expansion
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}

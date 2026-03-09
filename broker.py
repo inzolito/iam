@@ -118,23 +118,34 @@ def get_open_positions_details():
         print(f"[ERROR] Al obtener detalles de posiciones: {e}")
         return []
 
-def close_position(symbol, amount, side):
+def close_position(symbol, amount=0, side='both'):
     """
-    Cierra una posición específica al mercado.
+    Cierra posiciones de un símbolo. Si side es 'both', cierra todo lo que haya.
     """
     try:
-        # Lógica de cierre: Si era 'long', vendemos. Si era 'short', compramos.
-        close_side = 'sell' if side == 'long' else 'buy'
-        params = {'reduceOnly': True, 'marginCoin': 'USDT'}
-        order = exchange.create_order(symbol, 'market', close_side, amount, params=params)
-        print(f"[OK] Posición cerrada en {symbol}: {order.get('id')}")
-        # Intentar cancelar órdenes pendientes de SL/TP para este símbolo
+        positions = get_open_positions_details()
+        target_pos = [p for p in positions if symbol in p['symbol']]
+        
+        for p in target_pos:
+            if side != 'both' and p['side'].lower() != side.lower():
+                continue
+            
+            c_side = 'sell' if p['side'].lower() == 'long' else 'buy'
+            c_amount = p['contracts']
+            params = {'reduceOnly': True, 'marginCoin': 'USDT'}
+            order = exchange.create_order(p['symbol'], 'market', c_side, c_amount, params=params)
+            print(f"[OK] Cierre ejecutado en {p['symbol']}: {order.get('id')}")
+            
+        # Limpieza total de órdenes para este símbolo
         try:
+            exchange.cancel_all_orders(symbol)
+            # Para Bitget, a veces hay que cancelar planes de stop loss por separado
             exchange.cancel_all_orders(symbol, params={'planType': 'normal_plan'})
+            exchange.cancel_all_orders(symbol, params={'planType': 'profit_loss_plan'})
         except: pass
         return True
     except Exception as e:
-        print(f"[ERROR] Al cerrar posición: {e}")
+        print(f"[ERROR] Al cerrar posición masiva: {e}")
         return False
 
 import json
@@ -227,8 +238,10 @@ def execute_trade(signal, asset_name, strength=1, sl_target=None, tp_target=None
             side = 'buy'
 
         is_scale_in = 'SCALE_IN' in signal
-        leverage_map = {1: 10, 2: 20, 3: 30, 4: 35}
-        leverage = leverage_map.get(strength, 10)
+        # FIX v9.1: RISK_LEVEL=5 no tenía entrada en el mapa (devolvía 10 por default).
+        # Mapa extendido hasta nivel 6 para cubrir todos los valores posibles del motor.
+        leverage_map = {1: 10, 2: 15, 3: 20, 4: 25, 5: 30, 6: 35}
+        leverage = leverage_map.get(strength, 20)
         
         # Limitar apalancamiento según el Master Config
         max_lev = risk_rules.get("max_leverage", 35)
@@ -283,17 +296,26 @@ def execute_trade(signal, asset_name, strength=1, sl_target=None, tp_target=None
         print(f"[OK] Orden {signal} ejecutada: ID {order.get('id')}")
         
         # 5. Condicionales de Cierre (SL/TP)
+        # --- FIX v9.1: SL = stop-market trigger | TP = limit order al precio exacto ---
+        # El TP se coloca como orden LIMIT, NO como stop-market. Un stop-market con
+        # triggerPrice en TP era ignorado/rechazado por Bitget silenciosamente.
+        close_side = 'sell' if side == 'buy' else 'buy'
+        
+        # SL: Stop-Market (dispara venta a mercado cuando el precio toca el nivel de pérdida)
         try:
-             close_side = 'sell' if side == 'buy' else 'buy'
-             sl_params = {'triggerPrice': sl_price, 'reduceOnly': True, 'marginCoin': 'USDT'}
-             exchange.create_order(symbol, 'market', close_side, amount, params=sl_params)
-             
-             tp_params = {'triggerPrice': tp_price, 'reduceOnly': True, 'marginCoin': 'USDT'}
-             exchange.create_order(symbol, 'market', close_side, amount, params=tp_params)
-             print(f"[OK] Órdenes S/R fijadas en sistema.")
-             
+            sl_params = {'triggerPrice': sl_price, 'reduceOnly': True, 'marginCoin': 'USDT', 'planType': 'loss_plan'}
+            exchange.create_order(symbol, 'market', close_side, amount, params=sl_params)
+            print(f"[OK] Stop Loss fijado en {sl_price:.2f}")
+        except Exception as sl_e:
+            print(f"[WARNING] ⚠️ Error fijando SL en {sl_price:.2f}: {sl_e}")
+        
+        # TP: Limit Order al precio exacto de ganancia (se ejecuta cuando el mercado llega sin slippage)
+        try:
+            tp_params = {'reduceOnly': True, 'marginCoin': 'USDT'}
+            exchange.create_order(symbol, 'limit', close_side, amount, tp_price, params=tp_params)
+            print(f"[OK] Take Profit fijado en {tp_price:.2f} (LIMIT ORDER)")
         except Exception as tp_e:
-             print(f"[WARNING] Error fijando SL/TP: {tp_e}")
+            print(f"[WARNING] ⚠️ Error fijando TP en {tp_price:.2f}: {tp_e}")
     except Exception as e:
         print(f"[ERROR] Error ejecutando trade ({signal}): {e}")
 

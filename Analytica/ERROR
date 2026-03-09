@@ -1,0 +1,296 @@
+[
+  {
+    "insertId": "akg3yzdqz2y",
+    "logName": "projects/maikbottrade/logs/cloudaudit.googleapis.com%2Fsystem_event",
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "methodName": "/Services.ReplaceService",
+      "resourceName": "namespaces/maikbottrade/revisions/analytica-backend-00003-zm6",
+      "response": {
+        "@type": "type.googleapis.com/google.cloud.run.v1.Revision",
+        "apiVersion": "serving.knative.dev/v1",
+        "kind": "Revision",
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "20",
+            "run.googleapis.com/client-name": "gcloud",
+            "run.googleapis.com/client-version": "558.0.0",
+            "run.googleapis.com/operation-id": "3e296203-e1bb-493b-a5f4-00b85df13792",
+            "run.googleapis.com/startup-cpu-boost": "true",
+            "serving.knative.dev/creator": "maikol.salas.m@gmail.com"
+          },
+          "creationTimestamp": "2026-03-07T21:59:08.174295Z",
+          "generation": 1,
+          "labels": {
+            "client.knative.dev/nonce": "ovafwroygj",
+            "cloud.googleapis.com/location": "us-central1",
+            "run.googleapis.com/startupProbeType": "Default",
+            "serving.knative.dev/configuration": "analytica-backend",
+            "serving.knative.dev/configurationGeneration": "3",
+            "serving.knative.dev/route": "analytica-backend",
+            "serving.knative.dev/service": "analytica-backend",
+            "serving.knative.dev/serviceUid": "c6949197-12d7-40f5-8fd2-81d81c558baa"
+          },
+          "name": "analytica-backend-00003-zm6",
+          "namespace": "419965139801",
+          "ownerReferences": [
+            {
+              "apiVersion": "serving.knative.dev/v1",
+              "blockOwnerDeletion": true,
+              "controller": true,
+              "kind": "Configuration",
+              "name": "analytica-backend",
+              "uid": "e3d1d7bb-04d8-40b2-a9bc-038c176f3bb1"
+            }
+          ],
+          "resourceVersion": "AAZMdkhdIRQ",
+          "selfLink": "/apis/serving.knative.dev/v1/namespaces/419965139801/revisions/analytica-backend-00003-zm6",
+          "uid": "6f097ea4-d6c4-4f5c-b5f6-d37344e22784"
+        },
+        "spec": {
+          "containerConcurrency": 80,
+          "containers": [
+            {
+              "image": "us-central1-docker.pkg.dev/maikbottrade/analytica-repo/backend@sha256:22a68064052cec1d2d3eab8d930ca3265d3d89da432325c280f66ee0c3a6b5f0",
+              "name": "backend-1",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "512Mi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            }
+          ],
+          "serviceAccountName": "419965139801-compute@developer.gserviceaccount.com",
+          "timeoutSeconds": 300
+        },
+        "status": {
+          "conditions": [
+            {
+              "lastTransitionTime": "2026-03-07T21:59:24.178708Z",
+              "message": "The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=maikbottrade&resource=cloud_run_revision/service_name/analytica-backend/revision_name/analytica-backend-00003-zm6&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22analytica-backend%22%0Aresource.labels.revision_name%3D%22analytica-backend-00003-zm6%22 \nFor more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start",
+              "reason": "HealthCheckContainerError",
+              "status": "False",
+              "type": "Ready"
+            },
+            {
+              "lastTransitionTime": "2026-03-07T21:59:24.178708Z",
+              "message": "The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=maikbottrade&resource=cloud_run_revision/service_name/analytica-backend/revision_name/analytica-backend-00003-zm6&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22analytica-backend%22%0Aresource.labels.revision_name%3D%22analytica-backend-00003-zm6%22 \nFor more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start",
+              "reason": "HealthCheckContainerError",
+              "status": "False",
+              "type": "ContainerHealthy"
+            },
+            {
+              "lastTransitionTime": "2026-03-07T21:59:14.657213Z",
+              "message": "Container image import completed in 5.77s.",
+              "status": "True",
+              "type": "ContainerReady"
+            },
+            {
+              "lastTransitionTime": "2026-03-07T21:59:19.440725Z",
+              "message": "Provisioning imported containers completed in 4.78s. Checking container health. This will wait for up to 4m for the configured startup probe, including an initial delay of 0s.",
+              "status": "True",
+              "type": "ResourcesAvailable"
+            },
+            {
+              "lastTransitionTime": "2026-03-07T21:59:19.440725Z",
+              "message": "System will retry after 00:00 from lastTransitionTime for attempt 0.",
+              "reason": "ImmediateRetry",
+              "severity": "Info",
+              "status": "True",
+              "type": "Retry"
+            }
+          ],
+          "containerStatuses": [
+            {
+              "imageDigest": "us-central1-docker.pkg.dev/maikbottrade/analytica-repo/backend@sha256:22a68064052cec1d2d3eab8d930ca3265d3d89da432325c280f66ee0c3a6b5f0",
+              "name": "backend-1"
+            }
+          ],
+          "imageDigest": "us-central1-docker.pkg.dev/maikbottrade/analytica-repo/backend@sha256:22a68064052cec1d2d3eab8d930ca3265d3d89da432325c280f66ee0c3a6b5f0",
+          "logUrl": "https://console.cloud.google.com/logs/viewer?project=maikbottrade&resource=cloud_run_revision/service_name/analytica-backend/revision_name/analytica-backend-00003-zm6&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22analytica-backend%22%0Aresource.labels.revision_name%3D%22analytica-backend-00003-zm6%22",
+          "observedGeneration": 1
+        }
+      },
+      "serviceName": "run.googleapis.com",
+      "status": {
+        "code": 9,
+        "message": "Ready condition status changed to False for Revision analytica-backend-00003-zm6 with message: The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=maikbottrade&resource=cloud_run_revision/service_name/analytica-backend/revision_name/analytica-backend-00003-zm6&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22analytica-backend%22%0Aresource.labels.revision_name%3D%22analytica-backend-00003-zm6%22 \nFor more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start"
+      }
+    },
+    "receiveTimestamp": "2026-03-07T21:59:24.260515746Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "analytica-backend",
+        "location": "us-central1",
+        "project_id": "maikbottrade",
+        "revision_name": "analytica-backend-00003-zm6",
+        "service_name": "analytica-backend"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-03-07T21:59:24.186567Z"
+  },
+  {
+    "insertId": "-r4xdgoddpv0",
+    "logName": "projects/maikbottrade/logs/cloudaudit.googleapis.com%2Fsystem_event",
+    "protoPayload": {
+      "@type": "type.googleapis.com/google.cloud.audit.AuditLog",
+      "methodName": "/Services.ReplaceService",
+      "resourceName": "namespaces/maikbottrade/revisions/analytica-backend-00002-gwh",
+      "response": {
+        "@type": "type.googleapis.com/google.cloud.run.v1.Revision",
+        "apiVersion": "serving.knative.dev/v1",
+        "kind": "Revision",
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "20",
+            "run.googleapis.com/client-name": "gcloud",
+            "run.googleapis.com/client-version": "558.0.0",
+            "run.googleapis.com/operation-id": "51721720-9dd4-4edf-9826-a7351ea56032",
+            "run.googleapis.com/startup-cpu-boost": "true",
+            "serving.knative.dev/creator": "maikol.salas.m@gmail.com"
+          },
+          "creationTimestamp": "2026-03-07T21:48:06.083788Z",
+          "generation": 1,
+          "labels": {
+            "client.knative.dev/nonce": "kfisjplwzq",
+            "cloud.googleapis.com/location": "us-central1",
+            "run.googleapis.com/startupProbeType": "Default",
+            "serving.knative.dev/configuration": "analytica-backend",
+            "serving.knative.dev/configurationGeneration": "2",
+            "serving.knative.dev/route": "analytica-backend",
+            "serving.knative.dev/service": "analytica-backend",
+            "serving.knative.dev/serviceUid": "c6949197-12d7-40f5-8fd2-81d81c558baa"
+          },
+          "name": "analytica-backend-00002-gwh",
+          "namespace": "419965139801",
+          "ownerReferences": [
+            {
+              "apiVersion": "serving.knative.dev/v1",
+              "blockOwnerDeletion": true,
+              "controller": true,
+              "kind": "Configuration",
+              "name": "analytica-backend",
+              "uid": "e3d1d7bb-04d8-40b2-a9bc-038c176f3bb1"
+            }
+          ],
+          "resourceVersion": "AAZMdiCkrQc",
+          "selfLink": "/apis/serving.knative.dev/v1/namespaces/419965139801/revisions/analytica-backend-00002-gwh",
+          "uid": "0485724e-71c5-4250-9b39-5d64fdf88d88"
+        },
+        "spec": {
+          "containerConcurrency": 80,
+          "containers": [
+            {
+              "image": "us-central1-docker.pkg.dev/maikbottrade/analytica-repo/backend@sha256:9b400596624401618ff5a5e2d2988a7370a49fe6f6f56ce04c6573f5f8cf2b57",
+              "name": "backend-1",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "512Mi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            }
+          ],
+          "serviceAccountName": "419965139801-compute@developer.gserviceaccount.com",
+          "timeoutSeconds": 300
+        },
+        "status": {
+          "conditions": [
+            {
+              "lastTransitionTime": "2026-03-07T21:48:17.778951Z",
+              "message": "The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=maikbottrade&resource=cloud_run_revision/service_name/analytica-backend/revision_name/analytica-backend-00002-gwh&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22analytica-backend%22%0Aresource.labels.revision_name%3D%22analytica-backend-00002-gwh%22 \nFor more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start",
+              "reason": "HealthCheckContainerError",
+              "status": "False",
+              "type": "Ready"
+            },
+            {
+              "lastTransitionTime": "2026-03-07T21:48:17.778951Z",
+              "message": "The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=maikbottrade&resource=cloud_run_revision/service_name/analytica-backend/revision_name/analytica-backend-00002-gwh&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22analytica-backend%22%0Aresource.labels.revision_name%3D%22analytica-backend-00002-gwh%22 \nFor more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start",
+              "reason": "HealthCheckContainerError",
+              "status": "False",
+              "type": "ContainerHealthy"
+            },
+            {
+              "lastTransitionTime": "2026-03-07T21:48:12.571021Z",
+              "message": "Container image import completed in 5.77s.",
+              "status": "True",
+              "type": "ContainerReady"
+            },
+            {
+              "lastTransitionTime": "2026-03-07T21:48:14.250890Z",
+              "message": "Provisioning imported containers completed in 1.68s. Checking container health. This will wait for up to 4m for the configured startup probe, including an initial delay of 0s.",
+              "status": "True",
+              "type": "ResourcesAvailable"
+            },
+            {
+              "lastTransitionTime": "2026-03-07T21:48:14.250890Z",
+              "message": "System will retry after 00:00 from lastTransitionTime for attempt 0.",
+              "reason": "ImmediateRetry",
+              "severity": "Info",
+              "status": "True",
+              "type": "Retry"
+            }
+          ],
+          "containerStatuses": [
+            {
+              "imageDigest": "us-central1-docker.pkg.dev/maikbottrade/analytica-repo/backend@sha256:9b400596624401618ff5a5e2d2988a7370a49fe6f6f56ce04c6573f5f8cf2b57",
+              "name": "backend-1"
+            }
+          ],
+          "imageDigest": "us-central1-docker.pkg.dev/maikbottrade/analytica-repo/backend@sha256:9b400596624401618ff5a5e2d2988a7370a49fe6f6f56ce04c6573f5f8cf2b57",
+          "logUrl": "https://console.cloud.google.com/logs/viewer?project=maikbottrade&resource=cloud_run_revision/service_name/analytica-backend/revision_name/analytica-backend-00002-gwh&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22analytica-backend%22%0Aresource.labels.revision_name%3D%22analytica-backend-00002-gwh%22",
+          "observedGeneration": 1
+        }
+      },
+      "serviceName": "run.googleapis.com",
+      "status": {
+        "code": 9,
+        "message": "Ready condition status changed to False for Revision analytica-backend-00002-gwh with message: The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.\n\nLogs URL: https://console.cloud.google.com/logs/viewer?project=maikbottrade&resource=cloud_run_revision/service_name/analytica-backend/revision_name/analytica-backend-00002-gwh&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22analytica-backend%22%0Aresource.labels.revision_name%3D%22analytica-backend-00002-gwh%22 \nFor more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start"
+      }
+    },
+    "receiveTimestamp": "2026-03-07T21:48:18.697443842Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "analytica-backend",
+        "location": "us-central1",
+        "project_id": "maikbottrade",
+        "revision_name": "analytica-backend-00002-gwh",
+        "service_name": "analytica-backend"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-03-07T21:48:17.792985Z"
+  }
+]

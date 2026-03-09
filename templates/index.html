@@ -46,44 +46,46 @@
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-2">
                     <span class="text-xl font-extrabold tracking-tighter text-slate-950">MAIK CONTROL</span>
-                    <span
-                        class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-900 text-white uppercase tracking-tighter">v15</span>
-                    <span class="text-[9px] text-slate-400 font-medium ml-1">Update: 01/Mar 13:50 (Audit IA Hub)</span>
-                </div>
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-black rounded uppercase">v18</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Update: 02/Mar
+                            13:30</span>
+                    </div>
 
-                <!-- Tab Switcher -->
-                <div class="flex p-1 bg-slate-100 rounded-full border border-slate-200">
-                    <button id="tab-general" onclick="switchView('general')"
-                        class="tab-btn px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 bg-white text-slate-900 shadow-sm border border-slate-200">
-                        GENERAL
-                    </button>
-                    <button id="tab-details" onclick="switchView('details')"
-                        class="tab-btn px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 text-slate-500 hover:text-slate-800">
-                        DETALLES
-                    </button>
-                    <button id="tab-config" onclick="switchView('config')"
-                        class="tab-btn px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 text-slate-500 hover:text-slate-800">
-                        AJUSTES
-                    </button>
-                    <button id="tab-suggestions" onclick="switchView('suggestions')"
-                        class="tab-btn px-6 py-2.5 text-[14px] font-black rounded-full transition-all duration-300 text-slate-500 hover:bg-slate-50 flex items-center gap-2 group">
-                        <div class="relative flex items-center justify-center">
-                            <svg class="w-6 h-6 text-indigo-500 group-hover:scale-110 transition-transform" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                            <span class="absolute -top-1 -right-1 flex h-3 w-3">
-                                <span
-                                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                <span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
-                            </span>
-                        </div>
-                        <span class="tracking-widest">IA</span>
-                    </button>
+                    <!-- Tab Switcher -->
+                    <div class="flex p-1 bg-slate-100 rounded-full border border-slate-200">
+                        <button id="tab-general" onclick="switchView('general')"
+                            class="tab-btn px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 bg-white text-slate-900 shadow-sm border border-slate-200">
+                            GENERAL
+                        </button>
+                        <button id="tab-details" onclick="switchView('details')"
+                            class="tab-btn px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 text-slate-500 hover:text-slate-800">
+                            DETALLES
+                        </button>
+                        <button id="tab-config" onclick="switchView('config')"
+                            class="tab-btn px-4 py-1.5 text-xs font-bold rounded-full transition-all duration-300 text-slate-500 hover:text-slate-800">
+                            AJUSTES
+                        </button>
+                        <button id="tab-suggestions" onclick="switchView('suggestions')"
+                            class="tab-btn px-6 py-2.5 text-[14px] font-black rounded-full transition-all duration-300 text-slate-500 hover:bg-slate-50 flex items-center gap-2 group">
+                            <div class="relative flex items-center justify-center">
+                                <svg class="w-6 h-6 text-indigo-500 group-hover:scale-110 transition-transform"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                                <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                                    <span
+                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+                                </span>
+                            </div>
+                            <span class="tracking-widest">IA</span>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
     </nav>
 
     <div class="max-w-7xl mx-auto p-4 md:p-8 space-y-10">
@@ -95,7 +97,18 @@
                 <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
                 <div class="flex justify-between items-start mb-4">
                     <div>
-                        <h2 class="text-xl font-black text-slate-900 tracking-tighter uppercase">Motor Cripto</h2>
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-xl font-black text-slate-900 tracking-tighter uppercase">Motor Cripto</h2>
+                            <div id="offset-indicator"
+                                class="hidden flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500 text-white animate-pulse">
+                                <span class="relative flex h-2 w-2">
+                                    <span
+                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-100 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                                </span>
+                                <span class="text-[9px] font-black uppercase tracking-tighter">Modo Offset Activo</span>
+                            </div>
+                        </div>
                         <div class="flex items-center gap-2 mt-1">
                             <span class="text-xs text-slate-500 font-medium">Estado:</span>
                             <span id="state-badge-crypto"
@@ -118,7 +131,7 @@
                     </label>
                 </div>
 
-                <div class="pt-4 border-t border-slate-100">
+                <div class="pt-4 border-t border-slate-100 space-y-3">
                     <div class="flex gap-2">
                         <button onclick="setMode('crypto', 'algoritmico')" id="btn-crypto-algo"
                             class="flex-1 py-1.5 px-2 text-xs font-bold rounded bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 transition-colors">Algorítmico</button>
@@ -126,6 +139,32 @@
                             class="flex-1 py-1.5 px-2 text-xs font-bold rounded bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 transition-colors">Híbrido</button>
                         <button onclick="setMode('crypto', 'inteligente')" id="btn-crypto-smar"
                             class="flex-1 py-1.5 px-2 text-xs font-bold rounded bg-slate-50 text-slate-500 border border-slate-200 hover:bg-slate-100 transition-colors">Inteligente</button>
+                    </div>
+
+                    <div
+                        class="flex items-center justify-between px-2 py-2 bg-rose-50 rounded-lg border border-rose-100">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-black text-rose-600 uppercase tracking-widest">Modo
+                                Agresivo</span>
+                            <span class="text-[8px] text-rose-400 font-bold italic">(Escalado x3)</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer scale-75">
+                            <input type="checkbox" id="toggle-aggressive" class="sr-only peer"
+                                onchange="toggleAggressive()">
+                            <div
+                                class="w-11 h-6 bg-rose-200 rounded-full peer peer-checked:bg-rose-600 transition-colors">
+                            </div>
+                            <div
+                                class="absolute left-[2px] top-[2px] bg-white w-5 h-5 rounded-full transition-transform peer-checked:translate-x-full">
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Leyenda de Activos -->
+                    <div class="flex items-center gap-4 mt-2 px-1">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">BTC & ETH & SOL &
+                            XRP</span>
+                        <div class="h-px flex-1 bg-slate-100"></div>
                     </div>
                 </div>
             </div>
@@ -178,63 +217,44 @@
         <!-- VISTA GENERAL (Home) -->
         <div id="view-general" class="space-y-10 transition-all duration-500">
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <!-- Balance & PNL -->
-                <div class="lg:col-span-1 space-y-8">
-                    <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 lg:p-8">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-xl font-semibold text-slate-950 font-primary">Balance Real</h2>
-                            <div class="text-right">
-                                <div class="text-[9px] text-slate-400 font-bold session-start-label">---</div>
-                                <div class="text-[9px] text-indigo-500 font-black session-timer-label">00:00:00</div>
-                            </div>
-                        </div>
-                        <div id="balance" class="text-4xl font-extrabold text-slate-950 mb-8 tracking-tighter">$0.00
-                        </div>
-                        <div class="flex flex-col gap-2 pt-6 border-t border-slate-100">
-                            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Net PnL
-                                (Sesión)</span>
+                <!-- Panel de Balance y Rendimiento (Restaurado por prioridad) -->
+                <div
+                    class="lg:col-span-4 bg-white border border-slate-100 rounded-2xl shadow-sm p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-8 mb-4">
+                    <div class="flex-1">
+                        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Balance Real</h2>
+                        <div id="balance" class="text-4xl font-extrabold text-slate-950 tracking-tighter leading-none">
+                            $0.00</div>
+                    </div>
+
+                    <div class="w-px h-12 bg-slate-100 hidden md:block"></div>
+
+                    <div class="flex-1">
+                        <h2 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Net PnL Sesión
+                        </h2>
+                        <div class="flex items-baseline gap-3">
                             <span id="pnl-neto" class="text-3xl font-extrabold text-slate-900">$0.00</span>
+                            <span id="pnl-roe-pct"
+                                class="px-2 py-0.5 rounded text-xs font-black bg-slate-100 text-slate-400">0.00%</span>
                         </div>
                     </div>
 
-                    <!-- Metrics -->
-                    <div class="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 lg:p-8">
-                        <div class="flex justify-between items-center mb-6">
-                            <h2 class="text-xl font-semibold text-slate-950">Métricas</h2>
-                            <div class="text-right">
-                                <div class="text-[9px] text-slate-400 font-bold session-start-label">---</div>
-                                <div class="text-[9px] text-indigo-500 font-black session-timer-label">00:00:00</div>
-                            </div>
-                        </div>
-                        <div class="space-y-8">
-                            <div>
-                                <div class="flex justify-between items-end mb-2">
-                                    <span class="text-sm font-medium text-slate-500">Win Rate</span>
-                                    <span id="total-wr-val" class="font-bold text-slate-900 text-lg">0.0%</span>
-                                </div>
-                                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                    <div id="total-wr-bar" class="h-full bg-slate-950 transition-all duration-500"
-                                        style="width: 0%"></div>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Trades TP (Profit)
-                                    </div>
-                                    <div id="total_w" class="text-2xl font-extrabold text-emerald-600">0</div>
-                                </div>
-                                <div>
-                                    <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Trades SL (Loss)
-                                    </div>
-                                    <div id="total_l" class="text-2xl font-extrabold text-red-600">0</div>
-                                </div>
-                            </div>
+                    <div class="w-px h-12 bg-slate-100 hidden md:block"></div>
+
+                    <div class="flex flex-col items-end">
+                        <span id="pnl-roe-label"
+                            class="text-[9px] font-bold text-slate-300 uppercase tracking-widest mb-1 italic">ROE
+                            SESIÓN</span>
+                        <div class="flex items-center gap-2">
+                            <span class="session-start-label text-[10px] font-bold text-slate-400">---</span>
+                            <span
+                                class="session-timer-label text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded">00:00:00</span>
                         </div>
                     </div>
                 </div>
 
+
                 <!-- Column 2 (Active Pos - DUAL) -->
-                <div class="lg:col-span-3 space-y-6">
+                <div class="lg:col-span-4 space-y-6">
 
                     <!-- DUAL ENGINE CARDS -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -354,25 +374,24 @@
                     </div>
                 </div>
 
-                <!-- Logs Table -->
+                <!-- Historial de Posiciones de la Sesión -->
                 <div class="lg:col-span-4 max-w-full overflow-hidden">
                     <div class="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
                         <div
                             class="p-6 lg:p-8 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between bg-white gap-4">
-                            <h2 class="text-xl font-extrabold text-slate-950">Historial de Sesión</h2>
-                            <!-- RESUMEN DE HISTORIAL -->
+                            <h2 class="text-xl font-extrabold text-slate-950" id="hist-title">Historial de posiciones de
+                                la sesión</h2>
                             <div
                                 class="flex items-center gap-6 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
                                 <div class="flex flex-col">
                                     <span
-                                        class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Posiciones
-                                        Activas</span>
+                                        class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Abiertas</span>
                                     <span class="text-base font-black text-blue-600" id="hist-abiertas">0</span>
                                 </div>
                                 <div class="w-px h-8 bg-slate-200"></div>
                                 <div class="flex flex-col">
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Órdenes
-                                        Totales</span>
+                                    <span
+                                        class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cerradas</span>
                                     <span class="text-base font-black text-emerald-600" id="hist-cerradas">0</span>
                                 </div>
                             </div>
@@ -416,14 +435,14 @@
                             </thead>
                             <tbody id="logs-body">
                                 <tr>
-                                    <td colspan="10" class="px-6 py-12 text-center text-slate-400 italic">
-                                        Cargando
-                                        registros...</td>
+                                    <td colspan="10" class="px-6 py-12 text-center text-slate-400 italic">Cargando
+                                        posiciones...</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
@@ -846,12 +865,47 @@
             </div>
         </header>
 
-        <div id="suggestions-container" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div class="col-span-full py-20 text-center">
-                <div
-                    class="animate-spin inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full mb-4">
+        <div id="suggestions-container" class="space-y-8">
+            <!-- Pendientes -->
+            <div id="pending-suggestions" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="col-span-full py-20 text-center">
+                    <div
+                        class="animate-spin inline-block w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full mb-4">
+                    </div>
+                    <p class="text-slate-500 font-medium">Buscando optimizaciones...</p>
                 </div>
-                <p class="text-slate-400 font-medium italic">Consultando inteligencia en base de datos...</p>
+            </div>
+
+            <!-- Colapsable Historial -->
+            <div id="history-section" class="border-t border-slate-100 pt-10 mt-10 hidden">
+                <button onclick="toggleAiHistory()" class="flex items-center justify-between w-full group">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-slate-50 rounded-lg group-hover:bg-slate-100 transition-colors">
+                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3
+                            class="text-lg font-black text-slate-400 uppercase tracking-tight group-hover:text-slate-600 transition-colors">
+                            Registro de Auditoría Técnica</h3>
+                        <span id="history-count"
+                            class="px-2 py-0.5 bg-slate-100 text-slate-400 text-[10px] font-bold rounded-full">0</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="text-[9px] font-bold text-slate-300 uppercase tracking-widest hidden sm:inline">Memoria
+                            de IA Activa</span>
+                        <svg id="history-chevron" class="w-5 h-5 text-slate-300 transform transition-transform"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7">
+                            </path>
+                        </svg>
+                    </div>
+                </button>
+                <div id="applied-suggestions" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8 hidden">
+                    <!-- Applied cards here -->
+                </div>
             </div>
         </div>
     </div>
@@ -860,7 +914,7 @@
     <!-- SCRIPTS -->
     <!-- SCRIPTS -->
     <script>
-        console.log("MAIK CONTROL v12 loaded successfully.");
+        console.log("MAIK CONTROL v16 loaded successfully.");
         let globalConfig = null;
         let activeView = 'general';
 
@@ -926,6 +980,12 @@
                         toggle.checked = activeState;
                     }
 
+                    // Sync Aggressive Mode for crypto
+                    if (engine === 'crypto') {
+                        const aggToggle = document.getElementById('toggle-aggressive');
+                        if (aggToggle) aggToggle.checked = c.risk_rules?.aggressive_mode || false;
+                    }
+
                     // Update buttons
                     const btnAlgo = document.getElementById(`btn-${engine}-algo`);
                     const btnHybr = document.getElementById(`btn-${engine}-hybr`);
@@ -944,10 +1004,17 @@
             });
         }
 
-        async function setMode(engine, mode) {
-            if (!globalConfig || !globalConfig[engine]) return;
-            globalConfig[engine].trading_mode = mode;
+        // ─── IA ANALYSIS ─────────────────────────────────────────────
+
+        async function toggleAggressive() {
+            if (!globalConfig || !globalConfig.crypto) return;
+            const isAggressive = document.getElementById('toggle-aggressive').checked;
+
+            if (!globalConfig.crypto.risk_rules) globalConfig.crypto.risk_rules = {};
+            globalConfig.crypto.risk_rules.aggressive_mode = isAggressive;
+
             await saveDualConfigBackground();
+            console.log("Aggressive mode updated and synced.");
         }
 
         async function toggleBotActive(engine) {
@@ -1093,46 +1160,101 @@
                     const c = data.current;
                     document.getElementById('sync-time').innerText = new Date().toLocaleTimeString();
 
-                    // Métrica Globales
+                    // Métrica Globales (Protegidas o eliminadas por solicitud)
                     const bal = fmtVal(c.balance);
-                    document.getElementById('balance').innerText = `$${bal.toFixed(2)}`;
+
+                    // 1. Verificar si hay posiciones de OFFSET (SOL)
+                    const isOffsetActive = data.active_positions_crypto && data.active_positions_crypto.some(p => p.symbol.includes('SOL'));
+                    const offsetElem = document.getElementById('offset-indicator');
+                    if (offsetElem) {
+                        if (isOffsetActive) offsetElem.classList.remove('hidden');
+                        else offsetElem.classList.add('hidden');
+                    }
+
+                    const balEl = document.getElementById('balance');
+                    if (balEl) balEl.innerText = `$${bal.toFixed(2)}`;
 
                     const pnlVal = fmtVal(c.pnl_total);
                     const pnlEl = document.getElementById('pnl-neto');
-                    pnlEl.innerText = `${pnlVal >= 0 ? '+' : ''}$${pnlVal.toFixed(2)}`;
-                    pnlEl.className = `text-3xl font-extrabold tracking-tighter ${pnlVal >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+                    if (pnlEl) {
+                        pnlEl.innerText = `${pnlVal >= 0 ? '+' : ''}$${pnlVal.toFixed(2)}`;
+                        pnlEl.className = `text-3xl font-extrabold tracking-tighter ${pnlVal >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+                    }
+
+                    // ROE% de sesión
+                    const roeEl = document.getElementById('pnl-roe-pct');
+                    const roeLbl = document.getElementById('pnl-roe-label');
+                    if (roeEl) {
+                        const balanceInicial = bal - pnlVal;
+                        const roePct = balanceInicial !== 0 ? (pnlVal / Math.abs(balanceInicial)) * 100 : 0;
+                        const roeSign = roePct >= 0 ? '+' : '';
+                        roeEl.innerText = `${roeSign}${roePct.toFixed(2)}%`;
+                        if (roePct >= 0) {
+                            roeEl.className = 'mb-1 px-2.5 py-1 rounded-lg text-sm font-black tracking-tight bg-emerald-50 text-emerald-600 border border-emerald-200';
+                        } else {
+                            roeEl.className = 'mb-1 px-2.5 py-1 rounded-lg text-sm font-black tracking-tight bg-red-50 text-red-600 border border-red-200';
+                        }
+                        if (roeLbl) roeLbl.innerText = `ROE Sesión (sobre $${Math.abs(balanceInicial).toFixed(0)} inicial)`;
+                    }
 
                     const tw = fmtVal(c.total_w), tl = fmtVal(c.total_l);
-                    document.getElementById('total_w').innerText = tw;
-                    document.getElementById('total_l').innerText = tl;
+                    const twEl = document.getElementById('total_w');
+                    const tlEl = document.getElementById('total_l');
+                    if (twEl) twEl.innerText = tw;
+                    if (tlEl) tlEl.innerText = tl;
+
                     const totalTr = tw + tl;
                     const wrVal = totalTr > 0 ? ((tw / totalTr) * 100).toFixed(1) : '0.0';
-                    document.getElementById('total-wr-val').innerText = wrVal + '%';
-                    document.getElementById('total-wr-bar').style.width = wrVal + '%';
+                    const wrValEl = document.getElementById('total-wr-val');
+                    const wrBarEl = document.getElementById('total-wr-bar');
+                    if (wrValEl) wrValEl.innerText = wrVal + '%';
+                    if (wrBarEl) wrBarEl.style.width = wrVal + '%';
 
                     // Tablas de Detalles
-                    document.getElementById('tb-fills').innerText = `${c.total_executions || 0} Fills`;
-                    document.getElementById('tb-trades').innerText = `${totalTr} Negocios`;
-                    document.getElementById('tb-duration').innerText = `${fmtVal(c.avg_duration_min).toFixed(2)} min`;
-                    document.getElementById('tb-tp').innerText = `${tw} Ganada${tw !== 1 ? 's' : ''} (${fmtVal(c.avg_win_pct).toFixed(1)}%)`;
-                    document.getElementById('tb-sl').innerText = `${tl} Perdida${tl !== 1 ? 's' : ''} (${fmtVal(c.avg_loss_pct).toFixed(1)}%)`;
+                    const fillsEl = document.getElementById('tb-fills');
+                    if (fillsEl) fillsEl.innerText = `${c.total_executions || 0} Fills`;
+
+                    const tradesEl = document.getElementById('tb-trades');
+                    if (tradesEl) tradesEl.innerText = `${totalTr} Negocios`;
+
+                    const durEl = document.getElementById('tb-duration');
+                    if (durEl) durEl.innerText = `${fmtVal(c.avg_duration_min).toFixed(2)} min`;
+
+                    const tpEl = document.getElementById('tb-tp');
+                    if (tpEl) tpEl.innerText = `${tw} Ganada${tw !== 1 ? 's' : ''} (${fmtVal(c.avg_win_pct).toFixed(1)}%)`;
+
+                    const slEl = document.getElementById('tb-sl');
+                    if (slEl) slEl.innerText = `${tl} Perdida${tl !== 1 ? 's' : ''} (${fmtVal(c.avg_loss_pct).toFixed(1)}%)`;
 
                     const af = fmtVal(c.avg_fee_usd);
                     const totalWinUsd = fmtVal(c.avg_win_usd) * tw;
                     const totalLossUsd = fmtVal(c.avg_loss_usd) * tl;
 
-                    document.getElementById('tb-fee').innerText = `$${af.toFixed(3)}`;
-                    document.getElementById('tb-total-win').innerText = `+$${totalWinUsd.toFixed(2)}`;
-                    document.getElementById('tb-total-loss').innerText = `-$${totalLossUsd.toFixed(2)}`;
+                    const feeEl = document.getElementById('tb-fee');
+                    if (feeEl) feeEl.innerText = `$${af.toFixed(3)}`;
+
+                    const twinEl = document.getElementById('tb-total-win');
+                    if (twinEl) twinEl.innerText = `+$${totalWinUsd.toFixed(2)}`;
+
+                    const tlossEl = document.getElementById('tb-total-loss');
+                    if (tlossEl) tlossEl.innerText = `-$${totalLossUsd.toFixed(2)}`;
 
                     const nw = fmtVal(c.net_win_usd);
                     const nl = fmtVal(c.net_loss_usd);
-                    document.getElementById('tb-net-win').innerText = `${nw >= 0 ? '+' : ''}$${nw.toFixed(2)}`;
-                    document.getElementById('tb-net-loss').innerText = `${nl >= 0 ? '+' : ''}$${Math.abs(nl).toFixed(2)}`;
+                    const nwinEl = document.getElementById('tb-net-win');
+                    if (nwinEl) nwinEl.innerText = `${nw >= 0 ? '+' : ''}$${nw.toFixed(2)}`;
 
-                    document.getElementById('tb-balance').innerText = `$${bal.toFixed(2)}`;
-                    document.getElementById('tb-pnl').innerText = `${pnlVal >= 0 ? '+' : ''}$${pnlVal.toFixed(2)}`;
-                    document.getElementById('tb-pnl').className = `px-6 py-4 font-bold ${pnlVal >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+                    const nlossEl = document.getElementById('tb-net-loss');
+                    if (nlossEl) nlossEl.innerText = `${nl >= 0 ? '+' : ''}$${Math.abs(nl).toFixed(2)}`;
+
+                    const tbBalEl = document.getElementById('tb-balance');
+                    if (tbBalEl) tbBalEl.innerText = `$${bal.toFixed(2)}`;
+
+                    const tbPnlEl = document.getElementById('tb-pnl');
+                    if (tbPnlEl) {
+                        tbPnlEl.innerText = `${pnlVal >= 0 ? '+' : ''}$${pnlVal.toFixed(2)}`;
+                        tbPnlEl.className = `px-6 py-4 font-bold ${pnlVal >= 0 ? 'text-emerald-600' : 'text-red-600'}`;
+                    }
 
                     if (data.start_timestamp) {
                         const startTs = data.start_timestamp;
@@ -1155,166 +1277,169 @@
                         window.sessionInterval = setInterval(updateTimer, 1000);
                         updateTimer();
 
-                        document.getElementById('tb-start-date').innerText = date.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) + ' LOCAL';
+                        const tbStartEl = document.getElementById('tb-start-date');
+                        if (tbStartEl) tbStartEl.innerText = date.toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) + ' LOCAL';
                     }
-                }
 
-                // Snapshots Independientes
-                if (data.bot_crypto_snapshot) {
-                    document.getElementById('strategy-crypto').innerText = data.bot_crypto_snapshot.strategy || 'INICIANDO';
-                    document.getElementById('signal-val-crypto').innerText = (data.bot_crypto_snapshot.z_score || 0).toFixed(2) + " Z";
-                }
-                if (data.bot_metals_snapshot) {
-                    document.getElementById('strategy-metals').innerText = data.bot_metals_snapshot.strategy || 'INICIANDO';
-                    document.getElementById('signal-val-metals').innerText = (data.bot_metals_snapshot.z_score || 0).toFixed(2) + " Z";
-                }
+                    // Actualizar Badges de Estado y Modo dinámicamente
+                    if (data.config) {
+                        updateGlobalBadges(data.config);
+                        globalConfig = data.config; // Sincronizar memoria local
+                    }
 
-                // AI Analyst
+                    // Snapshots Independientes
+                    if (data.bot_crypto_snapshot) {
+                        document.getElementById('strategy-crypto').innerText = data.bot_crypto_snapshot.strategy || 'INICIANDO';
+                        document.getElementById('signal-val-crypto').innerText = (data.bot_crypto_snapshot.z_score || 0).toFixed(2) + " Z";
+                    }
+                    if (data.bot_metals_snapshot) {
+                        document.getElementById('strategy-metals').innerText = data.bot_metals_snapshot.strategy || 'INICIANDO';
+                        document.getElementById('signal-val-metals').innerText = (data.bot_metals_snapshot.z_score || 0).toFixed(2) + " Z";
+                    }
+                } // ── FIN if (data.current) ──
+
+                // ── Siempre renderizar: IA, Posiciones e Historial ──
+
+                // AI Analyst - Renderizado Mejorado con Bloques de Código
                 if (data.ai_analysis) {
-                    const htmlText = data.ai_analysis.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-900 font-bold">$1</strong>').replace(/\n/g, '<br/>');
-                    document.getElementById('ai-analysis').innerHTML = htmlText;
+                    let text = data.ai_analysis;
+                    // 1. Manejar bloques de código especiales ``` ... ```
+                    text = text.replace(/```(.*?)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+                    // 2. Manejar negritas
+                    text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-900 font-extrabold">$1</strong>');
+                    // 3. Manejar saltos de línea (fuera de bloques pre)
+                    text = text.replace(/\n\n/g, '<div class="h-4"></div>').replace(/\n/g, '<br/>');
+                    document.getElementById('ai-analysis').innerHTML = text;
                 }
 
                 // Posiciones Separadas
-                renderPositions(data.active_positions_crypto, 'active-positions-crypto', 'pos-count-crypto', 'indigo');
-                renderPositions(data.active_positions_metals, 'active-positions-metals', 'pos-count-metals', 'amber');
+                renderPositions(data.active_positions_crypto || [], 'active-positions-crypto', 'pos-count-crypto', 'indigo');
+                renderPositions(data.active_positions_metals || [], 'active-positions-metals', 'pos-count-metals', 'amber');
 
-                // Logs Table (Unificado del .txt)
+                // --- RECONSTRUCCIÓN DE HISTORIAL DE POSICIONES ---
                 if (data.logs) {
                     const tbody = document.getElementById('logs-body');
                     tbody.innerHTML = '';
 
-                    // Combinamos logs con posiciones activas para tener datos en tiempo vivo
-                    const activePosMap = {};
-                    if (data.active_positions_crypto) {
-                        data.active_positions_crypto.forEach(p => { activePosMap[p.symbol.replace(':USDT', '')] = p; });
-                    }
-                    if (data.active_positions_metals) {
-                        data.active_positions_metals.forEach(p => { activePosMap[p.symbol.replace(':USDT', '')] = p; });
-                    }
+                    // Actualizar Título con Fecha/Hora Local
+                    const now = new Date();
+                    document.getElementById('hist-title').innerText = `Historial de posiciones de la sesión : ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
 
-                    // Mapa para detectar la ÚLTIMA orden abierta de cada asset
-                    const lastOpenPerAsset = {};
-                    const renderedAssets = new Set();
+                    const allPositions = [];
 
-                    // PROCESAMIENTO DE LOGS: Invertimos para procesar de más reciente a más antiguo
+                    // 1. Agregar Posiciones Abiertas (Snapshots en vivo)
+                    const activeCrypto = data.active_positions_crypto || [];
+                    const activeMetals = data.active_positions_metals || [];
+
+                    [...activeCrypto, ...activeMetals].forEach(p => {
+                        const asset = p.symbol.replace(':USDT', '');
+                        const margin = parseFloat(p.margin || 0);
+                        const pnl = parseFloat(p.pnl || 0);
+                        const roe = parseFloat(p.pnl_pct || 0);
+
+                        allPositions.push({
+                            estado: 'ABIERTO',
+                            tiempo: 'EN VIVO',
+                            side: p.side.toUpperCase(),
+                            plan: 'HÍBRIDO', // O extraer de snapshot si está disponible
+                            par: asset,
+                            valor: `$${margin.toFixed(2)}`,
+                            leverage: `x${p.leverage}`,
+                            fee: `$${(margin * 0.0012).toFixed(2)}`, // Estimado
+                            profit: `<span class="${pnl >= 0 ? 'text-emerald-500' : 'text-rose-500'} font-black">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</span>`,
+                            roe: `<span class="${roe >= 0 ? 'text-emerald-500 font-black' : 'text-rose-500 font-black'}">${roe >= 0 ? '+' : ''}${roe.toFixed(2)}%</span>`,
+                            isLive: true
+                        });
+                    });
+
+                    // 2. Procesar Logs para Posiciones Cerradas
                     const rawLogs = [...data.logs].reverse();
-                    const logsData = [];
-
                     rawLogs.forEach(log => {
                         if (!log.includes('|')) return;
-                        const p = log.split('|').map(s => s.trim());
-                        const rem = {};
-                        p.slice(2).forEach(item => { if (item.includes(':')) { const kv = item.split(':'); rem[kv[0].trim()] = kv[1].trim(); } });
-                        const asset = (rem['Asset'] || 'N/A').replace(':USDT', '');
-                        const cleanAsset = asset.split(' ')[0].split('_')[0].replace('ORO', '').replace('PLATA', '');
-                        logsData.push({ p, rem, asset, cleanAsset, type: p[1] || '' });
-                        renderedAssets.add(cleanAsset);
-                    });
+                        const parts = log.split('|').map(s => s.trim());
+                        const type = parts[1];
 
-                    // INYECCIÓN DE POSICIONES PERSISTENTES (Las que vienen de antes de la sesión)
-                    for (let k in activePosMap) {
-                        if (!renderedAssets.has(k)) {
-                            const ap = activePosMap[k];
-                            const dummyP = ["ANTERIOR", "RECUERDO: ABIERTA"];
-                            const dummyRem = { "Asset": k, "Side": ap.side.toUpperCase(), "Strat": "PERSISTENTE", "Lev": `x${ap.leverage}` };
-                            logsData.unshift({ p: dummyP, rem: dummyRem, asset: k, cleanAsset: k, type: "ABIERTA", isPersistent: true });
-                        }
-                    }
-
-                    const groupMap = {};
-                    logsData.forEach(item => {
-                        if (!groupMap[item.cleanAsset]) groupMap[item.cleanAsset] = [];
-                        groupMap[item.cleanAsset].push(item);
-                    });
-
-                    logsData.forEach(item => {
-                        const { p, rem, asset, cleanAsset, type, isPersistent } = item;
-
-                        // Detectar si es el último hijo del grupo para el conector visual
-                        const myGroup = groupMap[cleanAsset];
-                        const myIndex = myGroup.indexOf(item);
-                        const nextOrderInGroup = myGroup.slice(myIndex + 1).find(x => x.type.includes('ORDEN') || x.type.includes('ABIERTA') || x.type.includes('SCALE'));
-                        const isLastInChain = !nextOrderInGroup;
-
-                        let isLatestOpen = false;
-                        if ((type.includes('ABIERTA') || type.includes('SCALE')) && !lastOpenPerAsset[cleanAsset]) {
-                            if (activePosMap[cleanAsset]) {
-                                lastOpenPerAsset[cleanAsset] = true;
-                                isLatestOpen = true;
-                            }
-                        }
-
-                        let evtType = type;
-                        let evtClass = "bg-slate-100 text-slate-600";
-                        let treePrefix = "";
-
-                        let val = rem['Value'] || rem['Bal'] || '---';
-                        let lev = rem['Lev'] || '---';
-                        let fee = rem['Fee'] || '---';
-                        let profit = rem['Profit'] || '---';
-                        let roe = rem['ROE'] || '---';
-
-                        if (type.includes('ABIERTA') || type.includes('SCALE')) {
-                            if (isLatestOpen) {
-                                evtType = "POSICIÓN";
-                                evtClass = 'bg-blue-600 text-white ring-2 ring-blue-100 shadow-lg';
-                                treePrefix = "";
-
-                                const ap = activePosMap[cleanAsset];
-                                if (ap) {
-                                    val = `<span class="text-slate-900 font-black">$${parseFloat(ap.notional || 0).toFixed(2)}</span>`;
-                                    lev = `x${ap.leverage || 10}`;
-                                    fee = `$${(parseFloat(ap.margin || 0) * 0.0012).toFixed(2)}`;
-                                    const pnlVal = parseFloat(ap.pnl || 0);
-                                    const pnlPct = parseFloat(ap.pnl_pct || 0);
-                                    profit = `<span class="${pnlVal >= 0 ? 'text-emerald-500' : 'text-rose-500'} font-black">${pnlVal >= 0 ? '+' : ''}$${pnlVal.toFixed(2)}</span>`;
-                                    roe = `<span class="${pnlPct >= 0 ? 'text-emerald-500 font-black' : 'text-rose-500 font-bold'}">${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(2)}%</span>`;
+                        // Solo nos interesan las posiciones CERRADAS
+                        if (type && type.includes('CERRADA')) {
+                            const rem = {};
+                            parts.slice(2).forEach(item => {
+                                if (item.includes(':')) {
+                                    const [k, v] = item.split(':');
+                                    rem[k.trim()] = v.trim();
                                 }
-                            } else {
-                                evtType = "ORDEN";
-                                evtClass = 'bg-slate-50 text-slate-400 border border-slate-200';
-                                treePrefix = isLastInChain ? " <span class='text-slate-300 ml-2'>└─</span> " : " <span class='text-slate-300 ml-2'>├─</span> ";
-                                val = `<span class="opacity-40">${val}</span>`;
-                                profit = "---";
-                                roe = "---";
-                            }
-                        } else if (type.includes('CERRADA')) {
-                            const profitVal = parseFloat(rem['Profit'] || 0);
-                            evtClass = profitVal >= 0 ? 'bg-emerald-600 text-white ring-1 ring-emerald-100' : 'bg-rose-600 text-white ring-1 ring-rose-100';
-                            evtType = 'CERRADA';
-                            treePrefix = "";
-                            if (profit !== '---') {
-                                const isWin = profit.includes('+') || profitVal >= 0;
-                                profit = `<span class="${isWin ? 'text-emerald-500 font-black' : 'text-rose-500 font-black'}">${profit}</span>`;
-                                roe = `<span class="${isWin ? 'text-emerald-500 font-bold' : 'text-rose-500 font-bold'}">${roe}</span>`;
-                            }
-                        }
+                            });
 
+                            const asset = (rem['Asset'] || '---').replace(':USDT', '');
+                            const lev = parseInt((rem['Lev'] || 'x10').replace('x', ''));
+                            const totalVal = parseFloat((rem['Value'] || '$0').replace('$', ''));
+                            const valorBase = lev > 0 ? totalVal / lev : 0;
+                            const profitVal = parseFloat((rem['Profit'] || '0').replace('$', '').replace('+', ''));
+                            let roeVal = rem['ROE'] || '0%';
+
+                            // Corrección para evitar ROEs astronómicos por datos corruptos en logs
+                            if (valorBase > 0 && Math.abs(profitVal) > 0) {
+                                const calculatedRoe = (profitVal / valorBase) * 100;
+                                if (Math.abs(calculatedRoe) > 500) {
+                                    roeVal = "---";
+                                } else {
+                                    roeVal = (calculatedRoe >= 0 ? '+' : '') + calculatedRoe.toFixed(2) + "%";
+                                }
+                            }
+
+                            // Convertir tiempo log de UTC a Local si es posible
+                            let timeStr = parts[0].split(' ')[1] || '---';
+                            try {
+                                const utcDate = new Date(parts[0]);
+                                if (!isNaN(utcDate.getTime())) {
+                                    timeStr = utcDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                }
+                            } catch (e) { }
+
+                            allPositions.push({
+                                estado: 'CERRADO',
+                                tiempo: timeStr,
+                                side: rem['Side'] || '---',
+                                plan: rem['Strat'] || 'PLAN_X',
+                                par: asset,
+                                valor: `$${valorBase.toFixed(2)}`,
+                                leverage: `x${lev}`,
+                                fee: rem['Fee'] || '$0.00',
+                                profit: `<span class="${profitVal >= 0 ? 'text-emerald-500' : 'text-rose-500'} font-bold">${profitVal >= 0 ? '+' : ''}$${profitVal.toFixed(2)}</span>`,
+                                roe: `<span class="${profitVal >= 0 ? 'text-emerald-500' : 'text-rose-500'} font-bold">${roeVal}</span>`,
+                                isLive: false
+                            });
+                        }
+                    });
+
+                    // 3. Renderizar Tabla
+                    allPositions.forEach(pos => {
                         const tr = document.createElement('tr');
-                        tr.className = `border-b border-slate-50 hover:bg-slate-50/50 transition-colors ${evtType === 'POSICIÓN' ? 'bg-blue-50/20' : ''}`;
+                        tr.className = `border-b border-slate-50 hover:bg-slate-50/50 transition-colors ${pos.isLive ? 'bg-blue-50/30' : ''}`;
+
+                        const statusClass = pos.isLive ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500';
+
                         tr.innerHTML = `
-                                <td class="px-6 py-4 flex items-center">
-                                    ${treePrefix}
-                                     <span class="${evtClass} text-[10px] font-black px-2.5 py-1 rounded-md uppercase tracking-tighter">${evtType.replace('RESULTADO: ', '').replace('ORDEN: ', '')}</span>
-                                </td>
-                                <td class="px-6 py-4 text-[10px] font-bold text-slate-300">${isPersistent ? 'ANTERIOR' : p[0].split(' ')[1]}</td>
-                                <td class="px-6 py-4 text-xs font-black ${rem['Side'] === 'LONG' || rem['Side'] === 'COMPRA' ? 'text-emerald-500/80' : 'text-rose-500/80'}">${rem['Side'] || '---'}</td>
-                                <td class="px-6 py-4 text-xs font-bold text-slate-400 italic">${rem['Strat'] || '---'}</td>
-                                <td class="px-6 py-4 text-xs font-black text-slate-800">${asset}</td>
-                                <td class="px-6 py-4 text-xs font-bold text-slate-500">${val}</td>
-                                <td class="px-6 py-4 text-xs font-black text-slate-900">${lev}</td>
-                                <td class="px-6 py-4 text-[10px] font-bold text-slate-400">${fee}</td>
-                                <td class="px-6 py-4 text-xs font-black">${profit}</td>
-                                <td class="px-6 py-4 text-xs font-black">${roe}</td>
-                            `;
+                            <td class="px-6 py-4">
+                                <span class="${statusClass} text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-tighter">${pos.estado}</span>
+                            </td>
+                            <td class="px-6 py-4 text-[10px] font-bold text-slate-400">${pos.tiempo}</td>
+                            <td class="px-6 py-4 text-xs font-black ${pos.side === 'LONG' ? 'text-emerald-500' : 'text-rose-500'}">${pos.side}</td>
+                            <td class="px-6 py-4 text-xs font-bold text-slate-400 italic">${pos.plan}</td>
+                            <td class="px-6 py-4 text-xs font-black text-slate-800">${pos.par}</td>
+                            <td class="px-6 py-4 text-xs font-bold text-slate-600">${pos.valor}</td>
+                            <td class="px-6 py-4 text-xs font-black text-slate-900">${pos.leverage}</td>
+                            <td class="px-6 py-4 text-[10px] font-bold text-slate-400">${pos.fee}</td>
+                            <td class="px-6 py-4 text-xs">${pos.profit}</td>
+                            <td class="px-6 py-4 text-xs">${pos.roe}</td>
+                        `;
                         tbody.appendChild(tr);
                     });
 
-                    // Actualizar Resumen Header (Sincero)
-                    document.getElementById('hist-abiertas').innerText = Object.keys(activePosMap).length;
-                    document.getElementById('hist-cerradas').innerText = rawLogs.filter(l => l.includes('ORDEN:') || l.includes('ABIERTA') || l.includes('SCALE')).length;
+                    // Actualizar contadores
+                    document.getElementById('hist-abiertas').innerText = (activeCrypto.length + activeMetals.length);
+                    document.getElementById('hist-cerradas').innerText = allPositions.filter(p => p.estado === 'CERRADO').length;
                 }
+
             } catch (e) { console.error("Update dash error:", e); }
         }
 
@@ -1391,56 +1516,83 @@
                 const container = document.getElementById('suggestions-container');
                 if (!container) return;
 
-                if (data.length === 0) {
-                    container.innerHTML = '<div class="col-span-full py-20 text-center text-slate-400 italic">No hay sugerencias guardadas aún.</div>';
-                    return;
+                const pendingContainer = document.querySelector('#pending-suggestions');
+                const appliedContainer = document.querySelector('#applied-suggestions');
+                const historySection = document.querySelector('#history-section');
+                const historyCount = document.querySelector('#history-count');
+
+                const pending = data.filter(s => s.status === 'pendiente');
+                const applied = data.filter(s => s.status === 'aplicada');
+
+                function renderCard(s) {
+                    const isApplied = s.status === 'aplicada';
+                    const cardStyle = isApplied
+                        ? 'bg-slate-50 border-slate-200/60 shadow-none'
+                        : 'bg-white border-sky-100 shadow-sm hover:shadow-md';
+
+                    const textColor = isApplied ? 'text-slate-600' : 'text-slate-700';
+                    const statusBg = isApplied ? 'bg-slate-500' : 'bg-sky-600';
+
+                    return `
+                        <div class="border rounded-2xl p-8 transition-all flex flex-col h-full relative overflow-hidden ${cardStyle}">
+                            ${isApplied ? '<div class="absolute top-0 left-0 w-full h-1 bg-slate-300/30"></div>' : ''}
+                            
+                            <div class="flex justify-between items-start mb-6">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-black px-2 py-1 rounded ${statusBg} text-white uppercase tracking-tighter">
+                                        ${isApplied ? 'DOCUMENTADA' : s.status}
+                                    </span>
+                                    ${s.bot_version ? `<span class="text-[9px] font-bold text-slate-400 bg-white/50 px-1.5 py-0.5 rounded border border-slate-200">v${s.bot_version}</span>` : ''}
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="text-right">
+                                        <div class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">${isApplied ? 'Implementada' : 'Guardada'}</div>
+                                        <div class="text-[10px] font-bold text-slate-500">${isApplied ? s.updated_at : s.timestamp}</div>
+                                    </div>
+                                    <button onclick="deleteSuggestion(${s.id})" class="text-slate-300 hover:text-red-500 p-1.5 transition-colors rounded-lg hover:bg-red-50" title="Eliminar definitivamente">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="text-[14px] ${textColor} leading-relaxed mb-8 flex-1 font-medium whitespace-pre-wrap selection:bg-sky-100 ${isApplied ? 'font-mono text-[13px] bg-white/40 p-4 rounded-xl border border-slate-100' : ''}">${s.content}</div>
+                            
+                            <div class="pt-6 border-t ${isApplied ? 'border-slate-200/40' : 'border-slate-100'} flex justify-between items-center sm:flex-row flex-col gap-4">
+                                <div class="flex flex-col">
+                                    <span class="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Hash Registro: #S${s.id}Z</span>
+                                    ${isApplied ? `<span class="text-[9px] font-bold text-indigo-400 uppercase">Estado: Activa en Producción</span>` : ''}
+                                </div>
+                                <div class="flex gap-2 w-full sm:w-auto">
+                                    ${s.status === 'pendiente' ? `
+                                        <button onclick="applySuggestion(${s.id})" 
+                                            class="flex-1 sm:flex-none px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-black rounded-xl shadow-lg shadow-sky-100 transition-all uppercase tracking-widest hover:-translate-y-0.5">
+                                            Ejecutar Estrategia
+                                        </button>
+                                    ` : `
+                                        <div class="flex items-center gap-2 px-4 py-2 bg-white text-slate-500 text-[10px] font-black rounded-lg border border-slate-200 uppercase tracking-widest shadow-sm">
+                                            <svg class="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                                            Auditoría OK
+                                        </div>
+                                    `}
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 }
 
-                container.innerHTML = data.map(s => `
-                    <div class="bg-white border ${s.status === 'pendiente' ? 'border-sky-100' : 'border-emerald-100 bg-emerald-50/10'} rounded-2xl shadow-sm p-8 hover:shadow-md transition-all flex flex-col h-full relative overflow-hidden">
-                        ${s.status === 'aplicada' ? '<div class=\"absolute top-0 right-0 w-2 h-full bg-emerald-500\"></div>' : ''}
-                        
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[10px] font-black px-2 py-1 rounded ${s.status === 'pendiente' ? 'bg-sky-600 text-white' : 'bg-emerald-600 text-white'} uppercase tracking-tighter">
-                                    ${s.status}
-                                </span>
-                                ${s.bot_version ? `<span class="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">v${s.bot_version}</span>` : ''}
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <div class="text-right">
-                                    <div class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Guardada</div>
-                                    <div class="text-[10px] font-bold text-slate-500">${s.timestamp}</div>
-                                </div>
-                                <button onclick="deleteSuggestion(${s.id})" class="text-slate-300 hover:text-red-500 p-1.5 transition-colors rounded-lg hover:bg-red-50" title="Eliminar definitivamente">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                </button>
-                            </div>
-                        </div>
+                if (pending.length > 0) {
+                    pendingContainer.innerHTML = pending.map(renderCard).join('');
+                } else {
+                    pendingContainer.innerHTML = '<div class="col-span-full py-20 text-center bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-100"><p class="text-slate-400 font-medium italic">No hay optimizaciones pendientes en este ciclo.</p></div>';
+                }
 
-                        <div class="text-[14px] text-slate-700 leading-relaxed mb-8 flex-1 font-medium whitespace-pre-wrap selection:bg-sky-100">${s.content}</div>
-                        
-                        <div class="pt-6 border-t border-slate-100 flex justify-between items-center sm:flex-row flex-col gap-4">
-                            <div class="flex flex-col">
-                                <span class="text-[9px] font-bold text-slate-300 uppercase tracking-widest">ID Registro: #${s.id}</span>
-                                ${s.updated_at && s.status === 'aplicada' ? `<span class="text-[9px] font-bold text-emerald-500 uppercase">Aplicada el: ${s.updated_at}</span>` : ''}
-                            </div>
-                            <div class="flex gap-2 w-full sm:w-auto">
-                                ${s.status === 'pendiente' ? `
-                                    <button onclick="applySuggestion(${s.id})" 
-                                        class="flex-1 sm:flex-none px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-black rounded-xl shadow-lg shadow-sky-100 transition-all uppercase tracking-widest hover:-translate-y-0.5 active:translate-y-0">
-                                        Ejecutar Estrategia
-                                    </button>
-                                ` : `
-                                    <div class="flex items-center gap-2 px-6 py-2.5 bg-emerald-50 text-emerald-600 text-[11px] font-black rounded-xl border border-emerald-100 uppercase tracking-widest">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                                        Estrategia Activa
-                                    </div>
-                                `}
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
+                if (applied.length > 0) {
+                    historySection.classList.remove('hidden');
+                    historyCount.innerHTML = applied.length;
+                    appliedContainer.innerHTML = applied.map(renderCard).join('');
+                } else {
+                    historySection.classList.add('hidden');
+                }
             } catch (e) {
                 console.error("Error cargando sugerencias:", e);
             }
@@ -1457,7 +1609,7 @@
         async function applySuggestion(id) {
             const btn = event.currentTarget;
             const originalText = btn.innerHTML;
-            btn.innerHTML = "Procesando...";
+            btn.innerHTML = "Aplicando...";
             btn.disabled = true;
 
             try {
@@ -1472,6 +1624,13 @@
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
+        }
+
+        function toggleAiHistory() {
+            const container = document.getElementById('applied-suggestions');
+            const chevron = document.getElementById('history-chevron');
+            container.classList.toggle('hidden');
+            chevron.classList.toggle('rotate-180');
         }
 
         // Initialize
