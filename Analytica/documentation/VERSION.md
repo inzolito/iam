@@ -1,6 +1,27 @@
 # Analytica Versioning
 
-## Current Version: v0.4.0 — "MetaAPI Sync Engine"
+## Current Version: v0.5.0 — "Full Analytics Suite (Phase 2-4)"
+
+### Changelog v0.5.0 (2026-03-09)
+- **Phase 2 — Risk & Performance Metrics**:
+    - `profit_factor`, `max_drawdown` (USD + %), win/loss streaks + current streak, `expected_payoff`, avg duration (human-readable), cost impact (commissions + swaps as % of gross PnL).
+    - Frontend: Phase2Metrics component (6 KPIs + cost panel), AssetRanking (Top/Bottom 5 bars).
+- **Phase 3 — Behavioral & Timing Analytics**:
+    - `/by-session`: PnL por sesión Asia/London/NewYork/Sydney con win rate y trades.
+    - `/heatmap`: grid 7×24 con PnL promedio por día y hora.
+    - `/trades`: lista raw de trades para scatter analysis.
+    - `z_score` + interpretación de dependencia estadística.
+    - Frontend: SessionChart (BarChart), HoldingTimeScatter (ScatterChart), HeatmapChart (grid CSS).
+- **Phase 4 — Institutional Metrics**:
+    - `sharpe_ratio` (annualized √252), `sqn` + rating, `recovery_factor`, z_score.
+    - `/monte-carlo`: 1,000 simulaciones, P5/P50/P95, probabilidad de ruina, 50 sample paths.
+    - `/calendar`: PnL diario por mes/año para vista calendario.
+    - Frontend: Phase4Metrics (5 KPIs + Monte Carlo fan chart), CalendarView (navegador mes).
+- **Infraestructura**: backend + frontend deployed to Cloud Run + VM (136.112.172.165).
+
+---
+
+## v0.4.0 — "MetaAPI Sync Engine"
 
 ### Changelog v0.4.0 (2026-03-09)
 - **Sincronización MetaAPI completa**:
