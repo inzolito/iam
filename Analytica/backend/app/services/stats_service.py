@@ -1,17 +1,129 @@
+import statistics
+import random
 from uuid import UUID
 from typing import Optional
 from decimal import Decimal
-from datetime import date
+from datetime import date, datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, case, and_
+from sqlalchemy import select, func, case, and_, extract
 from app.models.database import Trade, Instrument, DailySnapshot, TradingAccount
 
 
+def _human_duration(seconds: float) -> str:
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    return f"{h}h {m:02d}m"
+
+
+def _compute_streaks(net_profits: list[float]) -> dict:
+    max_win = max_loss = cur = 0
+    streak_type = None
+    cur_w = cur_l = 0
+    for pnl in net_profits:
+        if pnl > 0:
+            cur_w += 1; cur_l = 0
+            max_win = max(max_win, cur_w)
+        else:
+            cur_l += 1; cur_w = 0
+            max_loss = max(max_loss, cur_l)
+    # current streak from the end
+    if net_profits:
+        if net_profits[-1] > 0:
+            streak_type = "WIN"
+            for pnl in reversed(net_profits):
+                if pnl > 0: cur += 1
+                else: break
+        else:
+            streak_type = "LOSS"
+            for pnl in reversed(net_profits):
+                if pnl <= 0: cur += 1
+                else: break
+    return {
+        "max_win_streak": max_win,
+        "max_loss_streak": max_loss,
+        "current_streak": cur,
+        "current_streak_type": streak_type,
+    }
+
+
+def _compute_max_drawdown(balances: list[float]) -> tuple[float, float]:
+    if not balances:
+        return 0.0, 0.0
+    peak = balances[0]
+    max_dd_usd = max_dd_pct = 0.0
+    for b in balances:
+        if b > peak:
+            peak = b
+        dd_usd = peak - b
+        dd_pct = (dd_usd / peak * 100) if peak > 0 else 0.0
+        if dd_usd > max_dd_usd:
+            max_dd_usd = dd_usd
+            max_dd_pct = dd_pct
+    return max_dd_usd, max_dd_pct
+
+
+def _compute_sharpe(daily_pls: list[float]) -> Optional[float]:
+    if len(daily_pls) < 2:
+        return None
+    avg = statistics.mean(daily_pls)
+    std = statistics.stdev(daily_pls)
+    if std == 0:
+        return None
+    return (avg / std) * (252 ** 0.5)
+
+
+def _compute_sqn(net_profits: list[float]) -> tuple[Optional[float], Optional[str]]:
+    if len(net_profits) < 2:
+        return None, None
+    avg = statistics.mean(net_profits)
+    std = statistics.stdev(net_profits)
+    if std == 0:
+        return None, None
+    sqn = (avg / std) * (len(net_profits) ** 0.5)
+    if sqn < 1.6:   rating = "Pobre"
+    elif sqn < 2.0: rating = "Por debajo del promedio"
+    elif sqn < 2.5: rating = "Promedio"
+    elif sqn < 3.0: rating = "Bueno"
+    elif sqn < 5.0: rating = "Excelente"
+    else:           rating = "Santo Grial"
+    return sqn, rating
+
+
+def _z_score(net_profits: list[float]) -> Optional[float]:
+    if len(net_profits) < 5:
+        return None
+    n = len(net_profits)
+    w = sum(1 for p in net_profits if p > 0)
+    if w == 0 or w == n:
+        return None
+    # Count runs (streaks)
+    r = 1
+    for i in range(1, n):
+        prev = net_profits[i - 1] > 0
+        curr = net_profits[i] > 0
+        if curr != prev:
+            r += 1
+    denom = (w * (n - w) / n) ** 0.5
+    if denom == 0:
+        return None
+    return (r - (2 * w * (n - w) / n + 1)) / denom
+
+
+def _sqn_interpretation(z: Optional[float]) -> Optional[str]:
+    if z is None:
+        return None
+    if z < -1.96:
+        return "Dependencia (rachas correlacionadas)"
+    if z > 1.96:
+        return "Alternancia (W/L se alternan)"
+    return "Independiente (sin dependencia estadística)"
+
+
 class StatsService:
+
     @staticmethod
     def _date_filters(date_from: Optional[date], date_to: Optional[date]):
-        """Returns SQLAlchemy filter clauses for date range on Trade.close_time."""
         filters = []
         if date_from:
             filters.append(Trade.close_time >= date_from)
@@ -29,6 +141,7 @@ class StatsService:
         date_filters = StatsService._date_filters(date_from, date_to)
         base_where = [Trade.account_id == account_id] + date_filters
 
+        # ── Main aggregate query ───────────────────────────────────────────────
         result = await db.execute(
             select(
                 func.count(Trade.id).label("total_trades"),
@@ -41,43 +154,136 @@ class StatsService:
                 func.count(case((Trade.close_reason == "SL", 1))).label("sl_count"),
                 func.count(case((Trade.close_reason == "MANUAL", 1))).label("manual_count"),
                 func.count(case((Trade.close_reason == "UNKNOWN", 1))).label("unknown_count"),
+                # Phase 2
+                func.sum(case((Trade.net_profit > 0, Trade.net_profit))).label("gross_profit"),
+                func.sum(case((Trade.net_profit < 0, Trade.net_profit))).label("gross_loss"),
+                func.sum(Trade.commission).label("total_commission"),
+                func.sum(Trade.swap).label("total_swap"),
+                func.avg(Trade.duration_seconds).label("avg_duration"),
+                func.sum(Trade.gross_profit).label("sum_gross_profit"),
             ).where(and_(*base_where))
         )
         row = result.one()
 
-        total = row.total_trades or 0
-        winning = row.winning_trades or 0
-        win_rate = (Decimal(winning) / Decimal(total) * 100) if total > 0 else None
+        total    = row.total_trades or 0
+        winning  = row.winning_trades or 0
+        win_rate = (winning / total * 100) if total > 0 else None
 
-        avg_win = Decimal(str(row.avg_win)) if row.avg_win is not None else None
-        avg_loss = Decimal(str(row.avg_loss)) if row.avg_loss is not None else None
-        rr_ratio = (
-            abs(avg_win / avg_loss)
-            if avg_win and avg_loss and avg_loss != 0
-            else None
+        avg_win  = float(row.avg_win)  if row.avg_win  is not None else None
+        avg_loss = float(row.avg_loss) if row.avg_loss is not None else None
+        rr_ratio = (abs(avg_win / avg_loss) if avg_win and avg_loss and avg_loss != 0 else None)
+
+        tp_count     = row.tp_count or 0
+        sl_count     = row.sl_count or 0
+        manual_count = row.manual_count or 0
+        unknown_count = row.unknown_count or 0
+        tp_rate      = (tp_count / total * 100) if total > 0 else None
+        manual_rate  = (manual_count / total * 100) if total > 0 else None
+
+        net_profit_val  = float(row.net_profit or 0)
+        gross_profit_v  = float(row.gross_profit or 0)
+        gross_loss_v    = float(row.gross_loss or 0)
+        total_comm      = float(row.total_commission or 0)
+        total_swap_v    = float(row.total_swap or 0)
+
+        profit_factor = (
+            gross_profit_v / abs(gross_loss_v)
+            if gross_loss_v and gross_loss_v != 0 else None
+        )
+        expected_payoff = None
+        if win_rate is not None and avg_win is not None and avg_loss is not None:
+            wr = win_rate / 100
+            expected_payoff = (wr * avg_win) + ((1 - wr) * avg_loss)
+
+        avg_dur_s = float(row.avg_duration) if row.avg_duration is not None else None
+        avg_dur_human = _human_duration(avg_dur_s) if avg_dur_s else None
+
+        total_costs = total_comm + total_swap_v
+        cost_impact_pct = (
+            abs(total_costs) / gross_profit_v * 100
+            if gross_profit_v > 0 else None
         )
 
-        tp_count = row.tp_count or 0
-        tp_rate = (Decimal(tp_count) / Decimal(total) * 100) if total > 0 else None
-        manual_count = row.manual_count or 0
-        manual_rate = (Decimal(manual_count) / Decimal(total) * 100) if total > 0 else None
+        # ── Ordered trade list for streaks + Z-score ──────────────────────────
+        pnl_result = await db.execute(
+            select(Trade.net_profit)
+            .where(and_(*base_where))
+            .order_by(Trade.close_time.asc())
+        )
+        net_profits = [float(r[0]) for r in pnl_result.all() if r[0] is not None]
+        streaks = _compute_streaks(net_profits)
+        z = _z_score(net_profits)
+        sqn_val, sqn_rating = _compute_sqn(net_profits)
+
+        # ── Daily snapshots for max drawdown + sharpe ──────────────────────────
+        snap_result = await db.execute(
+            select(DailySnapshot.balance_end, DailySnapshot.daily_pl)
+            .where(DailySnapshot.account_id == account_id)
+            .order_by(DailySnapshot.date.asc())
+        )
+        snap_rows = snap_result.all()
+        balances  = [float(r[0]) for r in snap_rows if r[0] is not None]
+        daily_pls = [float(r[1]) for r in snap_rows if r[1] is not None]
+
+        # Prepend initial balance to drawdown series
+        acc_result = await db.execute(
+            select(TradingAccount.balance_initial).where(TradingAccount.id == account_id)
+        )
+        balance_initial = float(acc_result.scalar_one_or_none() or 0)
+        dd_series = ([balance_initial] + balances) if balances else [balance_initial]
+
+        max_dd_usd, max_dd_pct = _compute_max_drawdown(dd_series)
+        max_drawdown_usd = max_dd_usd if max_dd_usd > 0 else None
+        max_drawdown_pct = max_dd_pct if max_dd_pct > 0 else None
+
+        sharpe = _compute_sharpe(daily_pls)
+        recovery_factor = (
+            net_profit_val / max_dd_usd
+            if max_dd_usd and max_dd_usd > 0 else None
+        )
 
         return {
+            # Phase 1
             "total_trades": total,
-            "net_profit": Decimal(str(row.net_profit)) if row.net_profit is not None else Decimal("0"),
+            "net_profit": net_profit_val,
             "win_rate": win_rate,
             "avg_win": avg_win,
             "avg_loss": avg_loss,
             "rr_ratio": rr_ratio,
             "tp_count": tp_count,
-            "sl_count": row.sl_count or 0,
+            "sl_count": sl_count,
             "manual_count": manual_count,
-            "unknown_count": row.unknown_count or 0,
+            "unknown_count": unknown_count,
             "tp_rate": tp_rate,
-            "total_volume_lots": Decimal(str(row.total_volume)) if row.total_volume is not None else None,
+            "total_volume_lots": float(row.total_volume) if row.total_volume is not None else None,
             "manual_rate": manual_rate,
+            # Phase 2
+            "profit_factor": profit_factor,
+            "max_drawdown_pct": max_drawdown_pct,
+            "max_drawdown_usd": max_drawdown_usd,
+            "max_win_streak": streaks["max_win_streak"],
+            "max_loss_streak": streaks["max_loss_streak"],
+            "current_streak": streaks["current_streak"],
+            "current_streak_type": streaks["current_streak_type"],
+            "expected_payoff": expected_payoff,
+            "avg_duration_seconds": avg_dur_s,
+            "avg_duration_human": avg_dur_human,
+            "total_commission": total_comm,
+            "total_swap": total_swap_v,
+            "cost_impact_pct": cost_impact_pct,
+            "gross_profit": gross_profit_v,
+            "gross_loss": gross_loss_v,
+            # Phase 3 (Z-score)
+            "z_score": z,
+            "z_interpretation": _sqn_interpretation(z),
+            # Phase 4
+            "sharpe_ratio": sharpe,
+            "sqn": sqn_val,
+            "sqn_rating": sqn_rating,
+            "recovery_factor": recovery_factor,
         }
 
+    # ── Equity Curve ───────────────────────────────────────────────────────────
     @staticmethod
     async def get_equity_curve(
         db: AsyncSession,
@@ -96,18 +302,17 @@ class StatsService:
             .where(and_(*filters))
             .order_by(DailySnapshot.date.asc())
         )
-        snapshots = result.scalars().all()
-
         return [
             {
                 "date": str(s.date),
-                "balance": Decimal(str(s.balance_end)),
-                "daily_pl": Decimal(str(s.daily_pl)),
+                "balance": float(s.balance_end),
+                "daily_pl": float(s.daily_pl),
                 "trades_count": s.trades_count,
             }
-            for s in snapshots
+            for s in result.scalars().all()
         ]
 
+    # ── By Symbol ─────────────────────────────────────────────────────────────
     @staticmethod
     async def get_by_symbol(
         db: AsyncSession,
@@ -132,24 +337,226 @@ class StatsService:
             .group_by(Instrument.ticker, Instrument.asset_class)
             .order_by(func.sum(Trade.net_profit).desc())
         )
+        output = []
+        for row in result.all():
+            total = row.total_trades or 0
+            wr = (row.winning_trades / total * 100) if total > 0 else None
+            output.append({
+                "ticker": row.ticker,
+                "asset_class": row.asset_class,
+                "total_trades": total,
+                "total_pnl": float(row.total_pnl or 0),
+                "avg_pnl": float(row.avg_pnl) if row.avg_pnl is not None else None,
+                "win_rate": wr,
+            })
+        return output
+
+    # ── Phase 3: By Session ────────────────────────────────────────────────────
+    @staticmethod
+    async def get_by_session(
+        db: AsyncSession,
+        account_id: UUID,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> list:
+        date_filters = StatsService._date_filters(date_from, date_to)
+        base_where = [Trade.account_id == account_id] + date_filters
+
+        result = await db.execute(
+            select(
+                extract("hour", Trade.open_time).label("hour"),
+                Trade.net_profit,
+            ).where(and_(*base_where))
+        )
         rows = result.all()
 
-        output = []
+        def _session(hour: float) -> str:
+            h = int(hour)
+            if 0 <= h < 8:   return "Asia"
+            if 8 <= h < 13:  return "Londres"
+            if 13 <= h < 17: return "London/NY"
+            if 17 <= h < 22: return "Nueva York"
+            return "Fuera de sesión"
+
+        session_data: dict[str, list[float]] = {}
         for row in rows:
-            total = row.total_trades or 0
-            win_rate = (
-                Decimal(row.winning_trades) / Decimal(total) * 100
-                if total > 0
-                else None
-            )
-            output.append(
-                {
-                    "ticker": row.ticker,
-                    "asset_class": row.asset_class,
-                    "total_trades": total,
-                    "total_pnl": Decimal(str(row.total_pnl)) if row.total_pnl is not None else Decimal("0"),
-                    "avg_pnl": Decimal(str(row.avg_pnl)) if row.avg_pnl is not None else None,
-                    "win_rate": win_rate,
-                }
-            )
+            s = _session(row.hour or 0)
+            if s not in session_data:
+                session_data[s] = []
+            session_data[s].append(float(row.net_profit or 0))
+
+        SESSION_ORDER = ["Asia", "Londres", "London/NY", "Nueva York", "Fuera de sesión"]
+        output = []
+        for sess in SESSION_ORDER:
+            pnls = session_data.get(sess, [])
+            if not pnls:
+                continue
+            wins = sum(1 for p in pnls if p > 0)
+            output.append({
+                "session": sess,
+                "total_pnl": sum(pnls),
+                "avg_pnl": sum(pnls) / len(pnls),
+                "win_rate": wins / len(pnls) * 100,
+                "trades": len(pnls),
+            })
         return output
+
+    # ── Phase 3: Heatmap ───────────────────────────────────────────────────────
+    @staticmethod
+    async def get_heatmap(
+        db: AsyncSession,
+        account_id: UUID,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> list:
+        date_filters = StatsService._date_filters(date_from, date_to)
+        base_where = [Trade.account_id == account_id] + date_filters
+
+        result = await db.execute(
+            select(
+                extract("dow", Trade.close_time).label("dow"),
+                extract("hour", Trade.close_time).label("hour"),
+                func.avg(Trade.net_profit).label("avg_pnl"),
+                func.count(Trade.id).label("count"),
+            )
+            .where(and_(*base_where))
+            .group_by("dow", "hour")
+        )
+        return [
+            {
+                "day": int(row.dow or 0),    # 0=Sunday in PostgreSQL
+                "hour": int(row.hour or 0),
+                "avg_pnl": float(row.avg_pnl or 0),
+                "count": row.count,
+            }
+            for row in result.all()
+        ]
+
+    # ── Phase 3: Trade List (scatter plots) ────────────────────────────────────
+    @staticmethod
+    async def get_trades_list(
+        db: AsyncSession,
+        account_id: UUID,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> list:
+        date_filters = StatsService._date_filters(date_from, date_to)
+        base_where = [Trade.account_id == account_id] + date_filters
+
+        result = await db.execute(
+            select(
+                Trade.id,
+                Trade.duration_seconds,
+                Trade.net_profit,
+                Trade.gross_profit,
+                Trade.volume,
+                Trade.close_reason,
+                Trade.open_time,
+                Trade.close_time,
+                Trade.mae_price,
+                Trade.mfe_price,
+                Trade.open_price,
+                Trade.close_price,
+                Instrument.ticker,
+            )
+            .join(Instrument, Trade.instrument_id == Instrument.id)
+            .where(and_(*base_where))
+            .order_by(Trade.close_time.desc())
+            .limit(500)
+        )
+        return [
+            {
+                "id": str(row.id),
+                "ticker": row.ticker,
+                "duration_hours": round(float(row.duration_seconds or 0) / 3600, 2),
+                "net_profit": float(row.net_profit or 0),
+                "volume": float(row.volume or 0),
+                "close_reason": row.close_reason,
+                "mae_price": float(row.mae_price) if row.mae_price is not None else None,
+                "mfe_price": float(row.mfe_price) if row.mfe_price is not None else None,
+            }
+            for row in result.all()
+        ]
+
+    # ── Phase 4: Calendar ──────────────────────────────────────────────────────
+    @staticmethod
+    async def get_calendar(
+        db: AsyncSession,
+        account_id: UUID,
+        year: int,
+        month: int,
+    ) -> list:
+        result = await db.execute(
+            select(DailySnapshot)
+            .where(
+                and_(
+                    DailySnapshot.account_id == account_id,
+                    extract("year", DailySnapshot.date) == year,
+                    extract("month", DailySnapshot.date) == month,
+                )
+            )
+            .order_by(DailySnapshot.date.asc())
+        )
+        return [
+            {
+                "date": str(s.date),
+                "daily_pl": float(s.daily_pl),
+                "trades_count": s.trades_count,
+                "balance_end": float(s.balance_end),
+            }
+            for s in result.scalars().all()
+        ]
+
+    # ── Phase 4: Monte Carlo ───────────────────────────────────────────────────
+    @staticmethod
+    async def run_monte_carlo(
+        db: AsyncSession,
+        account_id: UUID,
+        simulations: int = 1000,
+        forward_trades: int = 100,
+    ) -> dict:
+        result = await db.execute(
+            select(Trade.net_profit)
+            .where(Trade.account_id == account_id)
+            .order_by(Trade.close_time.asc())
+        )
+        pnls = [float(r[0]) for r in result.all() if r[0] is not None]
+        if not pnls:
+            return {"error": "Sin trades suficientes para simular."}
+
+        n = min(forward_trades, len(pnls))
+        final_balances: list[float] = []
+        ruin_count = 0
+        sample_paths: list[list[float]] = []
+
+        random.seed()
+        for i in range(simulations):
+            sample = random.choices(pnls, k=n)
+            path: list[float] = []
+            cum = 0.0
+            ruined = False
+            for pnl in sample:
+                cum += pnl
+                path.append(round(cum, 2))
+                if cum < -abs(sum(pnls)):
+                    ruined = True
+            final_balances.append(cum)
+            if ruined:
+                ruin_count += 1
+            if i < 100:  # only store 100 sample paths for the chart
+                sample_paths.append(path)
+
+        final_balances.sort()
+        p5  = final_balances[int(simulations * 0.05)]
+        p50 = final_balances[int(simulations * 0.50)]
+        p95 = final_balances[int(simulations * 0.95)]
+
+        return {
+            "simulations": simulations,
+            "forward_trades": n,
+            "percentile_5": round(p5, 2),
+            "percentile_50": round(p50, 2),
+            "percentile_95": round(p95, 2),
+            "ruin_probability": round(ruin_count / simulations * 100, 2),
+            "sample_paths": sample_paths,
+        }

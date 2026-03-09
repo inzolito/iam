@@ -20,6 +20,13 @@ import KpiCard from "../../components/dashboard/KpiCard";
 import CloseReasonChart from "../../components/dashboard/CloseReasonChart";
 import EquityCurve from "../../components/dashboard/EquityCurve";
 import SymbolTable from "../../components/dashboard/SymbolTable";
+import Phase2Metrics from "../../components/dashboard/Phase2Metrics";
+import AssetRanking from "../../components/dashboard/AssetRanking";
+import SessionChart from "../../components/dashboard/SessionChart";
+import HoldingTimeScatter from "../../components/dashboard/HoldingTimeScatter";
+import HeatmapChart from "../../components/dashboard/HeatmapChart";
+import Phase4Metrics from "../../components/dashboard/Phase4Metrics";
+import CalendarView from "../../components/dashboard/CalendarView";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -33,6 +40,7 @@ interface Account {
 }
 
 interface Stats {
+  // Phase 1
   total_trades: number;
   net_profit: number;
   win_rate: number | null;
@@ -46,6 +54,30 @@ interface Stats {
   tp_rate: number | null;
   total_volume_lots: number | null;
   manual_rate: number | null;
+  // Phase 2
+  profit_factor: number | null;
+  max_drawdown_pct: number | null;
+  max_drawdown_usd: number | null;
+  max_win_streak: number;
+  max_loss_streak: number;
+  current_streak: number;
+  current_streak_type: string | null;
+  expected_payoff: number | null;
+  avg_duration_seconds: number | null;
+  avg_duration_human: string | null;
+  total_commission: number;
+  total_swap: number;
+  cost_impact_pct: number | null;
+  gross_profit: number;
+  gross_loss: number;
+  // Phase 3
+  z_score: number | null;
+  z_interpretation: string | null;
+  // Phase 4
+  sharpe_ratio: number | null;
+  sqn: number | null;
+  sqn_rating: string | null;
+  recovery_factor: number | null;
 }
 
 interface EquityPoint {
@@ -62,6 +94,29 @@ interface SymbolRow {
   total_pnl: number;
   avg_pnl: number | null;
   win_rate: number | null;
+}
+
+interface SessionRow {
+  session: string;
+  total_pnl: number;
+  avg_pnl: number;
+  win_rate: number;
+  trades: number;
+}
+
+interface TradeRow {
+  id: string;
+  ticker: string;
+  duration_hours: number;
+  net_profit: number;
+  close_reason: string | null;
+}
+
+interface HeatmapCell {
+  day: number;
+  hour: number;
+  avg_pnl: number;
+  count: number;
 }
 
 function fmt(value: number | null | undefined, decimals = 2, prefix = "") {
@@ -82,6 +137,9 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [equityCurve, setEquityCurve] = useState<EquityPoint[]>([]);
   const [symbolData, setSymbolData] = useState<SymbolRow[]>([]);
+  const [sessionData, setSessionData] = useState<SessionRow[]>([]);
+  const [tradesList, setTradesList] = useState<TradeRow[]>([]);
+  const [heatmapData, setHeatmapData] = useState<HeatmapCell[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(false);
   // Inline investor password form (for PASSIVE accounts with 0 trades)
@@ -135,15 +193,21 @@ export default function DashboardPage() {
     const token = localStorage.getItem("analytica_token");
     const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
     try {
-      const [statsRes, equityRes, symbolRes] = await Promise.all([
+      const [statsRes, equityRes, symbolRes, sessionRes, tradesRes, heatmapRes] = await Promise.all([
         fetch(`${API_BASE}/api/v1/trading/stats/${account.id}`, { headers: authHeader }),
         fetch(`${API_BASE}/api/v1/trading/equity-curve/${account.id}`, { headers: authHeader }),
         fetch(`${API_BASE}/api/v1/trading/by-symbol/${account.id}`, { headers: authHeader }),
+        fetch(`${API_BASE}/api/v1/trading/by-session/${account.id}`, { headers: authHeader }),
+        fetch(`${API_BASE}/api/v1/trading/trades/${account.id}`, { headers: authHeader }),
+        fetch(`${API_BASE}/api/v1/trading/heatmap/${account.id}`, { headers: authHeader }),
       ]);
 
       if (statsRes.ok) setStats(await statsRes.json());
       if (equityRes.ok) setEquityCurve(await equityRes.json());
       if (symbolRes.ok) setSymbolData(await symbolRes.json());
+      if (sessionRes.ok) setSessionData(await sessionRes.json());
+      if (tradesRes.ok) setTradesList(await tradesRes.json());
+      if (heatmapRes.ok) setHeatmapData(await heatmapRes.json());
     } catch {
       // Silently handle — backend may be offline
     } finally {
@@ -479,6 +543,57 @@ export default function DashboardPage() {
 
                         {/* ── Row 3: Symbol Table ── */}
                         <SymbolTable data={symbolData} />
+
+                        {/* ── Phase 2: Risk & Performance Metrics ── */}
+                        <Phase2Metrics
+                          profit_factor={stats.profit_factor}
+                          max_drawdown_pct={stats.max_drawdown_pct}
+                          max_drawdown_usd={stats.max_drawdown_usd}
+                          expected_payoff={stats.expected_payoff}
+                          avg_duration_human={stats.avg_duration_human}
+                          max_win_streak={stats.max_win_streak}
+                          max_loss_streak={stats.max_loss_streak}
+                          current_streak={stats.current_streak}
+                          current_streak_type={stats.current_streak_type}
+                          total_commission={stats.total_commission}
+                          total_swap={stats.total_swap}
+                          cost_impact_pct={stats.cost_impact_pct}
+                          gross_profit={stats.gross_profit}
+                          gross_loss={stats.gross_loss}
+                          currency={selectedAccount?.currency}
+                        />
+
+                        {/* ── Phase 2: Asset Ranking ── */}
+                        <AssetRanking data={symbolData} currency={selectedAccount?.currency} />
+
+                        {/* ── Phase 3: Session Analysis + Holding Time ── */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          <SessionChart data={sessionData} currency={selectedAccount?.currency} />
+                          <HoldingTimeScatter data={tradesList} currency={selectedAccount?.currency} />
+                        </div>
+
+                        {/* ── Phase 3: Heatmap ── */}
+                        <HeatmapChart data={heatmapData} />
+
+                        {/* ── Phase 4: Advanced Metrics + Monte Carlo ── */}
+                        <Phase4Metrics
+                          sharpe_ratio={stats.sharpe_ratio}
+                          sqn={stats.sqn}
+                          sqn_rating={stats.sqn_rating}
+                          recovery_factor={stats.recovery_factor}
+                          z_score={stats.z_score}
+                          z_interpretation={stats.z_interpretation}
+                          accountId={selectedAccount?.id ?? ""}
+                          apiBase={API_BASE}
+                          currency={selectedAccount?.currency}
+                        />
+
+                        {/* ── Phase 4: Calendar View ── */}
+                        <CalendarView
+                          accountId={selectedAccount?.id ?? ""}
+                          apiBase={API_BASE}
+                          currency={selectedAccount?.currency}
+                        />
                       </>
                     )}
                   </>
