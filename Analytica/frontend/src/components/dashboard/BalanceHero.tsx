@@ -75,15 +75,24 @@ export default function BalanceHero({
   accountName,
   equityCurve,
 }: Props) {
-  const currentBalance = balanceInitial > 0
-    ? balanceInitial + netProfit
-    : netProfit; // fallback if no initial balance set
+  // Use last equity curve balance (= balance_initial + cumulative_net_profit).
+  // This is the most accurate source — it's recalculated server-side after each sync.
+  const lastEquityBalance = equityCurve.length > 0
+    ? equityCurve[equityCurve.length - 1].balance
+    : null;
+
+  const currentBalance = lastEquityBalance ?? (balanceInitial > 0 ? balanceInitial + netProfit : netProfit);
+
+  // Reference capital for % calculation
+  const capital = lastEquityBalance !== null && balanceInitial > 0
+    ? balanceInitial
+    : balanceInitial > 0 ? balanceInitial : null;
 
   const isPositive = netProfit > 0;
   const isNegative = netProfit < 0;
 
-  const pct = balanceInitial > 0
-    ? (netProfit / balanceInitial) * 100
+  const pct = capital != null && capital > 0
+    ? (netProfit / capital) * 100
     : null;
 
   const sparkData = equityCurve.map((p) => p.balance);

@@ -21,8 +21,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
+from sqlalchemy import func
+
 from app.core.encryption import decrypt_field
-from app.models.database import TradingAccount
+from app.models.database import TradingAccount, Trade
 from app.schemas.ingest import TradeIngestSchema
 from app.services.ingestion import IngestionService
 
@@ -234,6 +236,22 @@ async def _wait_connected(session: aiohttp.ClientSession, account_id: str) -> st
     )
 
 
+async def _fetch_account_info(
+    session: aiohttp.ClientSession,
+    region: str,
+    account_id: str,
+) -> dict:
+    """Fetch live account information (balance, equity, etc.) from MetaAPI."""
+    base = f"https://mt-client-api-v1.{region}.agiliumtrade.ai"
+    hdrs = {"auth-token": METAAPI_TOKEN}
+    async with session.get(
+        f"{base}/users/current/accounts/{account_id}/account-information",
+        headers=hdrs,
+    ) as r:
+        r.raise_for_status()
+        return await r.json()
+
+
 async def _fetch_history(
     session: aiohttp.ClientSession,
     region: str,
@@ -329,18 +347,60 @@ async def sync_account(db: AsyncSession, account: TradingAccount) -> dict:
                 info   = await _get_account(session, meta_id)
                 region = info.get("region", "")
 
-            # 4. Fetch history via REST ─────────────────────────────────────────
+            # 4. Fetch live balance + history via REST ────────────────────────
             start_dt = datetime.now(timezone.utc) - timedelta(days=HISTORY_DAYS)
             end_dt   = datetime.now(timezone.utc)
 
-            deals, orders = await _fetch_history(session, region, meta_id, start_dt, end_dt)
-            orders_by_id  = {str(o["id"]): o for o in orders if "id" in o}
+            # Fetch account-information and history in parallel
+            account_info_task = asyncio.create_task(
+                _fetch_account_info(session, region, meta_id)
+            )
+            history_task = asyncio.create_task(
+                _fetch_history(session, region, meta_id, start_dt, end_dt)
+            )
+            account_info, (deals, orders) = await asyncio.gather(
+                account_info_task, history_task
+            )
+
+            broker_balance = float(account_info.get("balance", 0))
+            logger.info(f"[MetaAPI] Account {account.id} broker balance={broker_balance}")
+
+            orders_by_id = {str(o["id"]): o for o in orders if "id" in o}
 
             # 5. Pair and ingest ────────────────────────────────────────────────
             trade_schemas = _pair_deals(deals, orders_by_id)
             upserted = 0
             if trade_schemas:
                 upserted = await IngestionService.process_trades(db, account.id, trade_schemas)
+
+            # 6. Derive and store correct balance_initial ───────────────────────
+            # balance_initial = broker_balance - sum(all imported trade net_profit)
+            # This is stable regardless of history window size.
+            if broker_balance > 0:
+                net_result = await db.execute(
+                    select(func.sum(Trade.net_profit)).where(Trade.account_id == account.id)
+                )
+                total_net = float(net_result.scalar() or 0)
+                derived_initial = round(broker_balance - total_net, 2)
+
+                if derived_initial > 0:
+                    account.balance_initial = Decimal(str(derived_initial))
+                    flag_modified(account, "balance_initial")
+                    await db.commit()
+
+                    # Recalculate ALL daily snapshots with the corrected balance_initial
+                    date_result = await db.execute(
+                        select(func.date(Trade.close_time).label("d"))
+                        .where(Trade.account_id == account.id)
+                        .distinct()
+                    )
+                    all_dates = {r.d for r in date_result.fetchall() if r.d}
+                    if all_dates:
+                        await IngestionService.update_daily_snapshots(db, account.id, all_dates)
+                    logger.info(
+                        f"[MetaAPI] Account {account.id} balance_initial set to "
+                        f"{derived_initial} (broker={broker_balance}, net={total_net})"
+                    )
 
             logger.info(f"[MetaAPI] Account {account.id} synced {upserted}/{len(trade_schemas)} trades.")
             return {"synced": upserted or 0, "error": None}
