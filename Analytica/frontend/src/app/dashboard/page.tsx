@@ -170,7 +170,9 @@ export default function DashboardPage() {
           return;
         }
         if (res.ok) {
-          const data: Account[] = await res.json();
+          const raw: Account[] = await res.json();
+          // Deduplicate by id (edge case: same account linked twice)
+          const data = raw.filter((a, i, arr) => arr.findIndex((b) => b.id === a.id) === i);
           if (data.length === 0) {
             router.replace("/connect");
             return;
@@ -302,7 +304,7 @@ export default function DashboardPage() {
   }, [selectedAccount, fetchStats]);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full">
       <AnimatePresence mode="wait">
         {isLoading ? (
           <motion.div

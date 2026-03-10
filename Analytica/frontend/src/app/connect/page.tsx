@@ -156,6 +156,7 @@ export default function ConnectPage() {
   const [brokerServer, setBrokerServer] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [balanceInitial, setBalanceInitial] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -180,7 +181,7 @@ export default function ConnectPage() {
           broker_server: brokerServer,
           investor_password: password,
           currency: "USD",
-          balance_initial: 0,
+          balance_initial: balanceInitial ? parseFloat(balanceInitial) : 0,
         }),
       });
       if (!res.ok) {
@@ -287,6 +288,27 @@ export default function ConnectPage() {
                   <p className="text-[11px] text-slate-500 leading-relaxed flex gap-2 items-start pt-1">
                     <ShieldCheck size={12} className="text-green-500/70 flex-shrink-0 mt-0.5" />
                     Solo usamos la Contraseña de Inversor — acceso de solo lectura. Imposible ejecutar órdenes con ella.
+                  </p>
+                </div>
+
+                {/* Initial balance */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <Hash size={11} className="text-amber-500/60" />
+                    Balance inicial (USD) <span className="text-slate-600 normal-case font-normal">— opcional</span>
+                  </label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    placeholder="10000.00"
+                    value={balanceInitial}
+                    onChange={(e) => setBalanceInitial(e.target.value)}
+                    className={inputClass}
+                  />
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    Se usa para calcular el punto de inicio en la Equity Curve.
                   </p>
                 </div>
 
