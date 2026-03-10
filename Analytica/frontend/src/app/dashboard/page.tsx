@@ -27,6 +27,7 @@ import HoldingTimeScatter from "../../components/dashboard/HoldingTimeScatter";
 import HeatmapChart from "../../components/dashboard/HeatmapChart";
 import Phase4Metrics from "../../components/dashboard/Phase4Metrics";
 import CalendarView from "../../components/dashboard/CalendarView";
+import BalanceHero from "../../components/dashboard/BalanceHero";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -478,6 +479,16 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       <>
+                        {/* ── Balance Hero ── */}
+                        <BalanceHero
+                          balanceInitial={selectedAccount?.balance_initial ?? 0}
+                          netProfit={stats.net_profit}
+                          totalTrades={stats.total_trades}
+                          currency={selectedAccount?.currency}
+                          accountName={selectedAccount?.name}
+                          equityCurve={equityCurve}
+                        />
+
                         {/* ── KPI Row 1 ── */}
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                           <KpiCard
