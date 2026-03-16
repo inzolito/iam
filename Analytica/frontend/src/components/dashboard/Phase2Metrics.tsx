@@ -24,12 +24,14 @@ function MiniKpi({
   label,
   value,
   sub,
+  description,
   color = "default",
   icon: Icon,
 }: {
   label: string;
   value: string;
   sub?: string;
+  description: string;
   color?: "green" | "red" | "amber" | "default";
   icon: React.ElementType;
 }) {
@@ -40,13 +42,18 @@ function MiniKpi({
     default: "text-white",
   };
   return (
-    <div className="bg-slate-900/60 border border-white/5 rounded-xl p-4 flex flex-col gap-2">
-      <div className="flex items-center gap-2 text-slate-500">
-        <Icon size={12} />
-        <span className="text-[10px] uppercase tracking-widest font-bold">{label}</span>
+    <div className="bg-slate-900/60 border border-white/5 rounded-xl overflow-hidden flex flex-col">
+      <div className="p-4 flex flex-col gap-2 flex-1">
+        <div className="flex items-center gap-2 text-slate-500">
+          <Icon size={12} />
+          <span className="text-[10px] uppercase tracking-widest font-bold">{label}</span>
+        </div>
+        <span className={`text-xl font-bold ${colors[color]}`}>{value}</span>
+        {sub && <span className="text-[10px] text-slate-500">{sub}</span>}
       </div>
-      <span className={`text-xl font-bold ${colors[color]}`}>{value}</span>
-      {sub && <span className="text-[10px] text-slate-500">{sub}</span>}
+      <div className="px-4 py-2.5 bg-slate-950/60 border-t border-white/5">
+        <span className="text-[10px] text-slate-400 leading-relaxed">{description}</span>
+      </div>
     </div>
   );
 }
@@ -84,6 +91,10 @@ export default function Phase2Metrics({
 
   const streakEmoji = current_streak_type === "WIN" ? "🔥" : current_streak_type === "LOSS" ? "❄️" : "";
 
+  // True gross PnL = net_profit + all costs
+  // gross_profit + gross_loss = total net_profit; adding costs back gives the raw PnL
+  const grossPnl = gross_profit + gross_loss + Math.abs(total_commission) + Math.abs(total_swap);
+
   return (
     <div className="space-y-4">
       {/* Row: Risk metrics */}
@@ -92,6 +103,7 @@ export default function Phase2Metrics({
           label="Profit Factor"
           value={profit_factor != null ? profit_factor.toFixed(2) : "—"}
           sub={profit_factor != null ? (profit_factor >= 1.5 ? "Saludable" : profit_factor >= 1.0 ? "Marginal" : "Perdedor") : undefined}
+          description="Ganas X por cada $1 que pierdes. Saludable si es > 1.5"
           color={pfColor}
           icon={Zap}
         />
@@ -99,6 +111,7 @@ export default function Phase2Metrics({
           label="Max Drawdown"
           value={max_drawdown_pct != null ? `${max_drawdown_pct.toFixed(1)}%` : "—"}
           sub={max_drawdown_usd != null ? `${currency} ${Math.abs(max_drawdown_usd).toFixed(2)}` : undefined}
+          description="Mayor caída desde el pico de capital. Menor es mejor."
           color={ddColor}
           icon={TrendingDown}
         />
@@ -106,6 +119,7 @@ export default function Phase2Metrics({
           label="Expectancia"
           value={expected_payoff != null ? `${expected_payoff >= 0 ? "+" : ""}${expected_payoff.toFixed(2)}` : "—"}
           sub="por trade"
+          description="Ganancia esperada por cada trade futuro. Debe ser positiva."
           color={epColor}
           icon={Zap}
         />
@@ -113,12 +127,14 @@ export default function Phase2Metrics({
           label="Duración Prom."
           value={avg_duration_human ?? "—"}
           sub="tiempo en mercado"
+          description="Tiempo promedio expuesto al mercado por operación."
           icon={Clock}
         />
         <MiniKpi
           label="Mejor Racha"
           value={`${max_win_streak} ganados`}
           sub={current_streak_type === "WIN" ? `${streakEmoji} Racha activa: ${current_streak}` : undefined}
+          description="Máximo de operaciones ganadoras consecutivas."
           color="green"
           icon={Trophy}
         />
@@ -126,13 +142,14 @@ export default function Phase2Metrics({
           label="Peor Racha"
           value={`${max_loss_streak} perdidos`}
           sub={current_streak_type === "LOSS" ? `${streakEmoji} Racha activa: ${current_streak}` : undefined}
+          description="Máximo de operaciones perdedoras consecutivas."
           color="red"
           icon={Skull}
         />
       </div>
 
       {/* Cost Impact */}
-      <div className="bg-slate-900/60 border border-white/5 rounded-xl p-5">
+      <div className="bg-slate-950/40 border border-white/5 rounded-xl p-5">
         <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-4 flex items-center gap-2">
           <DollarSign size={11} className="text-amber-500/60" />
           Impacto de Costos
@@ -140,8 +157,8 @@ export default function Phase2Metrics({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <p className="text-[10px] text-slate-500 uppercase tracking-widest">PnL Bruto</p>
-            <p className={`text-lg font-bold ${gross_profit > 0 ? "text-emerald-400" : "text-red-400"}`}>
-              {gross_profit >= 0 ? "+" : ""}{currency} {Math.abs(gross_profit).toFixed(2)}
+            <p className={`text-lg font-bold ${grossPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+              {grossPnl >= 0 ? "+" : ""}{currency} {Math.abs(grossPnl).toFixed(2)}
             </p>
           </div>
           <div>

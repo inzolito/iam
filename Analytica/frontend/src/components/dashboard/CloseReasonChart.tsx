@@ -43,7 +43,7 @@ export default function CloseReasonChart({
       : "text-slate-400";
 
   return (
-    <div className="bg-slate-900/60 border border-white/5 rounded-xl p-5 flex flex-col gap-4">
+    <div className="bg-slate-900/40 border border-white/5 rounded-xl p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">
           Cierre de Operaciones

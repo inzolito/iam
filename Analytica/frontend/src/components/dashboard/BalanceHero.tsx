@@ -14,6 +14,7 @@ interface Props {
   currency?: string;
   accountName?: string;
   equityCurve: EquityPoint[];
+  liveEquity?: number | null;
 }
 
 function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
@@ -27,19 +28,22 @@ function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
   const max = Math.max(...data);
   const range = max - min || 1;
 
-  const points = data.map((v, i) => {
-    const x = pad + (i / (data.length - 1)) * (W - pad * 2);
-    const y = pad + (1 - (v - min) / range) * (H - pad * 2);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
+  const pts: [number, number][] = data.map((v, i) => [
+    pad + (i / (data.length - 1)) * (W - pad * 2),
+    pad + (1 - (v - min) / range) * (H - pad * 2),
+  ]);
+
+  let linePath = `M ${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for (let i = 1; i < pts.length; i++) {
+    const cpX = ((pts[i - 1][0] + pts[i][0]) / 2).toFixed(1);
+    linePath += ` C ${cpX},${pts[i - 1][1].toFixed(1)} ${cpX},${pts[i][1].toFixed(1)} ${pts[i][0].toFixed(1)},${pts[i][1].toFixed(1)}`;
+  }
+
+  const last = pts[pts.length - 1];
+  const fillPath = `${linePath} L ${last[0].toFixed(1)},${H} L ${pad},${H} Z`;
 
   const stroke = positive ? "#10b981" : "#f43f5e";
-  const fill = positive ? "rgba(16,185,129,0.08)" : "rgba(244,63,94,0.08)";
-  const last = points[points.length - 1].split(",");
-
-  // Close the fill path to bottom
-  const fillPath = `M ${points.join(" L ")} L ${last[0]},${H} L ${pad},${H} Z`;
-  const linePath = `M ${points.join(" L ")}`;
+  const fill   = positive ? "rgba(16,185,129,0.08)" : "rgba(244,63,94,0.08)";
 
   return (
     <svg
@@ -51,13 +55,13 @@ function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
     >
       <path d={fillPath} fill={fill} />
       <path d={linePath} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      {/* Last point dot */}
-      <circle cx={last[0]} cy={last[1]} r="3" fill={stroke} />
+      <circle cx={last[0].toFixed(1)} cy={last[1].toFixed(1)} r="3" fill={stroke} />
     </svg>
   );
 }
 
-function fmtBalance(value: number, currency: string) {
+function fmtBalance(value: number | null, currency: string) {
+  if (value === null) return "—";
   const abs = Math.abs(value);
   if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
   if (abs >= 1_000) {
@@ -74,20 +78,20 @@ export default function BalanceHero({
   currency = "USD",
   accountName,
   equityCurve,
+  liveEquity = null,
 }: Props) {
-  // Use last equity curve balance (= balance_initial + cumulative_net_profit).
-  // This is the most accurate source — it's recalculated server-side after each sync.
   const lastEquityBalance = equityCurve.length > 0
     ? equityCurve[equityCurve.length - 1].balance
     : null;
 
-  const currentBalance = lastEquityBalance ?? (balanceInitial > 0 ? balanceInitial + netProfit : netProfit);
+  // Priority: live equity from MetaAPI > last equity curve point > computed
+  const displayValue = liveEquity !== null
+    ? liveEquity
+    : lastEquityBalance ?? (balanceInitial > 0 ? balanceInitial + netProfit : null);
 
-  // Reference capital for % calculation
-  const capital = lastEquityBalance !== null && balanceInitial > 0
-    ? balanceInitial
-    : balanceInitial > 0 ? balanceInitial : null;
+  const isLive = liveEquity !== null;
 
+  const capital = balanceInitial > 0 ? balanceInitial : null;
   const isPositive = netProfit > 0;
   const isNegative = netProfit < 0;
 
@@ -95,9 +99,10 @@ export default function BalanceHero({
     ? (netProfit / capital) * 100
     : null;
 
-  const sparkData = equityCurve.map((p) => p.balance);
+  const sparkData = balanceInitial > 0
+    ? [balanceInitial, ...equityCurve.map((p) => p.balance)]
+    : equityCurve.map((p) => p.balance);
 
-  // Find first trade date
   const sinceDate = equityCurve.length > 0
     ? new Date(equityCurve[0].date).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })
     : null;
@@ -115,7 +120,7 @@ export default function BalanceHero({
         border: `1px solid ${borderColor}`,
       }}
     >
-      {/* Subtle grid texture */}
+      {/* Grid texture */}
       <div
         className="absolute inset-0 opacity-[0.015] pointer-events-none"
         style={{
@@ -124,18 +129,33 @@ export default function BalanceHero({
       />
 
       <div className="relative flex items-center justify-between gap-6">
-        {/* Left: balance info */}
+        {/* Left */}
         <div className="flex flex-col gap-3 min-w-0">
-          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
-            Balance Actual
-          </p>
+          {/* Label row */}
+          <div className="flex items-center gap-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
+              {isLive ? "Patrimonio (Equity)" : "Balance Actual"}
+            </p>
+            {isLive && (
+              <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                En vivo
+              </span>
+            )}
+          </div>
 
-          {/* Main balance number */}
+          {/* Main number */}
           <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="text-4xl md:text-5xl font-bold text-white tracking-tight tabular-nums leading-none">
-              {fmtBalance(currentBalance, currency)}
-            </span>
-            <span className="text-lg font-bold text-slate-500">{currency}</span>
+            {displayValue !== null ? (
+              <>
+                <span className="text-4xl md:text-5xl font-bold text-white tracking-tight tabular-nums leading-none">
+                  {fmtBalance(displayValue, currency)}
+                </span>
+                <span className="text-lg font-bold text-slate-500">{currency}</span>
+              </>
+            ) : (
+              <span className="text-4xl md:text-5xl font-bold text-slate-600 tracking-tight leading-none">—</span>
+            )}
           </div>
 
           {/* Change row */}
@@ -181,7 +201,7 @@ export default function BalanceHero({
           </div>
         </div>
 
-        {/* Right: sparkline */}
+        {/* Sparkline */}
         {sparkData.length >= 2 && (
           <div className="hidden sm:block flex-shrink-0 opacity-90">
             <Sparkline data={sparkData} positive={isPositive || !isNegative} />

@@ -29,20 +29,22 @@ export default function HeatmapChart({ data }: { data: HeatmapCell[] }) {
   const maxAbs = Math.max(...data.map((c) => Math.abs(c.avg_pnl)), 0.01);
 
   return (
-    <div className="bg-slate-900/60 border border-white/5 rounded-xl p-5 overflow-x-auto">
-      <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-4">
-        Mapa de Calor — PnL Promedio por Hora y Día
-      </p>
-      <div className="min-w-[640px]">
+    <div className="overflow-x-auto pb-4">
+      <div className="min-w-[640px] bg-slate-900/40 rounded-xl border border-white/5 p-5">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-6">
+          Distribución de PnL por Horario
+        </p>
+
         {/* Hour header */}
         <div className="flex mb-1">
           <div className="w-10 shrink-0" />
           {HOUR_LABELS.filter((_, i) => i % 2 === 0).map((h) => (
-            <div key={h} className="flex-1 text-center text-[8px] text-slate-600" style={{ minWidth: 22 }}>
+            <div key={h} className="flex-1 text-center text-[8px] text-slate-600">
               {h}
             </div>
           ))}
         </div>
+        
         {/* Rows: days */}
         {DAY_LABELS.map((day, dayIdx) => (
           <div key={day} className="flex items-center mb-0.5">
@@ -61,10 +63,11 @@ export default function HeatmapChart({ data }: { data: HeatmapCell[] }) {
             })}
           </div>
         ))}
+
         {/* Legend */}
-        <div className="flex items-center gap-2 mt-3">
-          <div className="h-3 w-20 rounded-sm" style={{ background: "linear-gradient(to right, rgba(244,63,94,0.8), rgba(255,255,255,0.03), rgba(16,185,129,0.8))" }} />
-          <span className="text-[9px] text-slate-600">Pérdida → Neutro → Ganancia</span>
+        <div className="flex items-center gap-2 mt-4">
+          <div className="h-2 w-20 rounded-full" style={{ background: "linear-gradient(to right, rgba(244,63,94,0.8), rgba(255,255,255,0.03), rgba(16,185,129,0.8))" }} />
+          <span className="text-[9px] text-slate-600 uppercase tracking-widest font-medium">Pérdida → Neutro → Ganancia</span>
         </div>
       </div>
     </div>

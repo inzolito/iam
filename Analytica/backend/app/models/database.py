@@ -65,6 +65,10 @@ class Trade(Base):
     mfe_price = Column(Numeric(18, 8), nullable=True)
     comment = Column(Text, nullable=True)
     
+    # AI Analysis Fields
+    opening_ai_analysis = Column(Text, nullable=True) # Razonamiento IA al abrir
+    closing_ai_analysis = Column(Text, nullable=True) # Razonamiento IA al cerrar
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     __table_args__ = (
@@ -100,3 +104,41 @@ class ApiKey(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     account = relationship("TradingAccount", backref="api_key")
+
+class AIAnalysisReport(Base):
+    __tablename__ = "ai_performance_reports"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    account_id = Column(UUID(as_uuid=True), ForeignKey("trading_accounts.id", ondelete="CASCADE"), nullable=False)
+    
+    # Contexto del análisis
+    date_from = Column(Date, nullable=False)
+    date_to = Column(Date, nullable=False)
+    system_version = Column(String, nullable=False)
+    
+    # Resultados de la IA
+    summary = Column(Text, nullable=False)
+    negative_trades_root_cause = Column(Text)
+    positive_trades_success_factors = Column(Text)
+    suggestions = Column(JSONB, nullable=False)
+    
+    # Comparativas de Sesión y Mapa de Calor
+    session_comparison = Column(JSONB, nullable=True)
+    heatmap_insights = Column(JSONB, nullable=True)
+    
+    metrics_snapshot = Column(JSONB)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    account = relationship("TradingAccount", backref="ai_reports")
+
+class MacroEvent(Base):
+    __tablename__ = "macro_events"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    timestamp = Column(DateTime(timezone=True), nullable=False)
+    event_name = Column(String, nullable=False)
+    currency = Column(String(3), nullable=True) # EJ: USD, EUR
+    impact = Column(String(10), nullable=False) # HIGH, MEDIUM, LOW
+    actual = Column(String, nullable=True)
+    forecast = Column(String, nullable=True)
+    previous = Column(String, nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

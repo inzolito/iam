@@ -36,6 +36,7 @@ async def startup_event():
     # Start MetaAPI scheduler only when token is present
     if os.getenv("METAAPI_TOKEN"):
         from app.services.metaapi_sync import sync_all_direct_accounts
+        # Job 1: MetaAPI
         scheduler.add_job(
             sync_all_direct_accounts,
             trigger="interval",
@@ -44,8 +45,25 @@ async def startup_event():
             replace_existing=True,
             misfire_grace_time=300,
         )
+        
+        # Job 2: Macro News
+        from app.services.macro_service import MacroService
+        from app.core.db import async_session
+        
+        async def macro_job():
+            async with async_session() as session:
+                await MacroService.fetch_and_store_news(session)
+
+        scheduler.add_job(
+            macro_job,
+            trigger="interval",
+            minutes=30,
+            id="macro_news_sync",
+            replace_existing=True,
+        )
+
         scheduler.start()
-        logger.info("MetaAPI sync scheduler started — runs every 6 hours.")
+        logger.info("Scheduler started: MetaAPI (6h) and Macro News (30m).")
     else:
         logger.warning("METAAPI_TOKEN not set — MetaAPI sync scheduler disabled.")
 

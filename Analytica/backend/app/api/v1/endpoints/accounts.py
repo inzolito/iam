@@ -147,7 +147,26 @@ async def get_accounts(
     result = await db.execute(
         select(TradingAccount).where(TradingAccount.user_id == user.id)
     )
-    return result.scalars().all()
+    db_accounts = result.scalars().all()
+
+    accounts: List[TradingAccountSchema] = []
+    for acc in db_accounts:
+        details = acc.connection_details or {}
+        accounts.append(
+            TradingAccountSchema(
+                id=acc.id,
+                user_id=acc.user_id,
+                name=acc.name,
+                platform=acc.platform,
+                currency=acc.currency,
+                balance_initial=float(acc.balance_initial),
+                connection_type=acc.connection_type,
+                created_at=acc.created_at,
+                broker_server=details.get("broker_server"),
+                mt5_login=details.get("mt5_login"),
+            )
+        )
+    return accounts
 
 
 @router.post("/link-direct", response_model=TradingAccountLinkDirectResponse, status_code=status.HTTP_201_CREATED)

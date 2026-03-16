@@ -52,8 +52,9 @@ class EquityCurvePoint(BaseModel):
 
 class SymbolStatsRow(BaseModel):
     ticker: str
-    asset_class: str
     total_trades: int
+    winning_trades: int
+    losing_trades: int
     total_pnl: Optional[float]
     avg_pnl: Optional[float]
     win_rate: Optional[float]
@@ -83,6 +84,7 @@ class TradeRow(BaseModel):
     close_reason: Optional[str]
     mae_price: Optional[float]
     mfe_price: Optional[float]
+    side: str = "BUY"
 
 
 class CalendarDay(BaseModel):
@@ -100,3 +102,11 @@ class MonteCarloResult(BaseModel):
     percentile_95: float
     ruin_probability: float
     sample_paths: List[List[float]]
+
+class AIAnalysisResponse(BaseModel):
+    summary: str
+    negative_trades_root_cause: str
+    positive_trades_success_factors: str
+    suggestions: List[str]
+    session_comparison: dict
+    heatmap_insights: dict

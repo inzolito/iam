@@ -30,16 +30,26 @@ export default function CalendarView({
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-based
   const [data, setData] = useState<CalendarDay[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetch_ = useCallback(async () => {
+    if (!accountId) return;
     setLoading(true);
+    setError(null);
     try {
       const token = localStorage.getItem("analytica_token");
       const res = await fetch(
         `${apiBase}/api/v1/trading/calendar/${accountId}?year=${year}&month=${month}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      if (res.ok) setData(await res.json());
+      if (res.ok) {
+        setData(await res.json());
+      } else {
+        const detail = await res.json().catch(() => null);
+        setError(detail?.detail ?? `Error ${res.status}`);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error de red");
     } finally {
       setLoading(false);
     }
@@ -98,6 +108,12 @@ export default function CalendarView({
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="w-4 h-4 border-2 border-t-amber-500 border-amber-500/20 rounded-full animate-spin" />
+        </div>
+      ) : error ? (
+        <div className="py-8 text-center">
+          <p className="text-xs text-red-400 bg-red-500/8 border border-red-500/15 rounded-lg px-4 py-3 inline-block">
+            Error al cargar el calendario: {error}
+          </p>
         </div>
       ) : (
         <>

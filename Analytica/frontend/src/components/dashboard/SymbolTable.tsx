@@ -5,8 +5,9 @@ import { ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 
 interface SymbolRow {
   ticker: string;
-  asset_class: string;
   total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
   total_pnl: number;
   avg_pnl: number | null;
   win_rate: number | null;
@@ -47,25 +48,19 @@ export default function SymbolTable({ data }: { data: SymbolRow[] }) {
 
   const headers: { key: SortKey; label: string }[] = [
     { key: "ticker", label: "Símbolo" },
-    { key: "asset_class", label: "Clase" },
-    { key: "total_trades", label: "# Trades" },
+    { key: "winning_trades", label: "Ganados" },
+    { key: "losing_trades", label: "Perdidos" },
     { key: "total_pnl", label: "PnL Total" },
     { key: "avg_pnl", label: "PnL Prom." },
     { key: "win_rate", label: "Win Rate" },
   ];
 
   return (
-    <div className="bg-slate-900/60 border border-white/5 rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/5">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">
-          Rendimiento por Par
-        </p>
-      </div>
-
+    <>
       {data.length === 0 ? (
-        <p className="text-slate-600 text-sm text-center py-10 px-5">Sin datos de operaciones.</p>
+        <p className="text-slate-600 text-sm text-center py-10 px-5 bg-slate-900/40 rounded-xl border border-white/5">Sin datos de operaciones.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="w-full">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-white/5">
@@ -94,8 +89,8 @@ export default function SymbolTable({ data }: { data: SymbolRow[] }) {
                     }`}
                   >
                     <td className="px-4 py-3 font-bold text-white">{row.ticker}</td>
-                    <td className="px-4 py-3 text-slate-400">{row.asset_class}</td>
-                    <td className="px-4 py-3 text-slate-300">{row.total_trades}</td>
+                    <td className="px-4 py-3 font-semibold text-emerald-400">{row.winning_trades}</td>
+                    <td className="px-4 py-3 font-semibold text-red-400">{row.losing_trades}</td>
                     <td
                       className={`px-4 py-3 font-bold ${
                         isProfit ? "text-emerald-400" : "text-red-400"
@@ -127,6 +122,6 @@ export default function SymbolTable({ data }: { data: SymbolRow[] }) {
           </table>
         </div>
       )}
-    </div>
+    </>
   );
 }

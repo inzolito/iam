@@ -6,7 +6,7 @@ from decimal import Decimal
 from datetime import date, datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, case, and_, extract
+from sqlalchemy import select, func, case, and_, extract, cast, Date
 from app.models.database import Trade, Instrument, DailySnapshot, TradingAccount
 
 
@@ -126,9 +126,10 @@ class StatsService:
     def _date_filters(date_from: Optional[date], date_to: Optional[date]):
         filters = []
         if date_from:
-            filters.append(Trade.close_time >= date_from)
+            # CAST(close_time AS DATE) is the correct PostgreSQL way to strip time before comparing
+            filters.append(cast(Trade.close_time, Date) >= date_from)
         if date_to:
-            filters.append(Trade.close_time <= date_to)
+            filters.append(cast(Trade.close_time, Date) <= date_to)
         return filters
 
     @staticmethod
@@ -215,10 +216,15 @@ class StatsService:
         z = _z_score(net_profits)
         sqn_val, sqn_rating = _compute_sqn(net_profits)
 
-        # ── Daily snapshots for max drawdown + sharpe ──────────────────────────
+        # ── Daily snapshots for max drawdown + sharpe (respects date filter) ──
+        snap_filters = [DailySnapshot.account_id == account_id]
+        if date_from:
+            snap_filters.append(DailySnapshot.date >= date_from)
+        if date_to:
+            snap_filters.append(DailySnapshot.date <= date_to)
         snap_result = await db.execute(
             select(DailySnapshot.balance_end, DailySnapshot.daily_pl)
-            .where(DailySnapshot.account_id == account_id)
+            .where(and_(*snap_filters))
             .order_by(DailySnapshot.date.asc())
         )
         snap_rows = snap_result.all()
@@ -285,12 +291,64 @@ class StatsService:
 
     # ── Equity Curve ───────────────────────────────────────────────────────────
     @staticmethod
+    async def _get_intraday_curve(
+        db: AsyncSession,
+        account_id: UUID,
+        day: date,
+    ) -> list:
+        """Intraday equity curve: one point per closed trade, showing running balance."""
+        # Balance at start of day = previous day's snapshot
+        prev = await db.execute(
+            select(DailySnapshot.balance_end)
+            .where(
+                and_(
+                    DailySnapshot.account_id == account_id,
+                    DailySnapshot.date < day,
+                )
+            )
+            .order_by(DailySnapshot.date.desc())
+            .limit(1)
+        )
+        start_balance = float(prev.scalar() or 0)
+
+        result = await db.execute(
+            select(Trade.close_time, Trade.net_profit)
+            .where(
+                and_(
+                    Trade.account_id == account_id,
+                    cast(Trade.close_time, Date) == day,
+                )
+            )
+            .order_by(Trade.close_time.asc())
+        )
+        rows = result.all()
+        if not rows:
+            return []
+
+        points = []
+        running = start_balance
+        for close_time, net_profit in rows:
+            running += float(net_profit or 0)
+            points.append({
+                "date": close_time.isoformat(),   # full ISO datetime — detected by frontend
+                "balance": round(running, 2),
+                "daily_pl": float(net_profit or 0),
+                "trades_count": 1,
+                "intraday": True,
+            })
+        return points
+
+    @staticmethod
     async def get_equity_curve(
         db: AsyncSession,
         account_id: UUID,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
     ) -> list:
+        # Single-day filter → intraday per-trade curve
+        if date_from and date_to and date_from == date_to:
+            return await StatsService._get_intraday_curve(db, account_id, date_from)
+
         filters = [DailySnapshot.account_id == account_id]
         if date_from:
             filters.append(DailySnapshot.date >= date_from)
@@ -326,25 +384,28 @@ class StatsService:
         result = await db.execute(
             select(
                 Instrument.ticker,
-                Instrument.asset_class,
                 func.count(Trade.id).label("total_trades"),
                 func.sum(Trade.net_profit).label("total_pnl"),
                 func.avg(Trade.net_profit).label("avg_pnl"),
                 func.count(case((Trade.net_profit > 0, 1))).label("winning_trades"),
+                func.count(case((Trade.net_profit < 0, 1))).label("losing_trades"),
             )
             .join(Instrument, Trade.instrument_id == Instrument.id)
             .where(and_(*base_where))
-            .group_by(Instrument.ticker, Instrument.asset_class)
+            .group_by(Instrument.ticker)
             .order_by(func.sum(Trade.net_profit).desc())
         )
         output = []
         for row in result.all():
             total = row.total_trades or 0
-            wr = (row.winning_trades / total * 100) if total > 0 else None
+            winning = row.winning_trades or 0
+            losing = row.losing_trades or 0
+            wr = (winning / total * 100) if total > 0 else None
             output.append({
                 "ticker": row.ticker,
-                "asset_class": row.asset_class,
                 "total_trades": total,
+                "winning_trades": winning,
+                "losing_trades": losing,
                 "total_pnl": float(row.total_pnl or 0),
                 "avg_pnl": float(row.avg_pnl) if row.avg_pnl is not None else None,
                 "win_rate": wr,
@@ -457,6 +518,7 @@ class StatsService:
                 Trade.mfe_price,
                 Trade.open_price,
                 Trade.close_price,
+                Trade.side,
                 Instrument.ticker,
             )
             .join(Instrument, Trade.instrument_id == Instrument.id)
@@ -474,6 +536,7 @@ class StatsService:
                 "close_reason": row.close_reason,
                 "mae_price": float(row.mae_price) if row.mae_price is not None else None,
                 "mfe_price": float(row.mfe_price) if row.mfe_price is not None else None,
+                "side": row.side or "BUY",
             }
             for row in result.all()
         ]
@@ -506,6 +569,90 @@ class StatsService:
             }
             for s in result.scalars().all()
         ]
+
+    # ── Feature 4.5: Portfolio Correlation ────────────────────────────────────
+    @staticmethod
+    async def get_correlation(
+        db: AsyncSession,
+        account_id: UUID,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+    ) -> dict:
+        """
+        Compute daily PnL correlation matrix between traded symbols.
+        Returns {"symbols": [...], "matrix": [{symbol_a, symbol_b, correlation, trades_overlap}]}
+        """
+        import statistics as _stats
+
+        date_filters = StatsService._date_filters(date_from, date_to)
+        base_where = [Trade.account_id == account_id] + date_filters
+
+        result = await db.execute(
+            select(
+                cast(Trade.close_time, Date).label("day"),
+                Instrument.ticker,
+                func.sum(Trade.net_profit).label("pnl"),
+                func.count(Trade.id).label("cnt"),
+            )
+            .join(Instrument, Trade.instrument_id == Instrument.id)
+            .where(and_(*base_where))
+            .group_by(cast(Trade.close_time, Date), Instrument.ticker)
+            .order_by(cast(Trade.close_time, Date))
+        )
+        rows = result.all()
+
+        # Build {symbol: {date_str: pnl}}
+        symbol_days: dict[str, dict[str, float]] = {}
+        symbol_counts: dict[str, int] = {}
+        for row in rows:
+            sym = row.ticker
+            if sym not in symbol_days:
+                symbol_days[sym] = {}
+                symbol_counts[sym] = 0
+            symbol_days[sym][str(row.day)] = float(row.pnl or 0)
+            symbol_counts[sym] += row.cnt
+
+        symbols = sorted(symbol_days.keys())
+        if len(symbols) < 2:
+            return {"symbols": symbols, "matrix": []}
+
+        all_dates = sorted({d for s in symbol_days.values() for d in s.keys()})
+
+        # Build aligned series (fill missing days with 0)
+        series = {s: [symbol_days[s].get(d, 0.0) for d in all_dates] for s in symbols}
+
+        def pearson(xs: list[float], ys: list[float]) -> Optional[float]:
+            n = len(xs)
+            if n < 3:
+                return None
+            mx = sum(xs) / n
+            my = sum(ys) / n
+            try:
+                sx = _stats.stdev(xs)
+                sy = _stats.stdev(ys)
+            except Exception:
+                return None
+            if sx == 0 or sy == 0:
+                return None
+            cov = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / (n - 1)
+            return cov / (sx * sy)
+
+        matrix = []
+        for i, a in enumerate(symbols):
+            for b in symbols[i + 1:]:
+                corr = pearson(series[a], series[b])
+                if corr is not None:
+                    matrix.append({
+                        "symbol_a": a,
+                        "symbol_b": b,
+                        "correlation": round(corr, 3),
+                        "trades_a": symbol_counts[a],
+                        "trades_b": symbol_counts[b],
+                    })
+
+        # Sort by abs correlation descending
+        matrix.sort(key=lambda x: abs(x["correlation"]), reverse=True)
+        return {"symbols": symbols, "matrix": matrix}
 
     # ── Phase 4: Monte Carlo ───────────────────────────────────────────────────
     @staticmethod

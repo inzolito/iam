@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Wallet, Plus, RefreshCw, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import Link from "next/link";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { API_BASE } from "../../../config";
 
 interface Account {
   id: string;
@@ -14,6 +13,8 @@ interface Account {
   currency: string;
   balance_initial: number;
   connection_type: string;
+  broker_server?: string | null;
+  mt5_login?: string | null;
 }
 
 const typeLabel: Record<string, { label: string; color: string; icon: React.ElementType }> = {
@@ -32,9 +33,23 @@ export default function AccountsPage() {
     const token = localStorage.getItem("analytica_token");
     if (!token) { router.replace("/login"); return; }
     fetch(`${API_BASE}/api/v1/accounts/`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.ok ? r.json() : [])
+      .then((r) => (r.ok ? r.json() : []))
       .then((data: Account[]) => {
-        const unique = data.filter((a, i, arr) => arr.findIndex((b) => b.id === a.id) === i);
+        const unique = data.filter((a, i, arr) => {
+          const key =
+            a.platform && a.broker_server && a.mt5_login
+              ? `${a.platform}:${a.broker_server}:${a.mt5_login}`
+              : a.id;
+          return (
+            arr.findIndex((b) => {
+              const otherKey =
+                b.platform && b.broker_server && b.mt5_login
+                  ? `${b.platform}:${b.broker_server}:${b.mt5_login}`
+                  : b.id;
+              return otherKey === key;
+            }) === i
+          );
+        });
         setAccounts(unique);
       })
       .catch(() => {})

@@ -16,6 +16,7 @@ interface EquityCurvePoint {
   balance: number;
   daily_pl: number;
   trades_count: number;
+  intraday?: boolean;
 }
 
 interface EquityCurveProps {
@@ -36,8 +37,29 @@ export default function EquityCurve({ data, balanceInitial, currency = "USD" }: 
   const strokeColor = isPositive ? "#10b981" : "#f43f5e";
   const gradientId = "equityGradient";
 
+  const isIntraday = data.length > 0 && (data[0] as any).intraday === true;
+
+  // tickFormatter for intraday: "2026-03-11T14:32:00+00:00" → "14:32"
+  const xTickFormatter = isIntraday
+    ? (v: string) => {
+        try {
+          const d = new Date(v);
+          return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+        } catch { return v; }
+      }
+    : (v: string) => v.slice(5); // MM-DD for multi-day
+
+  const xLabelFormatter = isIntraday
+    ? (label: string) => {
+        try {
+          const d = new Date(label);
+          return `Hora: ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+        } catch { return label; }
+      }
+    : (label: string) => `Fecha: ${label}`;
+
   return (
-    <div className="bg-slate-900/60 border border-white/5 rounded-xl p-5 flex flex-col gap-4">
+    <div className="bg-slate-900/40 border border-white/5 rounded-xl p-5 flex flex-col gap-4 h-full">
       <div className="flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">
           Curva de Equity
@@ -69,7 +91,7 @@ export default function EquityCurve({ data, balanceInitial, currency = "USD" }: 
               tick={{ fontSize: 10, fill: "#475569" }}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v: string) => v.slice(5)} // MM-DD
+              tickFormatter={xTickFormatter}
             />
             <YAxis
               tick={{ fontSize: 10, fill: "#475569" }}
@@ -100,7 +122,7 @@ export default function EquityCurve({ data, balanceInitial, currency = "USD" }: 
                 }
                 return [value, name];
               }}
-              labelFormatter={(label: string) => `Fecha: ${label}`}
+              labelFormatter={xLabelFormatter}
             />
             <ReferenceLine
               y={balanceInitial}

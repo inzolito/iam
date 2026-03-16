@@ -2,8 +2,9 @@
 
 interface SymbolRow {
   ticker: string;
-  asset_class: string;
   total_trades: number;
+  winning_trades: number;
+  losing_trades: number;
   total_pnl: number | null;
   win_rate: number | null;
 }

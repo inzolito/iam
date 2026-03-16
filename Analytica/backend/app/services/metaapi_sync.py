@@ -21,7 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
-from sqlalchemy import func
+from sqlalchemy import func, cast, Date
 
 from app.core.encryption import decrypt_field
 from app.models.database import TradingAccount, Trade
@@ -390,7 +390,7 @@ async def sync_account(db: AsyncSession, account: TradingAccount) -> dict:
 
                     # Recalculate ALL daily snapshots with the corrected balance_initial
                     date_result = await db.execute(
-                        select(func.date(Trade.close_time).label("d"))
+                        select(cast(Trade.close_time, Date).label("d"))
                         .where(Trade.account_id == account.id)
                         .distinct()
                     )
@@ -408,6 +408,156 @@ async def sync_account(db: AsyncSession, account: TradingAccount) -> dict:
     except Exception as exc:
         logger.error(f"[MetaAPI] Account {account.id} sync error: {exc}")
         return {"synced": 0, "error": str(exc)}
+
+
+# ── Incremental sync (for SSE) ────────────────────────────────────────────────
+
+async def run_incremental_sync(account_id) -> int:
+    """
+    Lightweight incremental sync triggered by the SSE stream.
+    Only runs if the MetaAPI account is already CONNECTED (no broker wait).
+    Returns the number of new trades ingested (0 if nothing new or not connected).
+    """
+    from app.core.db import async_session
+    from app.models.database import Trade
+
+    try:
+        async with async_session() as db:
+            result = await db.execute(
+                select(TradingAccount).where(TradingAccount.id == account_id)
+            )
+            account = result.scalar_one_or_none()
+            if not account or not account.investor_password_encrypted:
+                return 0
+
+            meta_id = (account.connection_details or {}).get("metaapi_account_id")
+            if not meta_id:
+                return 0
+
+            timeout = aiohttp.ClientTimeout(total=12)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                try:
+                    info = await _get_account(session, meta_id)
+                except Exception:
+                    return 0
+
+                if info.get("connectionStatus") != "CONNECTED":
+                    return 0
+
+                region = info.get("region", "")
+                if not region:
+                    return 0
+
+                # Get latest close_time from DB to avoid re-ingesting known trades
+                last_result = await db.execute(
+                    select(func.max(Trade.close_time)).where(Trade.account_id == account_id)
+                )
+                last_close = last_result.scalar()
+                if not last_close:
+                    return 0
+
+                # Ensure UTC-aware
+                if last_close.tzinfo is None:
+                    last_close = last_close.replace(tzinfo=timezone.utc)
+
+                start = last_close + timedelta(seconds=1)
+                end = datetime.now(timezone.utc)
+                if start >= end:
+                    return 0
+
+                deals, orders = await _fetch_history(session, region, meta_id, start, end)
+                if not deals:
+                    return 0
+
+                orders_by_id = {str(o["id"]): o for o in orders if "id" in o}
+                trade_schemas = _pair_deals(deals, orders_by_id)
+                if not trade_schemas:
+                    return 0
+
+                ingested = await IngestionService.process_trades(db, account_id, trade_schemas)
+                logger.info(f"[SSE Incremental] {account_id}: {ingested} new trades ingested")
+                return ingested or 0
+
+    except Exception as e:
+        logger.warning(f"[SSE Incremental] {account_id}: {e}")
+        return 0
+
+
+async def _http_get(session: aiohttp.ClientSession, url: str, headers: dict):
+    """GET helper returning parsed JSON or None."""
+    async with session.get(url, headers=headers) as r:
+        if r.status == 200:
+            return await r.json()
+        return None
+
+
+async def fetch_live_data(meta_id: str, region: Optional[str]) -> dict:
+    """
+    Fetch real-time equity and open positions from MetaAPI client API.
+    If region is None, resolves it first via provisioning API.
+    Returns {"equity": float|None, "positions": [...], "region": str|None}
+    """
+    if not METAAPI_TOKEN or not meta_id:
+        return {"equity": None, "positions": [], "region": region}
+
+    timeout = aiohttp.ClientTimeout(total=8)
+    resolved_region = region
+
+    try:
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            # Resolve region if needed (first call or after disconnect)
+            if not resolved_region:
+                info = await _get_account(session, meta_id)
+                if info.get("connectionStatus") != "CONNECTED":
+                    return {"equity": None, "positions": [], "region": None}
+                resolved_region = info.get("region") or None
+
+            if not resolved_region:
+                return {"equity": None, "positions": [], "region": None}
+
+            base = f"https://mt-client-api-v1.{resolved_region}.agiliumtrade.ai"
+            hdrs = {"auth-token": METAAPI_TOKEN}
+
+            acct_info, raw_pos = await asyncio.gather(
+                _http_get(session, f"{base}/users/current/accounts/{meta_id}/account-information", hdrs),
+                _http_get(session, f"{base}/users/current/accounts/{meta_id}/positions", hdrs),
+            )
+
+            if acct_info is None:
+                # Connection lost — clear region so next call re-resolves it
+                return {"equity": None, "positions": [], "region": None}
+
+            equity = float(acct_info.get("equity") or acct_info.get("balance") or 0) or None
+
+            now_utc = datetime.now(timezone.utc)
+            positions = []
+            for p in (raw_pos or []):
+                try:
+                    t_str = p.get("time") or p.get("openTime") or ""
+                    t = datetime.fromisoformat(t_str.replace("Z", "+00:00"))
+                    secs = int((now_utc - t).total_seconds())
+                    h, m = secs // 3600, (secs % 3600) // 60
+                    dur = f"{h}h {m}m" if h else f"{m}m"
+                except Exception:
+                    dur = "—"
+
+                pos_type = p.get("type", "")
+                positions.append({
+                    "id": str(p.get("id", "")),
+                    "symbol": p.get("symbol", ""),
+                    "direction": "BUY" if "BUY" in pos_type else "SELL",
+                    "volume": float(p.get("volume") or 0),
+                    "open_price": float(p.get("openPrice") or 0),
+                    "current_price": float(p.get("currentPrice") or 0),
+                    "pnl": float(p.get("profit") or 0),
+                    "duration": dur,
+                })
+
+            return {"equity": equity, "positions": positions, "region": resolved_region}
+
+    except Exception as e:
+        logger.debug(f"[Live Data] {meta_id}: {e}")
+        return {"equity": None, "positions": [], "region": region}
 
 
 # ── Scheduler job ─────────────────────────────────────────────────────────────

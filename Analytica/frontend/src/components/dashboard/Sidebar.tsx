@@ -7,16 +7,17 @@ import { LayoutDashboard, Wallet, BarChart3, Settings, LogOut, X } from "lucide-
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { name: "Cuentas MT5", icon: Wallet, href: "/dashboard/accounts" },
-  { name: "Estadísticas", icon: BarChart3, href: "/dashboard/stats" },
+  { name: "Estadísticas", icon: BarChart3, href: "/dashboard" },
   { name: "Configuración", icon: Settings, href: "/dashboard/settings" },
 ];
 
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  animated?: boolean;
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, animated = true }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -27,7 +28,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen w-64 bg-slate-950 border-r border-white/5 flex flex-col z-50 transition-transform duration-300 ease-in-out
+      className={`fixed left-0 top-0 h-screen w-64 bg-slate-950 border-r border-white/5 flex flex-col z-50
+        ${animated ? "transition-transform duration-300 ease-in-out" : ""}
         ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
     >
       <div className="p-8 flex items-start justify-between">
@@ -48,7 +50,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <nav className="flex-1 px-4 py-4 space-y-1">
         {menuItems.map((item) => {
-          const isActive = pathname === item.href;
+          // Exact match for dashboard root; prefix match for sub-pages
+          const isActive = item.href === "/dashboard"
+            ? pathname === "/dashboard"
+            : pathname.startsWith(item.href);
           return (
             <Link
               key={item.name}
