@@ -134,17 +134,22 @@ async def run_monte_carlo(
     return result
 
 
-@router.post("/analyze-performance/{account_id}", response_model=AIAnalysisResponse)
+@router.post("/analyze-performance/{account_id}")
 async def analyze_performance(
     account_id: UUID,
+    analysis_type: str = Query("symbols"),  # symbols | sessions | heatmap
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
-    system_version: str = Query("1.0.0"),
     db: AsyncSession = Depends(get_db),
 ):
     await _verify_account(db, account_id)
     service = AIAnalyticService()
-    result = await service.generate_full_audit(db, account_id, date_from, date_to, system_version)
+    if analysis_type == "sessions":
+        result = await service.analyze_sessions(db, account_id, date_from, date_to)
+    elif analysis_type == "heatmap":
+        result = await service.analyze_heatmap(db, account_id, date_from, date_to)
+    else:
+        result = await service.analyze_symbols(db, account_id, date_from, date_to)
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
     return result

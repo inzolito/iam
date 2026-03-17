@@ -301,7 +301,7 @@ export default function DashboardPage() {
 
                     <CollapsibleSection title="Análisis de Símbolos" subtitle="Rendimiento detallado por activo">
                       <SymbolTable data={symbolData} />
-                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} label="Auditoría IA de Portafolio" />
+                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="symbols" label="Análisis IA — Pares y Entradas" />
                     </CollapsibleSection>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -320,12 +320,12 @@ export default function DashboardPage() {
                         <SessionChart data={sessionData} currency={selectedAccount?.currency} />
                         <HoldingTimeScatter data={tradesList} currency={selectedAccount?.currency} />
                       </div>
-                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} label="Auditoría IA de Sesiones" />
+                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="sessions" label="Análisis IA — Sesiones" />
                     </CollapsibleSection>
 
                     <CollapsibleSection title="Mapa de Calor" subtitle="Distribución Horaria">
                       <HeatmapChart data={heatmapData} />
-                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} label="Consultar IA de Optimización" />
+                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="heatmap" label="Análisis IA — Optimización Horaria" />
                     </CollapsibleSection>
 
                     <CollapsibleSection title="Avanzado" subtitle="Monte Carlo, Sharpe y Z-Score" defaultOpen={false}>

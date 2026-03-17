@@ -2,16 +2,34 @@ import json
 import logging
 import os
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_, func
-from app.models.database import Trade, MacroEvent, AIAnalysisReport, TradingAccount
+from sqlalchemy import select, and_, func, cast, Date
+from app.models.database import Trade, MacroEvent, TradingAccount
 from app.services.stats_service import StatsService
 from google import genai
 
 logger = logging.getLogger(__name__)
+
+DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+
+
+def _heatmap_summary(heatmap: list, top_n=8, bottom_n=5):
+    if not heatmap:
+        return [], []
+    s = sorted(heatmap, key=lambda c: c["avg_pnl"], reverse=True)
+    def fmt(c):
+        d = c["day"]
+        return {
+            "day": DAYS[d] if d < len(DAYS) else str(d),
+            "hour": f"{c['hour']:02d}:00 UTC",
+            "avg_pnl": round(c["avg_pnl"], 2),
+            "trades": c["count"],
+        }
+    return [fmt(x) for x in s[:top_n]], [fmt(x) for x in s[-bottom_n:]]
+
 
 class AIAnalyticService:
     def __init__(self):
@@ -22,132 +40,183 @@ class AIAnalyticService:
             self.client = None
             logger.warning("GEMINI_API_KEY not found. AI Analyser disabled.")
 
-    async def generate_full_audit(
-        self, 
-        db: AsyncSession, 
-        account_id: uuid.UUID, 
-        date_from: date, 
-        date_to: date,
-        system_version: str = "1.0.0"
-    ):
-        """Generates a comprehensive AI audit using metrics and macro events."""
-        if not self.client:
-            return {"error": "AI client not initialized (missing API key)"}
-
-        # 1. Fetch data from StatsService
-        stats = await StatsService.get_account_stats(db, account_id, date_from, date_to)
-        by_symbol = await StatsService.get_by_symbol(db, account_id, date_from, date_to)
-        by_session = await StatsService.get_by_session(db, account_id, date_from, date_to)
-        heatmap = await StatsService.get_heatmap(db, account_id, date_from, date_to)
-        
-        # 2. Fetch Macro Events for the period
-        macro_filters = []
-        if date_from:
-            macro_filters.append(func.date(MacroEvent.timestamp) >= date_from)
-        if date_to:
-            macro_filters.append(func.date(MacroEvent.timestamp) <= date_to)
-        macro_q = select(MacroEvent).order_by(MacroEvent.timestamp.asc())
-        if macro_filters:
-            macro_q = macro_q.where(and_(*macro_filters))
-        macro_query = await db.execute(macro_q)
-        macro_events = macro_query.scalars().all()
-
-        # 3. Fetch sample of trades to look for correlations (last 50 in period)
-        trade_filters = [Trade.account_id == account_id]
-        if date_from:
-            trade_filters.append(func.date(Trade.close_time) >= date_from)
-        if date_to:
-            trade_filters.append(func.date(Trade.close_time) <= date_to)
-        trades_query = await db.execute(
-            select(Trade).where(and_(*trade_filters))
-            .order_by(Trade.close_time.desc()).limit(50)
-        )
-        trades_sample = trades_query.scalars().all()
-
-        # 4. Prepare data density for Prompt
-        data_packet = {
-            "period": {"from": str(date_from), "to": str(date_to)},
-            "global_metrics": {
-                "net_pnl": stats["net_profit"],
-                "win_rate": f"{stats['win_rate']:.2f}%" if stats['win_rate'] else "N/A",
-                "profit_factor": stats["profit_factor"],
-                "drawdown_pct": stats["max_drawdown_pct"],
-                "sharpe_ratio": stats["sharpe_ratio"],
-                "recovery_factor": stats["recovery_factor"]
-            },
-            "performance_by_pair": by_symbol,
-            "performance_by_session": by_session,
-            "heatmap_glance": heatmap[:20], # Top 20 density points
-            "macro_context": [
-                {
-                    "time": e.timestamp.strftime("%Y-%m-%d %H:%M"),
-                    "event": e.event_name,
-                    "impact": e.impact,
-                    "currency": e.currency
-                } for e in macro_events
-            ]
-        }
-
-        # 5. Build the Master Prompt
-        prompt = f"""
-        Actúa como un Auditor Senior de Trading Institucional. Analiza los siguientes datos de rendimiento de un bot de trading:
-        
-        DATOS DE RENDIMIENTO:
-        {json.dumps(data_packet, indent=2)}
-        
-        OBJETIVO:
-        Identificar por qué el sistema no está alcanzando un rendimiento diario del 10% y cómo optimizarlo.
-        
-        INSTRUCCIONES DE ANÁLISIS:
-        1. RESUMEN: Da una visión general del desempeño.
-        2. CAUSA RAÍZ (NEGATIVOS): Analiza por qué fallan los trades. Busca correlaciones macro (ej: trades cerca de noticias de alto impacto).
-        3. FACTORES DE ÉXITO (POSITIVOS): Qué está funcionando (horarios, pares, baja volatilidad?).
-        4. SESIÓN Y HORARIOS: Qué sesiones son tóxicas y cuáles son "Ventanas de Oro".
-        5. MAPA DE CALOR: Sugiere horas exactas para apagar o encender el bot.
-        6. SUGERENCIAS ACCIONABLES: Dame 3-5 pasos concretos para mejorar el rendimiento.
-        
-        RESPONDE ÚNICAMENTE EN FORMATO JSON con esta estructura:
-        {{
-            "summary": "...",
-            "negative_trades_root_cause": "...",
-            "positive_trades_success_factors": "...",
-            "suggestions": ["...", "..."],
-            "session_comparison": {{ "insight": "...", "recommendation": "..." }},
-            "heatmap_insights": {{ "best_hours": "...", "worst_hours": "..." }}
-        }}
-        """
-
-        # 6. Call Gemini
+    # ── Internal Gemini caller ─────────────────────────────────────────────────
+    async def _call_gemini(self, prompt: str) -> dict:
         try:
             response = self.client.models.generate_content(
                 model="gemini-2.0-flash-lite-preview-02-05",
                 contents=prompt,
-                config={'response_mime_type': 'application/json'}
+                config={"response_mime_type": "application/json"},
             )
-            report_data = json.loads(response.text)
-            
-            # 7. Save Report to DB
-            new_report = AIAnalysisReport(
-                id=uuid.uuid4(),
-                account_id=account_id,
-                date_from=date_from,
-                date_to=date_to,
-                system_version=system_version,
-                summary=report_data.get("summary"),
-                negative_trades_root_cause=report_data.get("negative_trades_root_cause"),
-                positive_trades_success_factors=report_data.get("positive_trades_success_factors"),
-                suggestions=report_data.get("suggestions"),
-                session_comparison=report_data.get("session_comparison"),
-                heatmap_insights=report_data.get("heatmap_insights"),
-                metrics_snapshot=data_packet["global_metrics"]
-            )
-            db.add(new_report)
-            await db.commit()
-            
-            return report_data
-            
+            return json.loads(response.text)
         except Exception as e:
-            logger.error(f"Error generating AI Audit: {e}")
-            await db.rollback()
-            return {"error": f"Failed to generate AI Audit: {str(e)}"}
+            logger.error(f"Gemini error: {e}")
+            return {"error": f"Gemini error: {str(e)}"}
 
+    # ── Macro events helper ────────────────────────────────────────────────────
+    async def _get_macro(self, db, date_from, date_to) -> list:
+        filters = []
+        if date_from:
+            filters.append(func.date(MacroEvent.timestamp) >= date_from)
+        if date_to:
+            filters.append(func.date(MacroEvent.timestamp) <= date_to)
+        q = select(MacroEvent).order_by(MacroEvent.timestamp.asc())
+        if filters:
+            q = q.where(and_(*filters))
+        rows = (await db.execute(q)).scalars().all()
+        return [
+            {
+                "time": e.timestamp.strftime("%Y-%m-%d %H:%M"),
+                "event": e.event_name,
+                "impact": e.impact,
+                "currency": e.currency,
+            }
+            for e in rows
+        ]
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # 1. ANÁLISIS DE SÍMBOLOS
+    #    Profundidad de entradas, fallos, correlación macro, pares a favorecer/evitar
+    # ═══════════════════════════════════════════════════════════════════════════
+    async def analyze_symbols(
+        self, db: AsyncSession, account_id: uuid.UUID,
+        date_from: Optional[date], date_to: Optional[date]
+    ) -> dict:
+        if not self.client:
+            return {"error": "AI client not initialized (missing API key)"}
+
+        by_symbol = await StatsService.get_by_symbol(db, account_id, date_from, date_to)
+        trades    = await StatsService.get_trades_list(db, account_id, date_from, date_to)
+        macro     = await self._get_macro(db, date_from, date_to)
+
+        data = {
+            "period": {"from": str(date_from), "to": str(date_to)},
+            "performance_by_pair": by_symbol,
+            "trades": [
+                {
+                    "ticker": t["ticker"],
+                    "side": t["side"],
+                    "net_profit": t["net_profit"],
+                    "duration_hours": t["duration_hours"],
+                    "close_reason": t["close_reason"],
+                }
+                for t in trades[:100]
+            ],
+            "macro_events_in_period": macro,
+        }
+
+        prompt = f"""Eres un Analista Senior de Trading Algorítmico. Analiza el rendimiento por par e identifica causas de fallo y éxito.
+
+DATOS:
+{json.dumps(data, indent=2, default=str)}
+
+INSTRUCCIONES:
+1. FALLO EN ENTRADAS: ¿Qué está fallando? Busca patrones en duración, cierre por SL, horarios.
+2. CORRELACIÓN MACRO: ¿Hubo noticias de alto impacto cerca de los trades negativos? Cita eventos específicos si los hay.
+3. PARES A FAVORECER: Qué pares tienen mejor win rate y PnL acumulado. Razón concreta.
+4. PARES A EVITAR: Qué pares están destruyendo rentabilidad y por qué.
+5. MEJORA DE ENTRADAS: 3-5 sugerencias concretas y accionables.
+
+RESPONDE ÚNICAMENTE EN JSON:
+{{
+    "summary": "...",
+    "trade_failures": "...",
+    "macro_impact": "...",
+    "entry_improvements": "...",
+    "pairs_to_favor": ["TICKER — razón", "..."],
+    "pairs_to_avoid": ["TICKER — razón", "..."],
+    "suggestions": ["...", "...", "..."]
+}}"""
+
+        return await self._call_gemini(prompt)
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # 2. ANÁLISIS DE SESIONES
+    #    Período seleccionado vs histórico completo
+    # ═══════════════════════════════════════════════════════════════════════════
+    async def analyze_sessions(
+        self, db: AsyncSession, account_id: uuid.UUID,
+        date_from: Optional[date], date_to: Optional[date]
+    ) -> dict:
+        if not self.client:
+            return {"error": "AI client not initialized (missing API key)"}
+
+        sessions_period     = await StatsService.get_by_session(db, account_id, date_from, date_to)
+        sessions_historical = await StatsService.get_by_session(db, account_id, None, None)
+
+        data = {
+            "period": {"from": str(date_from), "to": str(date_to)},
+            "sessions_current_period": sessions_period,
+            "sessions_all_time_historical": sessions_historical,
+        }
+
+        prompt = f"""Eres un Analista de Rendimiento de Trading. Analiza qué sesiones de mercado son más y menos rentables.
+
+Las sesiones son: Asia (00-08 UTC), Londres (08-13 UTC), London/NY overlap (13-17 UTC), Nueva York (17-22 UTC).
+
+DATOS:
+{json.dumps(data, indent=2, default=str)}
+
+INSTRUCCIONES:
+1. MEJORES SESIONES: ¿En qué sesiones gana más el trader en el período? ¿Coincide con el histórico?
+2. PEORES SESIONES: ¿Qué sesiones están dañando la cuenta? ¿Es un patrón recurrente o anomalía?
+3. COMPARACIÓN HISTÓRICA: Compara el período seleccionado contra el histórico. ¿Hay algo atípico?
+4. RECOMENDACIÓN: ¿En qué sesiones activar el bot y en cuáles apagarlo?
+
+RESPONDE ÚNICAMENTE EN JSON:
+{{
+    "summary": "...",
+    "best_sessions": "...",
+    "worst_sessions": "...",
+    "historical_comparison": "...",
+    "recommendation": "..."
+}}"""
+
+        return await self._call_gemini(prompt)
+
+    # ═══════════════════════════════════════════════════════════════════════════
+    # 3. ANÁLISIS DE MAPA DE CALOR
+    #    Horarios más y menos rentables, período vs histórico
+    # ═══════════════════════════════════════════════════════════════════════════
+    async def analyze_heatmap(
+        self, db: AsyncSession, account_id: uuid.UUID,
+        date_from: Optional[date], date_to: Optional[date]
+    ) -> dict:
+        if not self.client:
+            return {"error": "AI client not initialized (missing API key)"}
+
+        heatmap_period     = await StatsService.get_heatmap(db, account_id, date_from, date_to)
+        heatmap_historical = await StatsService.get_heatmap(db, account_id, None, None)
+
+        best_p, worst_p = _heatmap_summary(heatmap_period, 8, 5)
+        best_h, worst_h = _heatmap_summary(heatmap_historical, 8, 5)
+
+        data = {
+            "period": {"from": str(date_from), "to": str(date_to)},
+            "period_best_hours": best_p,
+            "period_worst_hours": worst_p,
+            "historical_best_hours": best_h,
+            "historical_worst_hours": worst_h,
+        }
+
+        prompt = f"""Eres un Especialista en Optimización Horaria de Trading. Analiza el mapa de calor para identificar las mejores y peores horas.
+
+DATOS (día/hora en UTC, avg_pnl = ganancia promedio por trade en ese slot):
+{json.dumps(data, indent=2, default=str)}
+
+INSTRUCCIONES:
+1. HORAS DORADAS: Las mejores combinaciones día/hora. ¿Son consistentes en período e histórico?
+2. HORAS A EVITAR: Las peores horas donde el bot pierde de forma consistente.
+3. PATRÓN SEMANAL: ¿Hay días de la semana significativamente mejores o peores?
+4. HORARIO RECOMENDADO: Un horario concreto de activación del bot (ej: "Lun-Jue 09:00-12:00 UTC y 14:00-17:00 UTC").
+
+RESPONDE ÚNICAMENTE EN JSON:
+{{
+    "summary": "...",
+    "golden_hours": "...",
+    "avoid_hours": "...",
+    "weekly_pattern": "...",
+    "schedule_recommendation": "..."
+}}"""
+
+        return await self._call_gemini(prompt)
