@@ -174,6 +174,12 @@ export default function AIAnalysisAudit({
   const [result, setResult] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Reset analysis when period or account changes
+  useEffect(() => {
+    setResult(null);
+    setError(null);
+  }, [accountId, dateFrom, dateTo]);
+
   if (!accountId) return null;
 
   const run = async () => {
@@ -204,7 +210,7 @@ export default function AIAnalysisAudit({
 
   return (
     <div className="pt-4 mt-4 border-t border-white/5">
-      {!result && !loading && (
+      {!loading && (
         <button
           onClick={run}
           className="group relative flex items-center justify-center gap-3 w-full py-3 rounded-lg bg-amber-500/5 border border-amber-500/10 hover:border-amber-500/30 hover:bg-amber-500/10 transition-all overflow-hidden"
@@ -212,7 +218,7 @@ export default function AIAnalysisAudit({
           <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/5 to-amber-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
           <Sparkles className="w-3.5 h-3.5 text-amber-500/80 group-hover:text-amber-500 transition-all duration-300" />
           <span className="text-[9px] uppercase tracking-[0.25em] text-slate-400 font-bold group-hover:text-amber-400 transition-colors">
-            {label}
+            {result ? `↺ Re-analizar — ${label}` : label}
           </span>
         </button>
       )}
@@ -247,9 +253,6 @@ export default function AIAnalysisAudit({
               <span className="text-[9px] uppercase tracking-[0.2em] text-amber-500/60 font-bold">
                 Reporte IA — {analysisType === "symbols" ? "Símbolos" : analysisType === "sessions" ? "Sesiones" : "Horarios"}
               </span>
-              <button onClick={() => setResult(null)} className="text-[10px] uppercase tracking-widest text-slate-500 hover:text-white transition-colors">
-                Cerrar
-              </button>
             </div>
 
             {analysisType === "symbols"  && <SymbolsReport  data={result as SymbolsResult}  />}
