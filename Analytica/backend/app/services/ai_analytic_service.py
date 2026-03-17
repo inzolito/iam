@@ -44,7 +44,7 @@ class AIAnalyticService:
     async def _call_gemini(self, prompt: str) -> dict:
         try:
             response = self.client.models.generate_content(
-                model="gemini-2.0-flash-lite-preview-02-05",
+                model="gemini-2.0-flash",
                 contents=prompt,
                 config={"response_mime_type": "application/json"},
             )
