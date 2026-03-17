@@ -41,26 +41,26 @@ class AIAnalyticService:
         heatmap = await StatsService.get_heatmap(db, account_id, date_from, date_to)
         
         # 2. Fetch Macro Events for the period
-        # We look for events within the range [date_from, date_to]
-        macro_query = await db.execute(
-            select(MacroEvent).where(
-                and_(
-                    func.date(MacroEvent.timestamp) >= date_from,
-                    func.date(MacroEvent.timestamp) <= date_to
-                )
-            ).order_by(MacroEvent.timestamp.asc())
-        )
+        macro_filters = []
+        if date_from:
+            macro_filters.append(func.date(MacroEvent.timestamp) >= date_from)
+        if date_to:
+            macro_filters.append(func.date(MacroEvent.timestamp) <= date_to)
+        macro_q = select(MacroEvent).order_by(MacroEvent.timestamp.asc())
+        if macro_filters:
+            macro_q = macro_q.where(and_(*macro_filters))
+        macro_query = await db.execute(macro_q)
         macro_events = macro_query.scalars().all()
-        
+
         # 3. Fetch sample of trades to look for correlations (last 50 in period)
+        trade_filters = [Trade.account_id == account_id]
+        if date_from:
+            trade_filters.append(func.date(Trade.close_time) >= date_from)
+        if date_to:
+            trade_filters.append(func.date(Trade.close_time) <= date_to)
         trades_query = await db.execute(
-            select(Trade).where(
-                and_(
-                    Trade.account_id == account_id,
-                    func.date(Trade.close_time) >= date_from,
-                    func.date(Trade.close_time) <= date_to
-                )
-            ).order_by(Trade.close_time.desc()).limit(50)
+            select(Trade).where(and_(*trade_filters))
+            .order_by(Trade.close_time.desc()).limit(50)
         )
         trades_sample = trades_query.scalars().all()
 
