@@ -7,7 +7,7 @@ from datetime import date, datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case, and_, extract, cast, Date
-from app.models.database import Trade, Instrument, DailySnapshot, TradingAccount
+from app.models.database import Trade, Instrument, DailySnapshot
 
 
 def _human_duration(seconds: float) -> str:
@@ -231,14 +231,18 @@ class StatsService:
         balances  = [float(r[0]) for r in snap_rows if r[0] is not None]
         daily_pls = [float(r[1]) for r in snap_rows if r[1] is not None]
 
-        # Prepend initial balance to drawdown series
-        acc_result = await db.execute(
-            select(TradingAccount.balance_initial).where(TradingAccount.id == account_id)
+        # Latest balance from DB (ignores date filter — always current)
+        latest_snap = await db.execute(
+            select(DailySnapshot.balance_end)
+            .where(DailySnapshot.account_id == account_id)
+            .order_by(DailySnapshot.date.desc())
+            .limit(1)
         )
-        balance_initial = float(acc_result.scalar_one_or_none() or 0)
-        dd_series = ([balance_initial] + balances) if balances else [balance_initial]
+        current_balance = latest_snap.scalar()
+        current_balance = float(current_balance) if current_balance is not None else None
 
-        max_dd_usd, max_dd_pct = _compute_max_drawdown(dd_series)
+        # Drawdown from snapshot series only (no hardcoded initial balance)
+        max_dd_usd, max_dd_pct = _compute_max_drawdown(balances)
         max_drawdown_usd = max_dd_usd if max_dd_usd > 0 else None
         max_drawdown_pct = max_dd_pct if max_dd_pct > 0 else None
 
@@ -249,6 +253,7 @@ class StatsService:
         )
 
         return {
+            "current_balance": current_balance,
             # Phase 1
             "total_trades": total,
             "net_profit": net_profit_val,

@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Wallet, BarChart3, Settings, LogOut, X } from "lucide-react";
+import { LayoutDashboard, Wallet, Settings, LogOut, X } from "lucide-react";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const menuItems = [
   { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
   { name: "Cuentas MT5", icon: Wallet, href: "/dashboard/accounts" },
-  { name: "Estadísticas", icon: BarChart3, href: "/dashboard" },
   { name: "Configuración", icon: Settings, href: "/dashboard/settings" },
 ];
 
@@ -20,6 +20,7 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose, animated = true }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme } = useTheme();
 
   const handleLogout = () => {
     localStorage.removeItem("analytica_token");
@@ -28,13 +29,14 @@ export default function Sidebar({ isOpen, onClose, animated = true }: SidebarPro
 
   return (
     <aside
-      className={`fixed left-0 top-0 h-screen w-64 bg-slate-950 border-r border-white/5 flex flex-col z-50
+      className={`fixed left-0 top-0 h-screen w-64 flex flex-col z-50
         ${animated ? "transition-transform duration-300 ease-in-out" : ""}
-        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+        ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+        ${theme === "light" ? "bg-white border-r border-slate-200" : "bg-slate-950 border-r border-white/5"}`}
     >
       <div className="p-8 flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-bold tracking-[0.1em] text-white">ANALYTICA</h1>
+          <h1 className={`text-xl font-bold tracking-[0.1em] ${theme === "light" ? "text-slate-900" : "text-white"}`}>ANALYTICA</h1>
           <p className="text-[10px] text-slate-500 tracking-[0.2em] font-medium uppercase mt-1">
             E pur si muove
           </p>

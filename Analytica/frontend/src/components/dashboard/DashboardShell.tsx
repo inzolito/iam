@@ -3,15 +3,16 @@
 import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
+import { useTheme } from "../../contexts/ThemeContext";
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  // Suppress transition on first render to avoid sidebar flash on mobile
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
+  const { theme } = useTheme();
 
   return (
-    <div className="h-screen overflow-hidden bg-slate-950 text-slate-200 selection:bg-amber-500/30">
+    <div className={`h-screen overflow-hidden selection:bg-amber-500/30 ${theme === "light" ? "bg-slate-100 text-slate-800" : "bg-slate-950 text-slate-200"}`}>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} animated={mounted} />
 
       {/* Mobile overlay */}

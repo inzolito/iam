@@ -403,10 +403,25 @@ async def sync_account(db: AsyncSession, account: TradingAccount) -> dict:
                     )
 
             logger.info(f"[MetaAPI] Account {account.id} synced {upserted}/{len(trade_schemas)} trades.")
+            # Clear any previous sync error
+            new_details = dict(account.connection_details)
+            if new_details.pop("sync_error", None) is not None:
+                account.connection_details = new_details
+                flag_modified(account, "connection_details")
+                await db.commit()
             return {"synced": upserted or 0, "error": None}
 
     except Exception as exc:
         logger.error(f"[MetaAPI] Account {account.id} sync error: {exc}")
+        # Persist the error so the frontend can display it
+        try:
+            new_details = dict(account.connection_details or {})
+            new_details["sync_error"] = str(exc)
+            account.connection_details = new_details
+            flag_modified(account, "connection_details")
+            await db.commit()
+        except Exception:
+            pass
         return {"synced": 0, "error": str(exc)}
 
 

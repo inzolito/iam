@@ -23,6 +23,7 @@ class TradingAccountSchema(TradingAccountBase):
     created_at: datetime
     broker_server: Optional[str] = None
     mt5_login: Optional[str] = None
+    sync_error: Optional[str] = None
 
     class Config:
         from_attributes = True

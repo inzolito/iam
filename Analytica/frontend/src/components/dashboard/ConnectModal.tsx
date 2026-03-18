@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Server, User, Lock, Activity, CheckCircle2, Copy, ExternalLink, ShieldCheck } from 'lucide-react';
+import { API_BASE } from '../../config';
 
 interface ConnectModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ const ConnectModal: React.FC<ConnectModalProps> = ({ isOpen, onClose }) => {
     
     try {
       const token = localStorage.getItem("analytica_token") ?? "";
-      const response = await fetch('https://analytica-backend-419965139801.us-central1.run.app/api/v1/accounts/link', {
+      const response = await fetch(`${API_BASE}/api/v1/accounts/link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({

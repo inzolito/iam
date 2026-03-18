@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { User, Bell, Search, LogOut, Menu, CheckCircle, Circle } from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+import { API_BASE } from "../../config";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -12,6 +12,7 @@ interface NavbarProps {
 
 export default function Navbar({ onMenuToggle }: NavbarProps) {
   const router = useRouter();
+  const { theme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountName, setAccountName] = useState<string | null>(null);
   const [hasAccount, setHasAccount] = useState(false);
@@ -36,7 +37,7 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
   };
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 bg-slate-950/80 backdrop-blur-xl border-b border-white/5 z-40 px-4 md:px-6 lg:px-10 flex items-center justify-between gap-4">
+    <header className={`fixed top-0 right-0 left-0 lg:left-64 h-16 backdrop-blur-xl border-b z-40 px-4 md:px-6 lg:px-10 flex items-center justify-between gap-4 ${theme === "light" ? "bg-white/80 border-slate-200" : "bg-slate-950/80 border-white/5"}`}>
       {/* Hamburger — mobile only */}
       <button
         onClick={onMenuToggle}
@@ -83,9 +84,9 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
           <div className="relative">
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-800 to-slate-950 border border-white/10 flex items-center justify-center overflow-hidden shadow-lg shadow-black/50 hover:border-amber-500/50 transition-all duration-300"
+              className={`w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shadow-lg hover:border-amber-500/50 transition-all duration-300 ${theme === "light" ? "bg-slate-200 border border-slate-300" : "bg-gradient-to-br from-slate-800 to-slate-950 border border-white/10 shadow-black/50"}`}
             >
-              <User className="w-5 h-5 text-slate-400" />
+              <User className={`w-5 h-5 ${theme === "light" ? "text-slate-500" : "text-slate-400"}`} />
             </button>
 
             {menuOpen && (

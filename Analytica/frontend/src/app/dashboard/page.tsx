@@ -35,13 +35,14 @@ interface Account {
   name: string;
   platform: string;
   currency: string;
-  balance_initial: number;
   connection_type: string;
   broker_server?: string | null;
   mt5_login?: string | null;
+  sync_error?: string | null;
 }
 
 interface Stats {
+  current_balance: number | null;
   total_trades: number;
   net_profit: number;
   win_rate: number | null;
@@ -217,7 +218,28 @@ export default function DashboardPage() {
     if (selectedAccount) fetchStats(selectedAccount, dateFrom, dateTo);
   }, [selectedAccount, fetchStats, dateFrom, dateTo]);
 
-  // Sync logic simplified for brevity
+  const reloadAccounts = useCallback(async () => {
+    const token = localStorage.getItem("analytica_token");
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/accounts/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const raw: Account[] = await res.json();
+        const data = raw.filter((a, i, arr) => {
+          const key = a.platform && a.broker_server && a.mt5_login ? `${a.platform}:${a.broker_server}:${a.mt5_login}` : a.id;
+          return arr.findIndex((b) => (b.platform && b.broker_server && b.mt5_login ? `${b.platform}:${b.broker_server}:${b.mt5_login}` : b.id) === key) === i;
+        });
+        setAccounts(data);
+        if (selectedAccount) {
+          const updated = data.find((a) => a.id === selectedAccount.id);
+          if (updated) setSelectedAccount(updated);
+        }
+      }
+    } catch {}
+  }, [selectedAccount]);
+
   const handleSync = useCallback(async () => {
     if (!selectedAccount) return;
     setSyncLoading(true);
@@ -227,10 +249,13 @@ export default function DashboardPage() {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Poll until trades appear (simplified)
-      setTimeout(() => fetchStats(selectedAccount, dateFrom, dateTo), 5000);
+      // Poll for trades and check for sync errors after 15s
+      setTimeout(async () => {
+        await reloadAccounts();
+        fetchStats(selectedAccount, dateFrom, dateTo);
+      }, 15000);
     } catch {} finally { setSyncLoading(false); }
-  }, [selectedAccount, fetchStats, dateFrom, dateTo]);
+  }, [selectedAccount, fetchStats, reloadAccounts, dateFrom, dateTo]);
 
   return (
     <div className="relative w-full pb-20">
@@ -265,14 +290,25 @@ export default function DashboardPage() {
                 {stats.total_trades === 0 && !hasTradesOverall ? (
                   <div className="rounded-2xl border border-slate-700/40 bg-slate-900/40 p-10 flex flex-col items-center gap-6 max-w-sm mx-auto text-center">
                     <p className="text-sm font-bold text-white">Sincroniza tu historial</p>
+                    {selectedAccount?.sync_error && (
+                      <div className="w-full bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-left">
+                        <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Error de sincronización</p>
+                        <p className="text-xs text-red-300 break-words">{selectedAccount.sync_error}</p>
+                      </div>
+                    )}
                     <button onClick={handleSync} disabled={syncLoading} className="px-6 py-3 rounded-xl bg-amber-600 text-white text-[10px] font-bold uppercase tracking-widest">
-                      {syncLoading ? "Sincronizando..." : "Conectar MetaAPI"}
+                      {syncLoading ? "Sincronizando..." : "Reintentar sincronización"}
                     </button>
+                  </div>
+                ) : stats.total_trades === 0 && hasTradesOverall ? (
+                  <div className="rounded-2xl border border-slate-700/40 bg-slate-900/40 p-10 flex flex-col items-center gap-4 max-w-sm mx-auto text-center">
+                    <p className="text-sm font-bold text-white">Sin operaciones en este período</p>
+                    <p className="text-xs text-slate-500">No hay trades cerrados en el rango de fechas seleccionado.</p>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     <BalanceHero
-                      balanceInitial={selectedAccount?.balance_initial ?? 0}
+                      currentBalance={stats.current_balance}
                       netProfit={stats.net_profit}
                       totalTrades={stats.total_trades}
                       currency={selectedAccount?.currency}
@@ -306,7 +342,7 @@ export default function DashboardPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                        <CollapsibleSection title="Curva de Equity" subtitle="Evolución del Capital">
-                          <EquityCurve data={equityCurve} balanceInitial={selectedAccount?.balance_initial ?? 0} currency={selectedAccount?.currency} />
+                          <EquityCurve data={equityCurve} currency={selectedAccount?.currency} />
                        </CollapsibleSection>
                        <CloseReasonChart tp_count={stats.tp_count} sl_count={stats.sl_count} manual_count={stats.manual_count} unknown_count={stats.unknown_count} manual_rate={stats.manual_rate || 0} />
                     </div>

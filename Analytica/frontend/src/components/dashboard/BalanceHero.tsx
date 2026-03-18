@@ -5,10 +5,11 @@ import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 interface EquityPoint {
   date: string;
   balance: number;
+  daily_pl: number;
 }
 
 interface Props {
-  balanceInitial: number;
+  currentBalance?: number | null;
   netProfit: number;
   totalTrades: number;
   currency?: string;
@@ -72,7 +73,7 @@ function fmtBalance(value: number | null, currency: string) {
 }
 
 export default function BalanceHero({
-  balanceInitial,
+  currentBalance = null,
   netProfit,
   totalTrades,
   currency = "USD",
@@ -84,24 +85,24 @@ export default function BalanceHero({
     ? equityCurve[equityCurve.length - 1].balance
     : null;
 
-  // Priority: live equity from MetaAPI > last equity curve point > computed
+  // Priority: live equity from MetaAPI > current balance from DB > last equity curve point
   const displayValue = liveEquity !== null
     ? liveEquity
-    : lastEquityBalance ?? (balanceInitial > 0 ? balanceInitial + netProfit : null);
+    : currentBalance ?? lastEquityBalance ?? null;
 
   const isLive = liveEquity !== null;
-
-  const capital = balanceInitial > 0 ? balanceInitial : null;
   const isPositive = netProfit > 0;
   const isNegative = netProfit < 0;
 
-  const pct = capital != null && capital > 0
-    ? (netProfit / capital) * 100
+  // Use first equity curve point as period start to compute return %
+  const periodStart = equityCurve.length > 0
+    ? equityCurve[0].balance - equityCurve[0].daily_pl
+    : null;
+  const pct = periodStart != null && periodStart > 0
+    ? (netProfit / periodStart) * 100
     : null;
 
-  const sparkData = balanceInitial > 0
-    ? [balanceInitial, ...equityCurve.map((p) => p.balance)]
-    : equityCurve.map((p) => p.balance);
+  const sparkData = equityCurve.map((p) => p.balance);
 
   const sinceDate = equityCurve.length > 0
     ? new Date(equityCurve[0].date).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })

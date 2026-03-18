@@ -3,6 +3,7 @@ from typing import List, Optional
 
 
 class AccountStatsResponse(BaseModel):
+    current_balance: Optional[float] = None
     # Phase 1
     total_trades: int
     net_profit: float
@@ -48,6 +49,7 @@ class EquityCurvePoint(BaseModel):
     balance: float
     daily_pl: float
     trades_count: int
+    intraday: bool = False
 
 
 class SymbolStatsRow(BaseModel):

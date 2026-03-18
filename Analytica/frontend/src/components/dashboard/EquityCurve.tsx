@@ -21,7 +21,6 @@ interface EquityCurvePoint {
 
 interface EquityCurveProps {
   data: EquityCurvePoint[];
-  balanceInitial: number;
   currency?: string;
 }
 
@@ -29,9 +28,10 @@ function formatBalance(value: number, currency: string) {
   return `${currency} ${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-export default function EquityCurve({ data, balanceInitial, currency = "USD" }: EquityCurveProps) {
-  const lastBalance = data.length > 0 ? data[data.length - 1].balance : balanceInitial;
-  const overallPnl = lastBalance - balanceInitial;
+export default function EquityCurve({ data, currency = "USD" }: EquityCurveProps) {
+  const firstBalance = data.length > 0 ? data[0].balance - data[0].daily_pl : 0;
+  const lastBalance = data.length > 0 ? data[data.length - 1].balance : 0;
+  const overallPnl = data.length > 0 ? lastBalance - firstBalance : 0;
   const isPositive = overallPnl >= 0;
 
   const strokeColor = isPositive ? "#10b981" : "#f43f5e";
@@ -124,12 +124,14 @@ export default function EquityCurve({ data, balanceInitial, currency = "USD" }: 
               }}
               labelFormatter={xLabelFormatter}
             />
-            <ReferenceLine
-              y={balanceInitial}
-              stroke="rgba(255,255,255,0.15)"
-              strokeDasharray="4 4"
-              label={{ value: "Inicial", fill: "#475569", fontSize: 10, position: "insideTopLeft" }}
-            />
+            {firstBalance > 0 && (
+              <ReferenceLine
+                y={firstBalance}
+                stroke="rgba(255,255,255,0.15)"
+                strokeDasharray="4 4"
+                label={{ value: "Inicio", fill: "#475569", fontSize: 10, position: "insideTopLeft" }}
+              />
+            )}
             <Area
               type="monotone"
               dataKey="balance"

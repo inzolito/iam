@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sparkles, Brain, TrendingUp, TrendingDown, AlertTriangle, Target, Clock, Zap, Sun, Moon, BarChart2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { API_BASE } from "../../config";

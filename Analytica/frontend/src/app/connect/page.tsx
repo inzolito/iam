@@ -156,7 +156,6 @@ export default function ConnectPage() {
   const [brokerServer, setBrokerServer] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [balanceInitial, setBalanceInitial] = useState("");
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -181,7 +180,7 @@ export default function ConnectPage() {
           broker_server: brokerServer,
           investor_password: password,
           currency: "USD",
-          balance_initial: balanceInitial ? parseFloat(balanceInitial) : 0,
+          balance_initial: 0,
         }),
       });
       if (!res.ok) {
@@ -291,60 +290,25 @@ export default function ConnectPage() {
                   </p>
                 </div>
 
-                {/* Initial balance */}
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                    <Hash size={11} className="text-amber-500/60" />
-                    Balance inicial (USD) <span className="text-slate-600 normal-case font-normal">— opcional</span>
-                  </label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="0.01"
-                    placeholder="10000.00"
-                    value={balanceInitial}
-                    onChange={(e) => setBalanceInitial(e.target.value)}
-                    className={inputClass}
-                  />
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Se usa para calcular el punto de inicio en la Equity Curve.
+                {error && (
+                  <p className="text-xs text-red-400 bg-red-500/8 border border-red-500/15 rounded-lg px-4 py-2.5">
+                    {error}
                   </p>
-                </div>
-
-                <AnimatePresence>
-                  {error && (
-                    <motion.p
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="text-xs text-red-400 bg-red-500/8 border border-red-500/15 rounded-lg px-4 py-2.5"
-                    >
-                      {error}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
+                )}
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 p-px transition-all duration-300 hover:shadow-[0_0_28px_rgba(245,158,11,0.35)] disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                  className="w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 p-px transition-all duration-300 hover:shadow-[0_0_28px_rgba(245,158,11,0.35)] disabled:opacity-60 disabled:cursor-not-allowed mt-2"
                 >
                   <div className="bg-slate-950 rounded-[11px] py-4 flex items-center justify-center gap-3 transition-colors duration-300 group-hover:bg-transparent group-disabled:bg-slate-950">
-                    {isLoading ? (
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full"
-                      />
-                    ) : (
-                      <>
-                        <span className="text-white font-bold uppercase tracking-widest text-xs">
-                          Vincular cuenta
-                        </span>
-                        <ArrowRight size={14} className="text-white/70" />
-                      </>
+                    {isLoading && (
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                     )}
+                    <span className="text-white font-bold uppercase tracking-widest text-xs">
+                      {isLoading ? "Vinculando..." : "Vincular cuenta"}
+                    </span>
+                    {!isLoading && <ArrowRight size={14} className="text-white/70" />}
                   </div>
                 </button>
               </form>

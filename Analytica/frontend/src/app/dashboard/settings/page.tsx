@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Settings, LogOut, Shield, Bell, Monitor } from "lucide-react";
+import { useTheme } from "../../../contexts/ThemeContext";
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
+  const { theme, toggle } = useTheme();
 
   const handleLogout = () => {
     localStorage.removeItem("analytica_token");
@@ -33,10 +32,10 @@ export default function SettingsPage() {
             <p className="text-xs text-slate-500 mt-0.5">Interfaz oscura optimizada para traders</p>
           </div>
           <button
-            onClick={() => setDarkMode((v) => !v)}
-            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${darkMode ? "bg-amber-500" : "bg-slate-700"}`}
+            onClick={toggle}
+            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${theme === "dark" ? "bg-amber-500" : "bg-slate-700"}`}
           >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${darkMode ? "translate-x-5" : ""}`} />
+            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${theme === "dark" ? "translate-x-5" : ""}`} />
           </button>
         </div>
       </div>
@@ -53,10 +52,10 @@ export default function SettingsPage() {
             <p className="text-xs text-slate-500 mt-0.5">Notificar cuando termine una sincronización</p>
           </div>
           <button
-            onClick={() => setNotifications((v) => !v)}
-            className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${notifications ? "bg-amber-500" : "bg-slate-700"}`}
+            disabled
+            className="relative w-11 h-6 rounded-full transition-colors duration-200 bg-slate-700 opacity-40 cursor-not-allowed"
           >
-            <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${notifications ? "translate-x-5" : ""}`} />
+            <span className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow" />
           </button>
         </div>
       </div>

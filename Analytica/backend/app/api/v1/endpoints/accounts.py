@@ -164,6 +164,7 @@ async def get_accounts(
                 created_at=acc.created_at,
                 broker_server=details.get("broker_server"),
                 mt5_login=details.get("mt5_login"),
+                sync_error=details.get("sync_error"),
             )
         )
     return accounts
@@ -235,7 +236,10 @@ async def regenerate_api_key(
     client_id, client_secret = await create_api_key(db, account_id)
     await db.commit()
 
-    ingest_url = "https://analytica-backend-419965139801.us-central1.run.app/api/v1/ingest/mt5"
+    ingest_url = os.getenv(
+        "INGEST_URL",
+        "https://analytica-backend-419965139801.us-central1.run.app/api/v1/ingest/mt5",
+    )
     return {
         "client_id": client_id,
         "client_secret": client_secret,
