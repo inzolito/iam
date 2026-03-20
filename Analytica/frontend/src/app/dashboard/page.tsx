@@ -177,10 +177,15 @@ export default function DashboardPage() {
         fetch(`${API_BASE}/api/v1/trading/correlation/${account.id}${q}`, { headers: authHeader }),
       ]);
 
-      if (statsRes.ok) {
-        const s = await statsRes.json();
-        setStats(s);
+      const s = statsRes.ok ? await statsRes.json() : null;
+
+      // Si el período filtrado no tiene trades, reintentar sin filtro de fecha
+      if (s && s.total_trades === 0 && (dFrom || dTo)) {
+        fetchStats(account, null, null);
+        return;
       }
+
+      if (s) setStats(s);
       if (equityRes.ok) setEquityCurve(await equityRes.json());
       if (symbolRes.ok) setSymbolData(await symbolRes.json());
       if (sessionRes.ok) setSessionData(await sessionRes.json());
