@@ -299,6 +299,8 @@ export default function DashboardPage() {
                       liveEquity={liveEquity}
                     />
 
+                    <OpenPositions positions={openPositions} currency={selectedAccount?.currency} />
+
                     {stats.total_trades === 0 ? (
                       <div className="rounded-2xl border border-slate-700/40 bg-slate-900/40 p-8 flex flex-col items-center gap-2 text-center">
                         <p className="text-sm font-bold text-white">Sin operaciones en este período</p>
@@ -306,7 +308,6 @@ export default function DashboardPage() {
                       </div>
                     ) : (
                       <>
-                        <OpenPositions positions={openPositions} currency={selectedAccount?.currency} />
 
                         {/* Stats — 4 compact cards */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
