@@ -311,68 +311,60 @@ export default function DashboardPage() {
 
                     <OpenPositions positions={openPositions} currency={selectedAccount?.currency} />
 
-                    {stats.total_trades === 0 ? (
-                      <p className="text-xs text-slate-600 text-center py-2">Sin operaciones cerradas en este período</p>
-                    ) : (
-                      <>
-
-                        {/* Stats — 4 compact cards */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          {[
-                            { label: "Win Rate",      value: stats.win_rate != null ? `${stats.win_rate.toFixed(1)}%` : "—",         positive: stats.win_rate != null ? stats.win_rate >= 50 : null },
-                            { label: "Profit Factor", value: stats.profit_factor?.toFixed(2) ?? "—",                                  positive: stats.profit_factor != null ? stats.profit_factor >= 1.5 : null },
-                            { label: "R:R",           value: stats.rr_ratio?.toFixed(2) ?? "—",                                       positive: stats.rr_ratio != null ? stats.rr_ratio >= 1 : null },
-                            { label: "Max Drawdown",  value: stats.max_drawdown_pct != null ? `${stats.max_drawdown_pct.toFixed(1)}%` : "—", positive: stats.max_drawdown_pct != null ? false : null },
-                          ].map((card) => (
-                            <div key={card.label} className="bg-white/5 border border-white/8 rounded-xl px-4 py-3">
-                              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{card.label}</p>
-                              <p className={`text-xl font-bold mt-1 tabular-nums ${card.positive === true ? "text-emerald-400" : card.positive === false ? "text-red-400" : "text-slate-300"}`}>
-                                {card.value}
-                              </p>
-                            </div>
-                          ))}
+                    {/* Stats — 4 compact cards */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { label: "Win Rate",      value: stats.win_rate != null ? `${stats.win_rate.toFixed(1)}%` : "—",         positive: stats.win_rate != null ? stats.win_rate >= 50 : null },
+                        { label: "Profit Factor", value: stats.profit_factor?.toFixed(2) ?? "—",                                  positive: stats.profit_factor != null ? stats.profit_factor >= 1.5 : null },
+                        { label: "R:R",           value: stats.rr_ratio?.toFixed(2) ?? "—",                                       positive: stats.rr_ratio != null ? stats.rr_ratio >= 1 : null },
+                        { label: "Max Drawdown",  value: stats.max_drawdown_pct != null ? `${stats.max_drawdown_pct.toFixed(1)}%` : "—", positive: stats.max_drawdown_pct != null ? false : null },
+                      ].map((card) => (
+                        <div key={card.label} className="bg-white/5 border border-white/8 rounded-xl px-4 py-3">
+                          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{card.label}</p>
+                          <p className={`text-xl font-bold mt-1 tabular-nums ${card.positive === true ? "text-emerald-400" : card.positive === false ? "text-red-400" : "text-slate-300"}`}>
+                            {card.value}
+                          </p>
                         </div>
+                      ))}
+                    </div>
 
+                    <CollapsibleSection title="Análisis de Símbolos" subtitle="Rendimiento detallado por activo">
+                      <SymbolTable data={symbolData} />
+                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="symbols" label="Análisis IA — Pares y Entradas" />
+                    </CollapsibleSection>
 
-                        <CollapsibleSection title="Análisis de Símbolos" subtitle="Rendimiento detallado por activo">
-                          <SymbolTable data={symbolData} />
-                          <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="symbols" label="Análisis IA — Pares y Entradas" />
-                        </CollapsibleSection>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       <CollapsibleSection title="Curva de Equity" subtitle="Evolución del Capital">
+                          <EquityCurve data={equityCurve} currency={selectedAccount?.currency} />
+                       </CollapsibleSection>
+                       <CloseReasonChart tp_count={stats.tp_count} sl_count={stats.sl_count} manual_count={stats.manual_count} unknown_count={stats.unknown_count} manual_rate={stats.manual_rate || 0} />
+                    </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                           <CollapsibleSection title="Curva de Equity" subtitle="Evolución del Capital">
-                              <EquityCurve data={equityCurve} currency={selectedAccount?.currency} />
-                           </CollapsibleSection>
-                           <CloseReasonChart tp_count={stats.tp_count} sl_count={stats.sl_count} manual_count={stats.manual_count} unknown_count={stats.unknown_count} manual_rate={stats.manual_rate || 0} />
-                        </div>
+                    <CollapsibleSection title="Métricas de Riesgo" subtitle="Drawdown, Expectancia y Rachas">
+                      <Phase2Metrics {...stats} currency={selectedAccount?.currency} />
+                    </CollapsibleSection>
 
-                        <CollapsibleSection title="Métricas de Riesgo" subtitle="Drawdown, Expectancia y Rachas">
-                          <Phase2Metrics {...stats} currency={selectedAccount?.currency} />
-                        </CollapsibleSection>
+                    <CollapsibleSection title="Dinámica de Sesiones" subtitle="PnL y Duración por Horario">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <SessionChart data={sessionData} currency={selectedAccount?.currency} />
+                        <HoldingTimeScatter data={tradesList} currency={selectedAccount?.currency} />
+                      </div>
+                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="sessions" label="Análisis IA — Sesiones" />
+                    </CollapsibleSection>
 
-                        <CollapsibleSection title="Dinámica de Sesiones" subtitle="PnL y Duración por Horario">
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <SessionChart data={sessionData} currency={selectedAccount?.currency} />
-                            <HoldingTimeScatter data={tradesList} currency={selectedAccount?.currency} />
-                          </div>
-                          <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="sessions" label="Análisis IA — Sesiones" />
-                        </CollapsibleSection>
+                    <CollapsibleSection title="Mapa de Calor" subtitle="Distribución Horaria">
+                      <HeatmapChart data={heatmapData} />
+                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="heatmap" label="Análisis IA — Optimización Horaria" />
+                    </CollapsibleSection>
 
-                        <CollapsibleSection title="Mapa de Calor" subtitle="Distribución Horaria">
-                          <HeatmapChart data={heatmapData} />
-                          <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="heatmap" label="Análisis IA — Optimización Horaria" />
-                        </CollapsibleSection>
+                    <CollapsibleSection title="Avanzado" subtitle="Monte Carlo, Sharpe y Z-Score" defaultOpen={false}>
+                      <Phase4Metrics {...stats} accountId={selectedAccount?.id ?? ""} apiBase={API_BASE} currency={selectedAccount?.currency} />
+                      <CalendarView accountId={selectedAccount?.id ?? ""} apiBase={API_BASE} currency={selectedAccount?.currency} />
+                    </CollapsibleSection>
 
-                        <CollapsibleSection title="Avanzado" subtitle="Monte Carlo, Sharpe y Z-Score" defaultOpen={false}>
-                          <Phase4Metrics {...stats} accountId={selectedAccount?.id ?? ""} apiBase={API_BASE} currency={selectedAccount?.currency} />
-                          <CalendarView accountId={selectedAccount?.id ?? ""} apiBase={API_BASE} currency={selectedAccount?.currency} />
-                        </CollapsibleSection>
-
-                        <CollapsibleSection title="Historial de Operaciones" subtitle="Trades cerrados" defaultOpen={false}>
-                          <TradeHistory accountId={selectedAccount?.id ?? ""} currency={selectedAccount?.currency} />
-                        </CollapsibleSection>
-                      </>
-                    )}
+                    <CollapsibleSection title="Historial de Operaciones" subtitle="Trades cerrados" defaultOpen={false}>
+                      <TradeHistory accountId={selectedAccount?.id ?? ""} currency={selectedAccount?.currency} />
+                    </CollapsibleSection>
                   </div>
                 )}
               </>
