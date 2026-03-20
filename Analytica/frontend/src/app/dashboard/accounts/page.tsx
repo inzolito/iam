@@ -30,7 +30,10 @@ export default function AccountsPage() {
   const [syncMsg, setSyncMsg] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [defaultId, setDefaultId] = useState<string>(() => localStorage.getItem("analytica_default_account") ?? "");
+  const [defaultId, setDefaultId] = useState<string>("");
+  useEffect(() => {
+    setDefaultId(localStorage.getItem("analytica_default_account") ?? "");
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("analytica_token");
