@@ -28,7 +28,7 @@ export default function SessionChart({ data, currency = "USD" }: { data: Session
         </span>
       </div>
 
-      <div className="flex-1 min-h-[200px] bg-slate-900/40 rounded-xl border border-white/5 p-4">
+    <div className="flex flex-col gap-4 h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />

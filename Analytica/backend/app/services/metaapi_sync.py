@@ -566,6 +566,8 @@ async def fetch_live_data(meta_id: str, region: Optional[str]) -> dict:
                     "current_price": float(p.get("currentPrice") or 0),
                     "pnl": float(p.get("profit") or 0),
                     "duration": dur,
+                    "sl": float(p["stopLoss"]) if p.get("stopLoss") else None,
+                    "tp": float(p["takeProfit"]) if p.get("takeProfit") else None,
                 })
 
             return {"equity": equity, "positions": positions, "region": resolved_region}

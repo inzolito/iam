@@ -87,7 +87,7 @@ export default function CalendarView({
   const maxAbs = Math.max(...data.map((d) => Math.abs(d.daily_pl)), 0.01);
 
   return (
-    <div className="bg-slate-900/60 border border-white/5 rounded-xl p-5">
+    <div className="w-full">
       <div className="flex items-center justify-between mb-4">
         <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">
           Calendario de Resultados

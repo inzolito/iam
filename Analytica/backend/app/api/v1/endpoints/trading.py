@@ -155,6 +155,52 @@ async def analyze_performance(
     return result
 
 
+@router.get("/history/{account_id}")
+async def get_trade_history(
+    account_id: UUID,
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    sort_by: str = Query("close_time"),
+    sort_dir: str = Query("desc"),
+    db: AsyncSession = Depends(get_db),
+):
+    await _verify_account(db, account_id)
+    return await StatsService.get_trade_history(
+        db, account_id, date_from, date_to, page, page_size, sort_by, sort_dir
+    )
+
+
+@router.get("/live/{account_id}")
+async def get_live_positions(
+    account_id: UUID,
+    token: str = Query(...),
+):
+    """REST endpoint polled every few seconds for live equity + open positions."""
+    email = decode_token_email(token)
+    if not email:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    from app.core.db import async_session as make_session
+    from app.services.metaapi_sync import fetch_live_data
+    from app.models.database import TradingAccount
+
+    async with make_session() as db:
+        row = (await db.execute(
+            select(TradingAccount).where(TradingAccount.id == account_id)
+        )).scalar_one_or_none()
+        if not row:
+            raise HTTPException(status_code=404, detail="Cuenta no encontrada")
+        meta_id = (row.connection_details or {}).get("metaapi_account_id")
+
+    if not meta_id:
+        return {"equity": None, "positions": []}
+
+    live = await fetch_live_data(meta_id, None)
+    return {"equity": live.get("equity"), "positions": live.get("positions", [])}
+
+
 # ── SSE real-time stream ───────────────────────────────────────────────────────
 
 @router.get("/stream/{account_id}")

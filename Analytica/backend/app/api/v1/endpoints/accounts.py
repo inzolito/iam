@@ -1,6 +1,6 @@
 import os
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.core.db import get_db
@@ -289,6 +289,32 @@ async def sync_account_endpoint(
     asyncio.create_task(_background_sync())
 
     return {"status": "started", "message": "Sincronización en curso. Puede tardar varios minutos la primera vez."}
+
+
+@router.patch("/{account_id}/rename", status_code=200)
+async def rename_account(
+    account_id: UUID,
+    payload: dict = Body(...),
+    db: AsyncSession = Depends(get_db),
+    current_user_email: str = Depends(get_current_user_email),
+):
+    """Renombra una cuenta existente."""
+    user = await _get_user(db, current_user_email)
+    result = await db.execute(
+        select(TradingAccount).where(
+            TradingAccount.id == account_id,
+            TradingAccount.user_id == user.id,
+        )
+    )
+    account = result.scalar_one_or_none()
+    if not account:
+        raise HTTPException(status_code=404, detail="Cuenta no encontrada.")
+    name = payload.get("name", "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="El nombre no puede estar vacío.")
+    account.name = name
+    await db.commit()
+    return {"message": "Cuenta renombrada."}
 
 
 @router.patch("/{account_id}/investor-password", status_code=200)

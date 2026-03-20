@@ -125,7 +125,7 @@ export default function Phase4Metrics({
       </div>
 
       {mc && mcChartData.length > 0 && (
-        <div className="bg-slate-900/60 border border-white/5 rounded-xl p-5">
+        <div className="w-full pt-4">
           <div className="flex items-center justify-between mb-4">
             <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">
               Monte Carlo — {mc.simulations.toLocaleString()} escenarios · {mc.forward_trades} trades

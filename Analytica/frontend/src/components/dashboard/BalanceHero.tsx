@@ -1,6 +1,7 @@
 "use client";
 
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface EquityPoint {
   date: string;
@@ -108,17 +109,18 @@ export default function BalanceHero({
     ? new Date(equityCurve[0].date).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })
     : null;
 
+  const { theme } = useTheme();
   const TrendIcon = isPositive ? TrendingUp : isNegative ? TrendingDown : Minus;
   const trendColor = isPositive ? "text-emerald-400" : isNegative ? "text-red-400" : "text-slate-400";
   const glowColor = isPositive ? "rgba(16,185,129,0.12)" : isNegative ? "rgba(244,63,94,0.08)" : "rgba(255,255,255,0.04)";
-  const borderColor = isPositive ? "rgba(16,185,129,0.2)" : isNegative ? "rgba(244,63,94,0.15)" : "rgba(255,255,255,0.05)";
+  const borderColorClass = isPositive ? "border-emerald-500/20" : isNegative ? "border-red-500/15" : "border-white/5";
+  const bgClass = theme === "light" ? "bg-white" : "bg-slate-950";
 
   return (
     <div
-      className="relative rounded-2xl overflow-hidden p-6 md:p-8"
+      className={`relative ${bgClass} rounded-2xl overflow-hidden p-4 md:p-5 border ${borderColorClass}`}
       style={{
-        background: `radial-gradient(ellipse 60% 100% at 10% 50%, ${glowColor}, transparent 70%), #0a0e1a`,
-        border: `1px solid ${borderColor}`,
+        backgroundImage: `radial-gradient(ellipse 60% 100% at 10% 50%, ${glowColor}, transparent 70%)`,
       }}
     >
       {/* Grid texture */}
@@ -149,13 +151,13 @@ export default function BalanceHero({
           <div className="flex items-baseline gap-3 flex-wrap">
             {displayValue !== null ? (
               <>
-                <span className="text-4xl md:text-5xl font-bold text-white tracking-tight tabular-nums leading-none">
+                <span className={`text-2xl md:text-3xl font-bold tracking-tight tabular-nums leading-none ${theme === "light" ? "text-slate-900" : "text-white"}`}>
                   {fmtBalance(displayValue, currency)}
                 </span>
                 <span className="text-lg font-bold text-slate-500">{currency}</span>
               </>
             ) : (
-              <span className="text-4xl md:text-5xl font-bold text-slate-600 tracking-tight leading-none">—</span>
+              <span className="text-2xl md:text-3xl font-bold text-slate-600 tracking-tight leading-none">—</span>
             )}
           </div>
 

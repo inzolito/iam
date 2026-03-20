@@ -23,14 +23,20 @@ El backend se despliega como un servicio serverless que escala automáticamente.
 ## 2. Actualización del Frontend (VM)
 El frontend corre en una VM de Google Compute Engine.
 
-### Proceso de actualización rápida:
-1.  Construir y empujar la imagen de Docker del frontend.
-2.  Acceder a la VM por SSH.
-3.  Detener el contenedor actual y arrancar el nuevo:
-    ```bash
-    docker stop frontend && docker rm frontend
-    bg-docker run -d --name frontend -p 80:3000 --restart always <IMAGE_PATH>
-    ```
+2.  **Uso de Scripts Automatizados (Recomendado)**:
+    -   En Windows (PowerShell): `./deploy-prod.ps1`
+    -   En Linux/Mac (Bash): `bash deploy-prod.sh`
+    Este script automatiza la construcción (`gcloud builds submit`), subida al registro y el reinicio del contenedor en la VM remota.
+
+3.  **Proceso Manual (Referencia)**:
+    1.  Construir y empujar la imagen: `gcloud builds submit --tag <IMAGE_PATH> ./frontend`
+    2.  Acceder a la VM por SSH: `gcloud compute ssh analytica-frontend-vm --zone=us-central1-a`
+    3.  Actualizar Docker: `gcloud auth configure-docker us-central1-docker.pkg.dev`
+    4.  Reiniciar contenedor:
+        ```bash
+        docker stop frontend && docker rm frontend
+        docker run -d --name frontend -p 80:3000 --restart always <IMAGE_PATH>
+        ```
 
 ## 3. Migraciones de Base de Datos (Alembic)
 Para cualquier cambio en la estructura de tablas, use Alembic:

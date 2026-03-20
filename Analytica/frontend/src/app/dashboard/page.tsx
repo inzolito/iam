@@ -24,6 +24,8 @@ import CalendarView from "../../components/dashboard/CalendarView";
 import BalanceHero from "../../components/dashboard/BalanceHero";
 import CorrelationMatrix from "../../components/dashboard/CorrelationMatrix";
 import OpenPositions from "../../components/dashboard/OpenPositions";
+import MarketSessions from "../../components/dashboard/MarketSessions";
+import TradeHistory from "../../components/dashboard/TradeHistory";
 import DateFilterBar from "../../components/dashboard/DateFilterBar";
 import CollapsibleSection from "../../components/dashboard/CollapsibleSection";
 import AIAnalysisAudit from "../../components/dashboard/AIAnalysisAudit";
@@ -240,6 +242,27 @@ export default function DashboardPage() {
     } catch {}
   }, [selectedAccount]);
 
+  // Live polling — equity + positions every 3s
+  useEffect(() => {
+    if (!selectedAccount) return;
+    const token = localStorage.getItem("analytica_token") ?? "";
+    const poll = async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/v1/trading/live/${selectedAccount.id}?token=${encodeURIComponent(token)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.equity != null) setLiveEquity(data.equity);
+          if (Array.isArray(data.positions)) setOpenPositions(data.positions);
+        }
+      } catch { /* ignore */ }
+    };
+    poll();
+    const id = setInterval(poll, 3000);
+    return () => clearInterval(id);
+  }, [selectedAccount]);
+
   const handleSync = useCallback(async () => {
     if (!selectedAccount) return;
     setSyncLoading(true);
@@ -300,11 +323,6 @@ export default function DashboardPage() {
                       {syncLoading ? "Sincronizando..." : "Reintentar sincronización"}
                     </button>
                   </div>
-                ) : stats.total_trades === 0 && hasTradesOverall ? (
-                  <div className="rounded-2xl border border-slate-700/40 bg-slate-900/40 p-10 flex flex-col items-center gap-4 max-w-sm mx-auto text-center">
-                    <p className="text-sm font-bold text-white">Sin operaciones en este período</p>
-                    <p className="text-xs text-slate-500">No hay trades cerrados en el rango de fechas seleccionado.</p>
-                  </div>
                 ) : (
                   <div className="space-y-6">
                     <BalanceHero
@@ -317,57 +335,76 @@ export default function DashboardPage() {
                       liveEquity={liveEquity}
                     />
 
-                    <OpenPositions positions={openPositions} currency={selectedAccount?.currency} />
+                    {stats.total_trades === 0 ? (
+                      <div className="rounded-2xl border border-slate-700/40 bg-slate-900/40 p-8 flex flex-col items-center gap-2 text-center">
+                        <p className="text-sm font-bold text-white">Sin operaciones en este período</p>
+                        <p className="text-xs text-slate-500">No hay trades cerrados en el rango de fechas seleccionado.</p>
+                      </div>
+                    ) : (
+                      <>
+                        <OpenPositions positions={openPositions} currency={selectedAccount?.currency} />
 
-                    <CollapsibleSection title="Estadísticas Clave" subtitle="Métricas Fundamentales de Rentabilidad" badge={stats.total_trades}>
-                      <div className="rounded-xl border border-white/5 bg-slate-900/40 divide-y divide-white/5">
-                        {[
-                          { label: "Win Rate", value: `${stats.win_rate?.toFixed(1)}%`, pos: stats.win_rate ? stats.win_rate >= 50 : undefined },
-                          { label: "Profit Factor", value: stats.profit_factor?.toFixed(2) || "—", pos: stats.profit_factor ? stats.profit_factor >= 1.5 : undefined },
-                          { label: "R:R Ratio", value: stats.rr_ratio?.toFixed(2) || "—", pos: stats.rr_ratio ? stats.rr_ratio >= 1 : undefined },
-                          { label: "Max Drawdown", value: `${stats.max_drawdown_pct?.toFixed(1)}%`, pos: false },
-                        ].map((row) => (
-                          <div key={row.label} className="flex items-center justify-between px-5 py-3">
-                            <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500">{row.label}</span>
-                            <span className={`text-sm font-bold ${row.pos === true ? "text-emerald-400" : row.pos === false ? "text-red-400" : "text-slate-300"}`}>{row.value}</span>
+                        {/* Stats — 4 compact cards */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {[
+                            { label: "Win Rate",      value: stats.win_rate != null ? `${stats.win_rate.toFixed(1)}%` : "—",         positive: stats.win_rate != null ? stats.win_rate >= 50 : null },
+                            { label: "Profit Factor", value: stats.profit_factor?.toFixed(2) ?? "—",                                  positive: stats.profit_factor != null ? stats.profit_factor >= 1.5 : null },
+                            { label: "R:R",           value: stats.rr_ratio?.toFixed(2) ?? "—",                                       positive: stats.rr_ratio != null ? stats.rr_ratio >= 1 : null },
+                            { label: "Max Drawdown",  value: stats.max_drawdown_pct != null ? `${stats.max_drawdown_pct.toFixed(1)}%` : "—", positive: stats.max_drawdown_pct != null ? false : null },
+                          ].map((card) => (
+                            <div key={card.label} className="bg-slate-900/40 border border-white/5 rounded-xl px-4 py-3">
+                              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{card.label}</p>
+                              <p className={`text-xl font-bold mt-1 tabular-nums ${card.positive === true ? "text-emerald-400" : card.positive === false ? "text-red-400" : "text-slate-300"}`}>
+                                {card.value}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Market Sessions */}
+                        <CollapsibleSection title="Sesiones de Mercado" subtitle="Estado en tiempo real" defaultOpen>
+                          <MarketSessions />
+                        </CollapsibleSection>
+
+                        <CollapsibleSection title="Análisis de Símbolos" subtitle="Rendimiento detallado por activo">
+                          <SymbolTable data={symbolData} />
+                          <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="symbols" label="Análisis IA — Pares y Entradas" />
+                        </CollapsibleSection>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           <CollapsibleSection title="Curva de Equity" subtitle="Evolución del Capital">
+                              <EquityCurve data={equityCurve} currency={selectedAccount?.currency} />
+                           </CollapsibleSection>
+                           <CloseReasonChart tp_count={stats.tp_count} sl_count={stats.sl_count} manual_count={stats.manual_count} unknown_count={stats.unknown_count} manual_rate={stats.manual_rate || 0} />
+                        </div>
+
+                        <CollapsibleSection title="Métricas de Riesgo" subtitle="Drawdown, Expectancia y Rachas">
+                          <Phase2Metrics {...stats} currency={selectedAccount?.currency} />
+                        </CollapsibleSection>
+
+                        <CollapsibleSection title="Dinámica de Sesiones" subtitle="PnL y Duración por Horario">
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <SessionChart data={sessionData} currency={selectedAccount?.currency} />
+                            <HoldingTimeScatter data={tradesList} currency={selectedAccount?.currency} />
                           </div>
-                        ))}
-                      </div>
-                    </CollapsibleSection>
+                          <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="sessions" label="Análisis IA — Sesiones" />
+                        </CollapsibleSection>
 
-                    <CollapsibleSection title="Análisis de Símbolos" subtitle="Rendimiento detallado por activo">
-                      <SymbolTable data={symbolData} />
-                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="symbols" label="Análisis IA — Pares y Entradas" />
-                    </CollapsibleSection>
+                        <CollapsibleSection title="Mapa de Calor" subtitle="Distribución Horaria">
+                          <HeatmapChart data={heatmapData} />
+                          <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="heatmap" label="Análisis IA — Optimización Horaria" />
+                        </CollapsibleSection>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                       <CollapsibleSection title="Curva de Equity" subtitle="Evolución del Capital">
-                          <EquityCurve data={equityCurve} currency={selectedAccount?.currency} />
-                       </CollapsibleSection>
-                       <CloseReasonChart tp_count={stats.tp_count} sl_count={stats.sl_count} manual_count={stats.manual_count} unknown_count={stats.unknown_count} manual_rate={stats.manual_rate || 0} />
-                    </div>
+                        <CollapsibleSection title="Avanzado" subtitle="Monte Carlo, Sharpe y Z-Score" defaultOpen={false}>
+                          <Phase4Metrics {...stats} accountId={selectedAccount?.id ?? ""} apiBase={API_BASE} currency={selectedAccount?.currency} />
+                          <CalendarView accountId={selectedAccount?.id ?? ""} apiBase={API_BASE} currency={selectedAccount?.currency} />
+                        </CollapsibleSection>
 
-                    <CollapsibleSection title="Métricas de Riesgo" subtitle="Drawdown, Expectancia y Rachas">
-                      <Phase2Metrics {...stats} currency={selectedAccount?.currency} />
-                    </CollapsibleSection>
-
-                    <CollapsibleSection title="Dinámica de Sesiones" subtitle="PnL y Duración por Horario">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <SessionChart data={sessionData} currency={selectedAccount?.currency} />
-                        <HoldingTimeScatter data={tradesList} currency={selectedAccount?.currency} />
-                      </div>
-                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="sessions" label="Análisis IA — Sesiones" />
-                    </CollapsibleSection>
-
-                    <CollapsibleSection title="Mapa de Calor" subtitle="Distribución Horaria">
-                      <HeatmapChart data={heatmapData} />
-                      <AIAnalysisAudit accountId={selectedAccount?.id ?? ""} dateFrom={dateFrom} dateTo={dateTo} analysisType="heatmap" label="Análisis IA — Optimización Horaria" />
-                    </CollapsibleSection>
-
-                    <CollapsibleSection title="Avanzado" subtitle="Monte Carlo, Sharpe y Z-Score" defaultOpen={false}>
-                      <Phase4Metrics {...stats} accountId={selectedAccount?.id ?? ""} apiBase={API_BASE} currency={selectedAccount?.currency} />
-                      <CalendarView accountId={selectedAccount?.id ?? ""} apiBase={API_BASE} currency={selectedAccount?.currency} />
-                    </CollapsibleSection>
+                        <CollapsibleSection title="Historial de Operaciones" subtitle="Trades cerrados" defaultOpen={false}>
+                          <TradeHistory accountId={selectedAccount?.id ?? ""} currency={selectedAccount?.currency} />
+                        </CollapsibleSection>
+                      </>
+                    )}
                   </div>
                 )}
               </>

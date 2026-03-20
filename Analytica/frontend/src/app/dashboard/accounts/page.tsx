@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Wallet, Plus, RefreshCw, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Wallet, Plus, RefreshCw, CheckCircle, Clock, AlertCircle, Pencil, Check, X } from "lucide-react";
 import Link from "next/link";
 import { API_BASE } from "../../../config";
 
@@ -28,6 +28,8 @@ export default function AccountsPage() {
   const [loading, setLoading] = useState(true);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [syncMsg, setSyncMsg] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
 
   useEffect(() => {
     const token = localStorage.getItem("analytica_token");
@@ -55,6 +57,21 @@ export default function AccountsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [router]);
+
+  const handleRename = async (accountId: string) => {
+    const token = localStorage.getItem("analytica_token");
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/accounts/${accountId}/rename`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName.trim() }),
+      });
+      if (res.ok) {
+        setAccounts((prev) => prev.map((a) => a.id === accountId ? { ...a, name: editName.trim() } : a));
+      }
+    } catch { /* silently ignore */ }
+    setEditingId(null);
+  };
 
   const handleSync = async (accountId: string) => {
     const token = localStorage.getItem("analytica_token");
@@ -117,8 +134,28 @@ export default function AccountsPage() {
             return (
               <div key={acc.id} className="bg-slate-900/60 border border-white/5 rounded-xl p-5 space-y-4">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-bold text-white">{acc.name}</p>
+                  <div className="flex-1 min-w-0">
+                    {editingId === acc.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          autoFocus
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") handleRename(acc.id); if (e.key === "Escape") setEditingId(null); }}
+                          className="bg-slate-800 border border-amber-500/40 rounded-lg px-2 py-1 text-sm text-white font-bold w-full focus:outline-none"
+                        />
+                        <button onClick={() => handleRename(acc.id)} className="text-emerald-400 hover:text-emerald-300"><Check size={14} /></button>
+                        <button onClick={() => setEditingId(null)} className="text-slate-500 hover:text-slate-300"><X size={14} /></button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group">
+                        <p className="text-sm font-bold text-white truncate">{acc.name}</p>
+                        <button
+                          onClick={() => { setEditingId(acc.id); setEditName(acc.name); }}
+                          className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-amber-400 transition-all"
+                        ><Pencil size={12} /></button>
+                      </div>
+                    )}
                     <p className="text-[10px] text-slate-500 mt-0.5 font-mono">{acc.id.slice(0, 8)}…</p>
                   </div>
                   <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest ${typeInfo.color}`}>

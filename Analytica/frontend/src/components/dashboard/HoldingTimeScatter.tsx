@@ -23,7 +23,7 @@ export default function HoldingTimeScatter({ data, currency = "USD" }: { data: T
       <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-4">
         Duración vs Resultado
       </p>
-      <div className="flex-1 min-h-[220px] bg-slate-900/40 rounded-xl border border-white/5 p-4">
+    <div className="flex flex-col gap-4 h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
           <ScatterChart margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />

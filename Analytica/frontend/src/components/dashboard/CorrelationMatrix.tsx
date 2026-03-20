@@ -96,11 +96,8 @@ export default function CorrelationMatrix({ data }: Props) {
                           className="py-1 px-1 text-center"
                         >
                           <div
-                            className="rounded-lg mx-auto flex items-center justify-center font-bold text-slate-300"
-                            style={{
-                              width: 56, height: 36,
-                              background: "rgba(148,163,184,0.12)",
-                            }}
+                            className="rounded-lg mx-auto flex items-center justify-center font-bold text-slate-300 bg-slate-400/10"
+                            style={{ width: 56, height: 36 }}
                           >
                             1.00
                           </div>
@@ -112,8 +109,8 @@ export default function CorrelationMatrix({ data }: Props) {
                       return (
                         <td key={colSym} className="py-1 px-1 text-center">
                           <div
-                            className="rounded-lg mx-auto flex items-center justify-center text-slate-600"
-                            style={{ width: 56, height: 36, background: "rgba(30,41,59,0.5)" }}
+                            className="rounded-lg mx-auto flex items-center justify-center text-slate-600 bg-slate-800/50"
+                            style={{ width: 56, height: 36 }}
                           >
                             —
                           </div>
@@ -145,15 +142,15 @@ export default function CorrelationMatrix({ data }: Props) {
         {/* Legend */}
         <div className="flex items-center gap-4 text-[10px] text-slate-500">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded" style={{ background: "rgba(52,211,153,0.7)" }} />
+            <div className="w-3 h-3 rounded bg-emerald-400/70" />
             <span>Correlación positiva</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded" style={{ background: "rgba(248,113,113,0.7)" }} />
+            <div className="w-3 h-3 rounded bg-red-400/70" />
             <span>Correlación negativa</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded" style={{ background: "rgba(148,163,184,0.12)" }} />
+            <div className="w-3 h-3 rounded bg-slate-400/10" />
             <span>Sin datos suficientes</span>
           </div>
         </div>

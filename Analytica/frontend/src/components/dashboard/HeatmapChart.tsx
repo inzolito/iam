@@ -30,7 +30,7 @@ export default function HeatmapChart({ data }: { data: HeatmapCell[] }) {
 
   return (
     <div className="overflow-x-auto pb-4">
-      <div className="min-w-[640px] bg-slate-900/40 rounded-xl border border-white/5 p-5">
+      <div className="min-w-[640px] w-full">
         <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold mb-6">
           Distribución de PnL por Horario
         </p>

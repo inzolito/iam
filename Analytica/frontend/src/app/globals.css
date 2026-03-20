@@ -49,32 +49,38 @@ body {
 
 /* Body */
 html.light body {
-  background: #f1f5f9;
+  background: #ffffff !important;
   color: #0f172a;
 }
 
-/* Backgrounds */
+/* Backgrounds - Pure white with subtle Apple shadow */
 html.light .bg-slate-950,
-html.light [class*="bg-slate-950"] { background-color: #f8fafc !important; }
-
+html.light [class^="bg-slate-950"], html.light [class*=" bg-slate-950"],
 html.light .bg-slate-900,
-html.light [class*="bg-slate-900"] { background-color: #f1f5f9 !important; }
-
-html.light .bg-slate-800,
-html.light [class*="bg-slate-800"] { background-color: #e2e8f0 !important; }
-
-html.light .bg-slate-700,
-html.light [class*="bg-slate-700"] { background-color: #cbd5e1 !important; }
-
-/* Semi-transparent backgrounds */
-html.light [class*="bg-slate-950\/"],
-html.light [class*="bg-slate-900\/"],
-html.light [class*="bg-slate-800\/"] {
-  background-color: rgba(241, 245, 249, 0.7) !important;
+html.light [class^="bg-slate-900"], html.light [class*=" bg-slate-900"] {
+  background-color: #ffffff !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  border-color: rgba(0,0,0,0.04) !important;
 }
 
-html.light [class*="bg-white\/"] {
-  background-color: rgba(15, 23, 42, 0.06) !important;
+html.light .bg-slate-800,
+html.light [class^="bg-slate-800"], html.light [class*=" bg-slate-800"] { background-color: #f8fafc !important; }
+
+html.light .bg-slate-700,
+html.light [class^="bg-slate-700"], html.light [class*=" bg-slate-700"] { background-color: #f1f5f9 !important; }
+
+/* Semi-transparent backgrounds */
+html.light [class^="bg-slate-950\/"], html.light [class*=" bg-slate-950\/"],
+html.light [class^="bg-slate-900\/"], html.light [class*=" bg-slate-900\/"],
+html.light [class^="bg-slate-800\/"], html.light [class*=" bg-slate-800\/"] {
+  background-color: rgba(248, 250, 252, 0.6) !important;
+}
+
+html.light [class^="bg-white\/"], html.light [class*=" bg-white\/"] {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+html.light [class^="hover\:bg-white\/"]:hover, html.light [class*=" hover\:bg-white\/"]:hover {
+  background-color: rgba(0, 0, 0, 0.05) !important;
 }
 
 /* Text */
@@ -83,34 +89,53 @@ html.light .text-slate-100         { color: #1e293b !important; }
 html.light .text-slate-200         { color: #334155 !important; }
 html.light .text-slate-300         { color: #475569 !important; }
 html.light .text-slate-400         { color: #64748b !important; }
-html.light .text-slate-500         { color: #94a3b8 !important; }
+html.light .text-slate-500         { color: #64748b !important; }
 html.light .text-slate-600         { color: #94a3b8 !important; }
-html.light .text-slate-700         { color: #94a3b8 !important; }
+html.light .text-slate-700         { color: #cbd5e1 !important; }
 
-/* Borders */
-html.light [class*="border-white\/"]   { border-color: rgba(15,23,42,0.12) !important; }
-html.light [class*="border-slate-800"]  { border-color: #cbd5e1 !important; }
-html.light [class*="border-slate-700"]  { border-color: #e2e8f0 !important; }
-
-/* Dividers */
-html.light [class*="divide-white\/"] > * + * { border-color: rgba(15,23,42,0.08) !important; }
+/* Borders & Dividers */
+html.light [class^="border-white\/"], html.light [class*=" border-white\/"],
+html.light [class^="border-slate-800"], html.light [class*=" border-slate-800"] {
+  border-color: rgba(0,0,0,0.06) !important;
+}
+html.light [class^="hover\:border-white\/"]:hover, html.light [class*=" hover\:border-white\/"]:hover {
+  border-color: rgba(0,0,0,0.1) !important;
+}
+html.light [class^="divide-white\/"] > * + *, html.light [class*=" divide-white\/"] > * + *,
+html.light [class^="divide-slate-800"] > * + *, html.light [class*=" divide-slate-800"] > * + * {
+  border-color: rgba(0,0,0,0.06) !important;
+}
 
 /* Input fields */
-html.light input,
-html.light textarea {
-  background-color: #f8fafc !important;
+html.light input:not(.bg-transparent),
+html.light textarea:not(.bg-transparent) {
+  background-color: #ffffff !important;
+  border-color: rgba(0,0,0,0.1) !important;
+}
+html.light input, html.light textarea {
   color: #0f172a !important;
-  border-color: rgba(15,23,42,0.15) !important;
 }
 
 html.light input::placeholder { color: #94a3b8 !important; }
 
 /* Recharts — chart lines/grid */
-html.light .recharts-cartesian-grid line { stroke: rgba(15,23,42,0.08) !important; }
+html.light .recharts-cartesian-grid line { stroke: rgba(0,0,0,0.05) !important; }
 html.light .recharts-text { fill: #64748b !important; }
+html.light .recharts-reference-line line { stroke: rgba(0,0,0,0.1) !important; }
+html.light .recharts-reference-line .recharts-text { fill: #64748b !important; }
+
+html.light .recharts-default-tooltip {
+  background-color: #ffffff !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+}
+html.light .recharts-tooltip-item {
+  color: #0f172a !important;
+}
 
 /* ThemeToggle itself stays visible */
 html.light .fixed.bottom-6.right-6 {
-  background-color: #f1f5f9 !important;
-  border-color: #cbd5e1 !important;
+  background-color: #ffffff !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
 }

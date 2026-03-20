@@ -659,6 +659,95 @@ class StatsService:
         matrix.sort(key=lambda x: abs(x["correlation"]), reverse=True)
         return {"symbols": symbols, "matrix": matrix}
 
+    # ── Trade History (full detail, paginated) ─────────────────────────────────
+    @staticmethod
+    async def get_trade_history(
+        db: AsyncSession,
+        account_id: UUID,
+        date_from: Optional[date] = None,
+        date_to: Optional[date] = None,
+        page: int = 1,
+        page_size: int = 50,
+        sort_by: str = "close_time",
+        sort_dir: str = "desc",
+    ) -> dict:
+        date_filters = StatsService._date_filters(date_from, date_to)
+        base_where = [Trade.account_id == account_id] + date_filters
+
+        count_result = await db.execute(
+            select(func.count(Trade.id)).where(and_(*base_where))
+        )
+        total = count_result.scalar() or 0
+
+        sort_cols = {
+            "open_time":   Trade.open_time,
+            "close_time":  Trade.close_time,
+            "side":        Trade.side,
+            "volume":      Trade.volume,
+            "open_price":  Trade.open_price,
+            "close_price": Trade.close_price,
+            "net_profit":  Trade.net_profit,
+        }
+        col   = sort_cols.get(sort_by, Trade.close_time)
+        order = col.desc() if sort_dir == "desc" else col.asc()
+
+        result = await db.execute(
+            select(
+                Trade.id,
+                Trade.external_ticket_id,
+                Trade.open_time,
+                Trade.close_time,
+                Trade.side,
+                Trade.volume,
+                Trade.open_price,
+                Trade.close_price,
+                Trade.sl_price,
+                Trade.tp_price,
+                Trade.net_profit,
+                Trade.commission,
+                Trade.swap,
+                Trade.comment,
+                Trade.close_reason,
+                Trade.duration_seconds,
+                Instrument.ticker,
+            )
+            .join(Instrument, Trade.instrument_id == Instrument.id)
+            .where(and_(*base_where))
+            .order_by(order)
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+
+        trades = []
+        for row in result.all():
+            trades.append({
+                "id":               str(row.id),
+                "ticket":           row.external_ticket_id or "",
+                "ticker":           row.ticker,
+                "open_time":        row.open_time.isoformat() if row.open_time else None,
+                "close_time":       row.close_time.isoformat() if row.close_time else None,
+                "side":             row.side or "BUY",
+                "volume":           float(row.volume or 0),
+                "open_price":       float(row.open_price or 0),
+                "close_price":      float(row.close_price or 0),
+                "sl":               float(row.sl_price) if row.sl_price else None,
+                "tp":               float(row.tp_price) if row.tp_price else None,
+                "net_profit":       float(row.net_profit or 0),
+                "commission":       float(row.commission or 0),
+                "swap":             float(row.swap or 0),
+                "comment":          row.comment or "",
+                "close_reason":     row.close_reason or "",
+                "duration_seconds": int(row.duration_seconds or 0),
+            })
+
+        return {
+            "total":     total,
+            "page":      page,
+            "page_size": page_size,
+            "pages":     max(1, (total + page_size - 1) // page_size),
+            "trades":    trades,
+        }
+
     # ── Phase 4: Monte Carlo ───────────────────────────────────────────────────
     @staticmethod
     async def run_monte_carlo(
