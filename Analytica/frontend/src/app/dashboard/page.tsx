@@ -137,6 +137,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(false);
   const [totalTradesEver, setTotalTradesEver] = useState<number | null>(null);
+  const [overallBalance, setOverallBalance] = useState<number | null>(null);
   
   const [inlinePassword, setInlinePassword] = useState("");
   const [showInlinePw, setShowInlinePw] = useState(false);
@@ -205,7 +206,12 @@ export default function DashboardPage() {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then((r) => r.ok ? r.json() : null)
-      .then((s) => { if (s) setTotalTradesEver(s.total_trades ?? 0); })
+      .then((s) => {
+        if (s) {
+          setTotalTradesEver(s.total_trades ?? 0);
+          setOverallBalance(s.current_balance ?? null);
+        }
+      })
       .catch(() => {});
   }, [selectedAccount]);
 
@@ -251,7 +257,7 @@ export default function DashboardPage() {
         const token2 = localStorage.getItem("analytica_token");
         fetch(`${API_BASE}/api/v1/trading/stats/${selectedAccount.id}`, {
           headers: token2 ? { Authorization: `Bearer ${token2}` } : {},
-        }).then((r) => r.ok ? r.json() : null).then((s) => { if (s) setTotalTradesEver(s.total_trades ?? 0); }).catch(() => {});
+        }).then((r) => r.ok ? r.json() : null).then((s) => { if (s) { setTotalTradesEver(s.total_trades ?? 0); setOverallBalance(s.current_balance ?? null); } }).catch(() => {});
       }, 15000);
     } catch {} finally { setSyncLoading(false); }
   }, [selectedAccount, fetchStats, reloadAccounts, dateFrom, dateTo]);
@@ -290,8 +296,12 @@ export default function DashboardPage() {
                     </CollapsibleSection>
 
                     <BalanceHero
-                      currentBalance={stats.current_balance}
-                      netProfit={stats.net_profit}
+                      currentBalance={overallBalance ?? stats.current_balance}
+                      netProfit={
+                        liveEquity !== null && overallBalance !== null
+                          ? liveEquity - overallBalance
+                          : stats.net_profit
+                      }
                       totalTrades={stats.total_trades}
                       currency={selectedAccount?.currency}
                       accountName={selectedAccount?.name}
@@ -302,10 +312,7 @@ export default function DashboardPage() {
                     <OpenPositions positions={openPositions} currency={selectedAccount?.currency} />
 
                     {stats.total_trades === 0 ? (
-                      <div className="rounded-2xl border border-slate-700/40 bg-slate-900/40 p-8 flex flex-col items-center gap-2 text-center">
-                        <p className="text-sm font-bold text-white">Sin operaciones en este período</p>
-                        <p className="text-xs text-slate-500">No hay trades cerrados en el rango de fechas seleccionado.</p>
-                      </div>
+                      <p className="text-xs text-slate-600 text-center py-2">Sin operaciones cerradas en este período</p>
                     ) : (
                       <>
 
