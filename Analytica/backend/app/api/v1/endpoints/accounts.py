@@ -186,7 +186,7 @@ async def link_trading_account_direct(
 
     account = TradingAccount(
         user_id=user.id,
-        name=f"MT5-{payload.account_number}",
+        name=payload.alias or f"MT5-{payload.account_number}",
         platform="MT5",
         connection_type="DIRECT",
         currency=payload.currency,

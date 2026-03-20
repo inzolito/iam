@@ -155,6 +155,7 @@ export default function ConnectPage() {
   const [accountNumber, setAccountNumber] = useState("");
   const [brokerServer, setBrokerServer] = useState("");
   const [password, setPassword] = useState("");
+  const [alias, setAlias] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -181,6 +182,7 @@ export default function ConnectPage() {
           investor_password: password,
           currency: "USD",
           balance_initial: 0,
+          alias: alias || undefined,
         }),
       });
       if (!res.ok) {
@@ -234,6 +236,21 @@ export default function ConnectPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="px-8 py-7 space-y-5">
+                {/* Alias */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <Hash size={11} className="text-amber-500/60" />
+                    Alias (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Cuenta FTMO Principal"
+                    value={alias}
+                    onChange={(e) => setAlias(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+
                 {/* Account number */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">

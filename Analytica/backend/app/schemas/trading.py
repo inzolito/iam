@@ -48,6 +48,7 @@ class TradingAccountLinkDirectRequest(BaseModel):
     investor_password: str = Field(..., example="inv_pass_123")
     currency: str = Field("USD", example="USD")
     balance_initial: float = Field(0.0, example=10000.0)
+    alias: Optional[str] = Field(None, example="Cuenta FTMO Principal")
 
 
 class TradingAccountLinkDirectResponse(BaseModel):
