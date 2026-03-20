@@ -30,6 +30,7 @@ import DateFilterBar from "../../components/dashboard/DateFilterBar";
 import CollapsibleSection from "../../components/dashboard/CollapsibleSection";
 import AIAnalysisAudit from "../../components/dashboard/AIAnalysisAudit";
 import { useDateFilter } from "../../contexts/DateFilterContext";
+import { useAccount } from "../../contexts/AccountContext";
 import { API_BASE } from "../../config";
 
 interface Account {
@@ -123,8 +124,7 @@ interface HeatmapCell {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const { accounts, selectedAccount, reloadAccounts: ctxReload } = useAccount();
   const [stats, setStats] = useState<Stats | null>(null);
   const [equityCurve, setEquityCurve] = useState<EquityPoint[]>([]);
   const [symbolData, setSymbolData] = useState<SymbolRow[]>([]);
@@ -148,36 +148,14 @@ export default function DashboardPage() {
   const { dateFrom, dateTo } = useDateFilter();
 
   useEffect(() => {
-    const load = async () => {
-      const token = localStorage.getItem("analytica_token");
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
-      try {
-        const res = await fetch(`${API_BASE}/api/v1/accounts/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const raw: Account[] = await res.json();
-          const data = raw.filter((a, i, arr) => {
-            const key = a.platform && a.broker_server && a.mt5_login ? `${a.platform}:${a.broker_server}:${a.mt5_login}` : a.id;
-            return arr.findIndex((b) => (b.platform && b.broker_server && b.mt5_login ? `${b.platform}:${b.broker_server}:${b.mt5_login}` : b.id) === key) === i;
-          });
-          if (data.length === 0) {
-            router.replace("/connect");
-            return;
-          }
-          setAccounts(data);
-          setSelectedAccount(data[0]);
-        }
-      } catch {
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    load();
+    const token = localStorage.getItem("analytica_token");
+    if (!token) { router.replace("/login"); return; }
   }, [router]);
+
+  useEffect(() => {
+    if (accounts.length === 0 && !isLoading) router.replace("/connect");
+    else if (accounts.length > 0) setIsLoading(false);
+  }, [accounts, isLoading, router]);
 
   const fetchStats = useCallback(async (account: Account, dFrom: string | null = null, dTo: string | null = null) => {
     setStatsLoading(true);
@@ -221,26 +199,8 @@ export default function DashboardPage() {
   }, [selectedAccount, fetchStats, dateFrom, dateTo]);
 
   const reloadAccounts = useCallback(async () => {
-    const token = localStorage.getItem("analytica_token");
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_BASE}/api/v1/accounts/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const raw: Account[] = await res.json();
-        const data = raw.filter((a, i, arr) => {
-          const key = a.platform && a.broker_server && a.mt5_login ? `${a.platform}:${a.broker_server}:${a.mt5_login}` : a.id;
-          return arr.findIndex((b) => (b.platform && b.broker_server && b.mt5_login ? `${b.platform}:${b.broker_server}:${b.mt5_login}` : b.id) === key) === i;
-        });
-        setAccounts(data);
-        if (selectedAccount) {
-          const updated = data.find((a) => a.id === selectedAccount.id);
-          if (updated) setSelectedAccount(updated);
-        }
-      }
-    } catch {}
-  }, [selectedAccount]);
+    await ctxReload();
+  }, [ctxReload]);
 
   // Live polling — equity + positions every 3s
   useEffect(() => {
@@ -291,22 +251,6 @@ export default function DashboardPage() {
         ) : (
           <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
             <DateFilterBar />
-            
-            {accounts.length > 1 && (
-              <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-                {accounts.map((acc) => (
-                  <button
-                    key={acc.id}
-                    onClick={() => setSelectedAccount(acc)}
-                    className={`text-[9px] uppercase tracking-widest px-4 py-2 rounded-lg border transition-all font-bold ${
-                      selectedAccount?.id === acc.id ? "border-amber-500/50 bg-amber-500/5 text-amber-400" : "border-white/5 bg-slate-900/40 text-slate-500 hover:text-white"
-                    }`}
-                  >
-                    {acc.name}
-                  </button>
-                ))}
-              </div>
-            )}
 
             {stats && (
               <>
@@ -325,6 +269,10 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="space-y-6">
+                    <CollapsibleSection title="Sesiones de Mercado" defaultOpen>
+                      <MarketSessions />
+                    </CollapsibleSection>
+
                     <BalanceHero
                       currentBalance={stats.current_balance}
                       netProfit={stats.net_profit}
@@ -352,7 +300,7 @@ export default function DashboardPage() {
                             { label: "R:R",           value: stats.rr_ratio?.toFixed(2) ?? "—",                                       positive: stats.rr_ratio != null ? stats.rr_ratio >= 1 : null },
                             { label: "Max Drawdown",  value: stats.max_drawdown_pct != null ? `${stats.max_drawdown_pct.toFixed(1)}%` : "—", positive: stats.max_drawdown_pct != null ? false : null },
                           ].map((card) => (
-                            <div key={card.label} className="bg-slate-900/40 border border-white/5 rounded-xl px-4 py-3">
+                            <div key={card.label} className="bg-white/5 border border-white/8 rounded-xl px-4 py-3">
                               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{card.label}</p>
                               <p className={`text-xl font-bold mt-1 tabular-nums ${card.positive === true ? "text-emerald-400" : card.positive === false ? "text-red-400" : "text-slate-300"}`}>
                                 {card.value}
@@ -361,10 +309,6 @@ export default function DashboardPage() {
                           ))}
                         </div>
 
-                        {/* Market Sessions */}
-                        <CollapsibleSection title="Sesiones de Mercado" subtitle="Estado en tiempo real" defaultOpen>
-                          <MarketSessions />
-                        </CollapsibleSection>
 
                         <CollapsibleSection title="Análisis de Símbolos" subtitle="Rendimiento detallado por activo">
                           <SymbolTable data={symbolData} />

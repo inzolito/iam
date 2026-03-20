@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Wallet, Plus, RefreshCw, CheckCircle, Clock, AlertCircle, Pencil, Check, X } from "lucide-react";
+import { Wallet, Plus, RefreshCw, CheckCircle, Clock, AlertCircle, Pencil, Check, X, Star } from "lucide-react";
 import Link from "next/link";
 import { API_BASE } from "../../../config";
 
@@ -30,6 +30,7 @@ export default function AccountsPage() {
   const [syncMsg, setSyncMsg] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [defaultId, setDefaultId] = useState<string>(() => localStorage.getItem("analytica_default_account") ?? "");
 
   useEffect(() => {
     const token = localStorage.getItem("analytica_token");
@@ -57,6 +58,11 @@ export default function AccountsPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [router]);
+
+  const handleSetDefault = (accountId: string) => {
+    localStorage.setItem("analytica_default_account", accountId);
+    setDefaultId(accountId);
+  };
 
   const handleRename = async (accountId: string) => {
     const token = localStorage.getItem("analytica_token");
@@ -181,8 +187,8 @@ export default function AccountsPage() {
                   </div>
                 </div>
 
-                {acc.connection_type === "DIRECT" && (
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                <div className="pt-2 border-t border-white/5 flex items-center justify-between gap-2">
+                  {acc.connection_type === "DIRECT" && (
                     <button
                       onClick={() => handleSync(acc.id)}
                       disabled={syncingId === acc.id}
@@ -191,11 +197,21 @@ export default function AccountsPage() {
                       <RefreshCw size={11} className={syncingId === acc.id ? "animate-spin" : ""} />
                       {syncingId === acc.id ? "Sincronizando..." : "Sincronizar"}
                     </button>
-                    {syncMsg[acc.id] && (
-                      <span className="text-[10px] text-slate-400">{syncMsg[acc.id]}</span>
-                    )}
-                  </div>
-                )}
+                  )}
+                  {syncMsg[acc.id] && (
+                    <span className="text-[10px] text-slate-400">{syncMsg[acc.id]}</span>
+                  )}
+                  <button
+                    onClick={() => handleSetDefault(acc.id)}
+                    className={`ml-auto flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                      defaultId === acc.id ? "text-amber-400" : "text-slate-600 hover:text-slate-400"
+                    }`}
+                    title="Establecer como cuenta predeterminada"
+                  >
+                    <Star size={11} className={defaultId === acc.id ? "fill-amber-400" : ""} />
+                    {defaultId === acc.id ? "Predeterminada" : "Predeterminar"}
+                  </button>
+                </div>
               </div>
             );
           })}

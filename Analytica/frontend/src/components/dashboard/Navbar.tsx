@@ -1,39 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { User, Bell, Search, LogOut, Menu, CheckCircle, Circle } from "lucide-react";
-import { API_BASE } from "../../config";
+import { User, Bell, Search, LogOut, Menu, ChevronDown, CheckCircle } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useAccount } from "../../contexts/AccountContext";
 
 interface NavbarProps {
   onMenuToggle: () => void;
 }
 
 export default function Navbar({ onMenuToggle }: NavbarProps) {
-  const router = useRouter();
+  const router    = useRouter();
   const { theme } = useTheme();
+  const { accounts, selectedAccount, setSelectedAccount } = useAccount();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [accountName, setAccountName] = useState<string | null>(null);
-  const [hasAccount, setHasAccount] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem("analytica_token");
-    if (!token) return;
-    fetch(`${API_BASE}/api/v1/accounts/`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.ok ? r.json() : [])
-      .then((accounts: { name: string }[]) => {
-        if (accounts.length > 0) {
-          setHasAccount(true);
-          setAccountName(accounts[0].name);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("analytica_token");
     router.replace("/login");
+  };
+
+  const handleSelectAccount = (acc: typeof accounts[0]) => {
+    setSelectedAccount(acc);
+    setMenuOpen(false);
   };
 
   return (
@@ -42,7 +32,6 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
       <button
         onClick={onMenuToggle}
         className="lg:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors flex-shrink-0"
-        aria-label="Abrir menú"
       >
         <Menu size={20} />
       </button>
@@ -64,35 +53,57 @@ export default function Navbar({ onMenuToggle }: NavbarProps) {
         </button>
 
         <div className="flex items-center gap-3 pl-4 md:pl-6 border-l border-white/5">
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-white tracking-wide leading-tight">
-              {accountName ?? "Analytica"}
-            </p>
-            <div className="flex items-center gap-1.5 justify-end mt-0.5">
-              {hasAccount ? (
-                <CheckCircle className="w-2.5 h-2.5 text-emerald-500" />
-              ) : (
-                <Circle className="w-2.5 h-2.5 text-slate-600" />
-              )}
-              <p className={`text-[9px] font-bold uppercase tracking-widest ${hasAccount ? "text-emerald-500" : "text-slate-500"}`}>
-                {hasAccount ? "Cuenta vinculada" : "Sin cuenta"}
-              </p>
-            </div>
-          </div>
-
-          {/* User icon + dropdown */}
+          {/* Account selector */}
           <div className="relative">
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              className={`w-9 h-9 rounded-full flex items-center justify-center overflow-hidden shadow-lg hover:border-amber-500/50 transition-all duration-300 ${theme === "light" ? "bg-slate-200 border border-slate-300" : "bg-gradient-to-br from-slate-800 to-slate-950 border border-white/10 shadow-black/50"}`}
+              className="flex items-center gap-2 group"
             >
-              <User className={`w-5 h-5 ${theme === "light" ? "text-slate-500" : "text-slate-400"}`} />
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold text-white tracking-wide leading-tight">
+                  {selectedAccount?.name ?? "Analytica"}
+                </p>
+                <div className="flex items-center gap-1.5 justify-end mt-0.5">
+                  <CheckCircle className="w-2.5 h-2.5 text-emerald-500" />
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-500">
+                    {selectedAccount?.platform ?? "Sin cuenta"}
+                  </p>
+                </div>
+              </div>
+
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-lg border transition-all duration-300 group-hover:border-amber-500/50 ${theme === "light" ? "bg-slate-200 border-slate-300" : "bg-gradient-to-br from-slate-800 to-slate-950 border-white/10"}`}>
+                <User className={`w-4 h-4 ${theme === "light" ? "text-slate-500" : "text-slate-400"}`} />
+              </div>
+
+              {accounts.length > 1 && (
+                <ChevronDown size={13} className={`text-slate-500 transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+              )}
             </button>
 
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 mt-2 w-44 bg-slate-900 border border-white/8 rounded-xl shadow-2xl shadow-black/60 z-20 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-52 bg-slate-900 border border-white/8 rounded-xl shadow-2xl shadow-black/60 z-20 overflow-hidden">
+                  {/* Account list */}
+                  {accounts.length > 1 && (
+                    <div className="border-b border-white/5 py-1">
+                      {accounts.map((acc) => (
+                        <button
+                          key={acc.id}
+                          onClick={() => handleSelectAccount(acc)}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs transition-colors ${
+                            selectedAccount?.id === acc.id
+                              ? "text-amber-400 bg-amber-500/8"
+                              : "text-slate-300 hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${selectedAccount?.id === acc.id ? "bg-amber-400" : "bg-slate-600"}`} />
+                          <span className="font-medium truncate">{acc.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {/* Logout */}
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-4 py-3 text-xs text-slate-300 hover:bg-white/5 hover:text-red-400 transition-colors"
