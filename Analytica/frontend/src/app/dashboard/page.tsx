@@ -136,7 +136,7 @@ export default function DashboardPage() {
   const [openPositions, setOpenPositions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(false);
-  const [hasTradesOverall, setHasTradesOverall] = useState(false);
+  const [totalTradesEver, setTotalTradesEver] = useState<number | null>(null);
   
   const [inlinePassword, setInlinePassword] = useState("");
   const [showInlinePw, setShowInlinePw] = useState(false);
@@ -179,8 +179,6 @@ export default function DashboardPage() {
       if (statsRes.ok) {
         const s = await statsRes.json();
         setStats(s);
-        // Check if account has trades overall once per period or sync
-        if (s.total_trades > 0) setHasTradesOverall(true);
       }
       if (equityRes.ok) setEquityCurve(await equityRes.json());
       if (symbolRes.ok) setSymbolData(await symbolRes.json());
@@ -197,6 +195,19 @@ export default function DashboardPage() {
   useEffect(() => {
     if (selectedAccount) fetchStats(selectedAccount, dateFrom, dateTo);
   }, [selectedAccount, fetchStats, dateFrom, dateTo]);
+
+  // Fetch total trades ever (no date filter) to decide whether to show sync screen
+  useEffect(() => {
+    if (!selectedAccount) return;
+    const token = localStorage.getItem("analytica_token");
+    setTotalTradesEver(null);
+    fetch(`${API_BASE}/api/v1/trading/stats/${selectedAccount.id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((s) => { if (s) setTotalTradesEver(s.total_trades ?? 0); })
+      .catch(() => {});
+  }, [selectedAccount]);
 
   const reloadAccounts = useCallback(async () => {
     await ctxReload();
@@ -236,6 +247,11 @@ export default function DashboardPage() {
       setTimeout(async () => {
         await reloadAccounts();
         fetchStats(selectedAccount, dateFrom, dateTo);
+        // Re-check total trades to exit sync screen if trades now exist
+        const token2 = localStorage.getItem("analytica_token");
+        fetch(`${API_BASE}/api/v1/trading/stats/${selectedAccount.id}`, {
+          headers: token2 ? { Authorization: `Bearer ${token2}` } : {},
+        }).then((r) => r.ok ? r.json() : null).then((s) => { if (s) setTotalTradesEver(s.total_trades ?? 0); }).catch(() => {});
       }, 15000);
     } catch {} finally { setSyncLoading(false); }
   }, [selectedAccount, fetchStats, reloadAccounts, dateFrom, dateTo]);
@@ -254,7 +270,7 @@ export default function DashboardPage() {
 
             {stats && (
               <>
-                {stats.total_trades === 0 && !hasTradesOverall ? (
+                {totalTradesEver === 0 ? (
                   <div className="rounded-2xl border border-slate-700/40 bg-slate-900/40 p-10 flex flex-col items-center gap-6 max-w-sm mx-auto text-center">
                     <p className="text-sm font-bold text-white">Sincroniza tu historial</p>
                     {selectedAccount?.sync_error && (
