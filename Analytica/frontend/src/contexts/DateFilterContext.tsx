@@ -70,16 +70,17 @@ export function computeDates(
 }
 
 const DateFilterContext = createContext<DateFilterContextType>({
-  period: "all",
+  period: "today",
   dateFrom: null,
   dateTo: null,
   setPeriod: () => {},
 });
 
 export function DateFilterProvider({ children }: { children: ReactNode }) {
-  const [period, setPeriodState] = useState<Period>("all");
-  const [dateFrom, setDateFrom] = useState<string | null>(null);
-  const [dateTo, setDateTo] = useState<string | null>(null);
+  const initialDates = computeDates("today");
+  const [period, setPeriodState] = useState<Period>("today");
+  const [dateFrom, setDateFrom] = useState<string | null>(initialDates.dateFrom);
+  const [dateTo, setDateTo] = useState<string | null>(initialDates.dateTo);
 
   const setPeriod = (p: Period, customFrom?: string, customTo?: string) => {
     const dates = computeDates(p, customFrom, customTo);
