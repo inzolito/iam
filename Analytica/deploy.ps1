@@ -62,7 +62,7 @@ Write-Host "  Actualizando contenedor en la VM..."
 $CMD  = "sudo gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet"
 $CMD += "; sudo docker pull ${FRONTEND_IMAGE}"
 $CMD += "; sudo docker stop frontend 2>/dev/null; sudo docker rm frontend 2>/dev/null"
-$CMD += "; sudo docker run -d --name frontend --restart always -p 80:3000 -e HOST=0.0.0.0 ${FRONTEND_IMAGE}"
+$CMD += "; sudo docker run -d --name frontend --restart always -p 3000:3000 -e HOST=0.0.0.0 ${FRONTEND_IMAGE}"
 
 gcloud compute ssh $VM_NAME --zone=$ZONE --command=$CMD
 if ($LASTEXITCODE -ne 0) { Write-Host "  ERROR: actualizacion del frontend fallo." -ForegroundColor Red; exit 1 }
