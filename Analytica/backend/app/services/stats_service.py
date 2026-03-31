@@ -124,14 +124,11 @@ class StatsService:
 
     @staticmethod
     def _date_filters(date_from: Optional[date], date_to: Optional[date]):
-        """Compare timestamps directly (no CAST) — faster and avoids UTC boundary issues."""
         filters = []
         if date_from:
-            dt_from = datetime(date_from.year, date_from.month, date_from.day, 0, 0, 0, tzinfo=timezone.utc)
-            filters.append(Trade.close_time >= dt_from)
+            filters.append(cast(Trade.close_time, Date) >= date_from)
         if date_to:
-            dt_to = datetime(date_to.year, date_to.month, date_to.day, 23, 59, 59, 999999, tzinfo=timezone.utc)
-            filters.append(Trade.close_time <= dt_to)
+            filters.append(cast(Trade.close_time, Date) <= date_to)
         return filters
 
     @staticmethod
@@ -318,15 +315,12 @@ class StatsService:
         )
         start_balance = float(prev.scalar() or 0)
 
-        day_start = datetime(day.year, day.month, day.day, 0, 0, 0, tzinfo=timezone.utc)
-        day_end   = datetime(day.year, day.month, day.day, 23, 59, 59, 999999, tzinfo=timezone.utc)
         result = await db.execute(
             select(Trade.close_time, Trade.net_profit)
             .where(
                 and_(
                     Trade.account_id == account_id,
-                    Trade.close_time >= day_start,
-                    Trade.close_time <= day_end,
+                    cast(Trade.close_time, Date) == day,
                 )
             )
             .order_by(Trade.close_time.asc())

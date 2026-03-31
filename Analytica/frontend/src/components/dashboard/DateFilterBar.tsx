@@ -5,14 +5,17 @@ import { CalendarRange, ChevronDown } from "lucide-react";
 import { useDateFilter, Period } from "../../contexts/DateFilterContext";
 
 const CHIPS: { label: string; value: Period }[] = [
-  { label: "Hoy",         value: "today" },
-  { label: "Semana",      value: "week"  },
-  { label: "Mes",         value: "month" },
-  { label: "3 Meses",     value: "3m"    },
-  { label: "6 Meses",     value: "6m"    },
-  { label: "Año",         value: "year"  },
-  { label: "Todo",        value: "all"   },
-  { label: "Personalizado", value: "custom" },
+  { label: "Hoy",           value: "today"     },
+  { label: "Ayer",          value: "yesterday" },
+  { label: "Esta Semana",   value: "week"      },
+  { label: "Sem. Pasada",   value: "lastweek"  },
+  { label: "Este Mes",      value: "month"     },
+  { label: "Mes Pasado",    value: "lastmonth" },
+  { label: "3 Meses",       value: "3m"        },
+  { label: "6 Meses",       value: "6m"        },
+  { label: "Año",           value: "year"      },
+  { label: "Todo",          value: "all"       },
+  { label: "Personalizado", value: "custom"    },
 ];
 
 export default function DateFilterBar() {

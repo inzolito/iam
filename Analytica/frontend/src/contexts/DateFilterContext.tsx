@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 
-export type Period = "today" | "week" | "month" | "3m" | "6m" | "year" | "all" | "custom";
+export type Period = "today" | "yesterday" | "week" | "lastweek" | "month" | "lastmonth" | "3m" | "6m" | "year" | "all" | "custom";
 
 export interface DateFilterState {
   period: Period;
@@ -29,15 +29,35 @@ export function computeDates(
     case "today":
       return { dateFrom: fmt(today), dateTo: fmt(today) };
 
+    case "yesterday": {
+      const d = new Date(today);
+      d.setDate(d.getDate() - 1);
+      return { dateFrom: fmt(d), dateTo: fmt(d) };
+    }
+
     case "week": {
       const d = new Date(today);
-      d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // rewind to Monday
+      d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // retroceder al lunes
       return { dateFrom: fmt(d), dateTo: fmt(today) };
     }
 
+    case "lastweek": {
+      const endD = new Date(today);
+      endD.setDate(today.getDate() - ((today.getDay() + 6) % 7) - 1); // domingo pasado
+      const startD = new Date(endD);
+      startD.setDate(endD.getDate() - 6); // lunes de la semana pasada
+      return { dateFrom: fmt(startD), dateTo: fmt(endD) };
+    }
+
     case "month": {
-      const first = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
-      return { dateFrom: first, dateTo: fmt(today) };
+      const first = new Date(today.getFullYear(), today.getMonth(), 1);
+      return { dateFrom: fmt(first), dateTo: fmt(today) };
+    }
+
+    case "lastmonth": {
+      const firstOfLast = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastOfLast  = new Date(today.getFullYear(), today.getMonth(), 0);
+      return { dateFrom: fmt(firstOfLast), dateTo: fmt(lastOfLast) };
     }
 
     case "3m": {

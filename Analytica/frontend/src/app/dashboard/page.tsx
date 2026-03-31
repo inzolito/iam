@@ -146,7 +146,7 @@ export default function DashboardPage() {
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState("");
 
-  const { period, dateFrom, dateTo, setPeriod } = useDateFilter();
+  const { dateFrom, dateTo } = useDateFilter();
 
   useEffect(() => {
     const token = localStorage.getItem("analytica_token");
@@ -290,22 +290,6 @@ export default function DashboardPage() {
                     )}
                     <button onClick={handleSync} disabled={syncLoading} className="px-6 py-3 rounded-xl bg-amber-600 text-white text-[10px] font-bold uppercase tracking-widest">
                       {syncLoading ? "Sincronizando..." : "Reintentar sincronización"}
-                    </button>
-                  </div>
-                ) : stats.total_trades === 0 && (dateFrom || dateTo) ? (
-                  <div className="rounded-2xl border border-slate-700/40 bg-slate-900/40 p-10 flex flex-col items-center gap-6 max-w-xs mx-auto text-center">
-                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
-                      <span className="text-lg">📭</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white mb-1">Sin operaciones</p>
-                      <p className="text-xs text-slate-500">No hay trades cerrados en el período seleccionado.</p>
-                    </div>
-                    <button
-                      onClick={() => setPeriod("all")}
-                      className="px-5 py-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold uppercase tracking-widest hover:bg-amber-500/20 transition-all"
-                    >
-                      Ver todo el historial
                     </button>
                   </div>
                 ) : (
