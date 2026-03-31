@@ -38,7 +38,7 @@ const ASSET_CHIPS: { label: string; value: AssetClass; emoji: string }[] = [
 ];
 
 export default function DateFilterBar({ availableSymbols = [] }: Props) {
-  const { period, assetClass, symbol, setPeriod, setAssetClass, setSymbol } = useDateFilter();
+  const { period, dateFrom, dateTo, assetClass, symbol, setPeriod, setAssetClass, setSymbol } = useDateFilter();
   const [customFrom, setCustomFrom] = useState("");
   const [customTo,   setCustomTo]   = useState("");
 
@@ -65,6 +65,17 @@ export default function DateFilterBar({ availableSymbols = [] }: Props) {
     : availableSymbols;
 
   const hasActiveAssetFilter = assetClass !== null || symbol !== null;
+
+  // Human-readable date range label
+  const fmtDate = (d: string) => {
+    const [y, m, day] = d.split("-");
+    return `${day}/${m}/${y}`;
+  };
+  const rangeLabel = dateFrom && dateTo
+    ? dateFrom === dateTo
+      ? fmtDate(dateFrom)
+      : `${fmtDate(dateFrom)} → ${fmtDate(dateTo)}`
+    : "Todo el historial";
 
   return (
     <div className="sticky top-0 z-20 -mx-4 md:-mx-8 lg:-mx-10 bg-slate-950/90 backdrop-blur-md border-b border-white/5">
@@ -95,6 +106,13 @@ export default function DateFilterBar({ availableSymbols = [] }: Props) {
             </button>
           );
         })}
+
+        {/* Active range label */}
+        {period !== "custom" && (
+          <span className="ml-auto text-[10px] font-mono text-slate-600 shrink-0 pl-2">
+            {rangeLabel}
+          </span>
+        )}
 
         {/* Custom date inputs */}
         {period === "custom" && (

@@ -159,15 +159,21 @@ export default function DashboardPage() {
     else if (accounts.length > 0) setIsLoading(false);
   }, [accounts, isLoading, router]);
 
-  const fetchStats = useCallback(async (account: Account, dFrom: string | null = null, dTo: string | null = null) => {
+  const fetchStats = useCallback(async (
+    account: Account,
+    dFrom: string | null = null,
+    dTo: string | null = null,
+    acClass: string | null = null,
+    sym: string | null = null,
+  ) => {
     setStatsLoading(true);
     const token = localStorage.getItem("analytica_token");
     const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
     const qs = new URLSearchParams();
-    if (dFrom) qs.append("date_from", dFrom);
-    if (dTo) qs.append("date_to", dTo);
-    if (assetClass) qs.append("asset_class", assetClass);
-    if (symbol) qs.append("symbol", symbol);
+    if (dFrom)   qs.append("date_from",   dFrom);
+    if (dTo)     qs.append("date_to",     dTo);
+    if (acClass) qs.append("asset_class", acClass);
+    if (sym)     qs.append("symbol",      sym);
     const q = qs.toString() ? `?${qs}` : "";
     try {
       const [statsRes, equityRes, symbolRes, sessionRes, tradesRes, heatmapRes, correlRes] = await Promise.all([
@@ -198,7 +204,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!selectedAccount) return;
     const timer = setTimeout(() => {
-      fetchStats(selectedAccount, dateFrom, dateTo);
+      fetchStats(selectedAccount, dateFrom, dateTo, assetClass, symbol);
     }, 150);
     return () => clearTimeout(timer);
   }, [selectedAccount, fetchStats, dateFrom, dateTo, assetClass, symbol]);
@@ -270,7 +276,7 @@ export default function DashboardPage() {
       // Poll for trades and check for sync errors after 15s
       setTimeout(async () => {
         await reloadAccounts();
-        fetchStats(selectedAccount, dateFrom, dateTo);
+        fetchStats(selectedAccount, dateFrom, dateTo, assetClass, symbol);
         // Re-check total trades to exit sync screen if trades now exist
         const token2 = localStorage.getItem("analytica_token");
         fetch(`${API_BASE}/api/v1/trading/stats/${selectedAccount.id}`, {
@@ -278,7 +284,7 @@ export default function DashboardPage() {
         }).then((r) => r.ok ? r.json() : null).then((s) => { if (s) { setTotalTradesEver(s.total_trades ?? 0); setOverallBalance(s.current_balance ?? null); } }).catch(() => {});
       }, 15000);
     } catch {} finally { setSyncLoading(false); }
-  }, [selectedAccount, fetchStats, reloadAccounts, dateFrom, dateTo]);
+  }, [selectedAccount, fetchStats, reloadAccounts, dateFrom, dateTo, assetClass, symbol]);
 
   return (
     <div className="relative w-full pb-20">
