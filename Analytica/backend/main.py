@@ -45,7 +45,7 @@ async def startup_event():
         scheduler.add_job(
             sync_all_direct_accounts,
             trigger="interval",
-            hours=6,
+            minutes=30,
             id="metaapi_sync",
             replace_existing=True,
             misfire_grace_time=300,
@@ -68,7 +68,7 @@ async def startup_event():
         )
 
         scheduler.start()
-        logger.info("Scheduler started: MetaAPI (6h) and Macro News (30m).")
+        logger.info("Scheduler started: MetaAPI (30m) and Macro News (30m).")
     else:
         logger.warning("METAAPI_TOKEN not set — MetaAPI sync scheduler disabled.")
 

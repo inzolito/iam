@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -133,6 +133,7 @@ export default function DashboardPage() {
   const [correlationData, setCorrelationData] = useState<{symbols: string[]; matrix: {symbol_a:string; symbol_b:string; correlation:number; trades_a:number; trades_b:number}[]}>({symbols:[], matrix:[]});
   const [liveEquity, setLiveEquity] = useState<number | null>(null);
   const [openPositions, setOpenPositions] = useState<any[]>([]);
+  const currentFiltersRef = useRef<{ dateFrom: string | null; dateTo: string | null; assetClass: string | null; symbol: string | null }>({ dateFrom: null, dateTo: null, assetClass: null, symbol: null });
   const [isLoading, setIsLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(false);
   const [totalTradesEver, setTotalTradesEver] = useState<number | null>(null);
@@ -242,26 +243,35 @@ export default function DashboardPage() {
     await ctxReload();
   }, [ctxReload]);
 
-  // Live polling — equity + positions every 3s
+  // Keep filters ref in sync so SSE stats handler uses current values
+  useEffect(() => {
+    currentFiltersRef.current = { dateFrom, dateTo, assetClass, symbol };
+  }, [dateFrom, dateTo, assetClass, symbol]);
+
+  // SSE stream — live equity + positions every 5s, trade sync notifications
   useEffect(() => {
     if (!selectedAccount) return;
     const token = localStorage.getItem("analytica_token") ?? "";
-    const poll = async () => {
+    const es = new EventSource(
+      `${API_BASE}/api/v1/trading/stream/${selectedAccount.id}?token=${encodeURIComponent(token)}`
+    );
+
+    es.addEventListener("live", (e: MessageEvent) => {
       try {
-        const res = await fetch(
-          `${API_BASE}/api/v1/trading/live/${selectedAccount.id}?token=${encodeURIComponent(token)}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          if (data.equity != null) setLiveEquity(data.equity);
-          if (Array.isArray(data.positions)) setOpenPositions(data.positions);
-        }
+        const data = JSON.parse(e.data);
+        if (data.equity != null) setLiveEquity(data.equity);
+        if (Array.isArray(data.positions)) setOpenPositions(data.positions);
       } catch { /* ignore */ }
-    };
-    poll();
-    const id = setInterval(poll, 15_000);
-    return () => clearInterval(id);
-  }, [selectedAccount]);
+    });
+
+    es.addEventListener("stats", () => {
+      // New trades were synced — refresh with current active filters
+      const { dateFrom: df, dateTo: dt, assetClass: ac, symbol: sym } = currentFiltersRef.current;
+      fetchStats(selectedAccount, df, dt, ac, sym);
+    });
+
+    return () => es.close();
+  }, [selectedAccount, fetchStats]);
 
   const handleSync = useCallback(async () => {
     if (!selectedAccount) return;

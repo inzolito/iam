@@ -302,9 +302,9 @@ async def stream_account(
                     except Exception as e:
                         logger.warning(f"[SSE DB] {account_id}: {e}")
 
-                # ── Incremental sync every 5 min (60 × 5s) ──────────────────
+                # ── Incremental sync every 60s (12 × 5s) ────────────────────
                 tick += 1
-                if tick % 60 == 0:
+                if tick % 12 == 0:
                     asyncio.create_task(run_incremental_sync(account_id))
 
             except (asyncio.CancelledError, GeneratorExit):
