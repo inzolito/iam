@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarRange, ChevronDown, X } from "lucide-react";
+import { CalendarRange, ChevronDown, X, RefreshCw } from "lucide-react";
 import { useDateFilter, Period, AssetClass } from "../../contexts/DateFilterContext";
 
 interface SymbolOption {
@@ -12,6 +12,8 @@ interface SymbolOption {
 
 interface Props {
   availableSymbols?: SymbolOption[];
+  onSync?: () => void;
+  syncLoading?: boolean;
 }
 
 const DATE_CHIPS: { label: string; value: Period }[] = [
@@ -37,7 +39,7 @@ const ASSET_CHIPS: { label: string; value: AssetClass; emoji: string }[] = [
   { label: "Materias", value: "COMMODITIES", emoji: "🛢️" },
 ];
 
-export default function DateFilterBar({ availableSymbols = [] }: Props) {
+export default function DateFilterBar({ availableSymbols = [], onSync, syncLoading }: Props) {
   const { period, dateFrom, dateTo, assetClass, symbol, setPeriod, setAssetClass, setSymbol } = useDateFilter();
   const [customFrom, setCustomFrom] = useState("");
   const [customTo,   setCustomTo]   = useState("");
@@ -197,6 +199,19 @@ export default function DateFilterBar({ availableSymbols = [] }: Props) {
           >
             <X size={9} />
             Limpiar
+          </button>
+        )}
+
+        {/* Sync button */}
+        {onSync && (
+          <button
+            onClick={onSync}
+            disabled={syncLoading}
+            title="Sincronizar historial con el broker"
+            className="flex items-center gap-1 ml-auto px-2.5 py-1 rounded-lg text-[9px] text-slate-500 hover:text-amber-400 border border-transparent hover:border-amber-500/20 hover:bg-amber-500/5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <RefreshCw size={9} className={syncLoading ? "animate-spin" : ""} />
+            {syncLoading ? "Sincronizando..." : "Sincronizar"}
           </button>
         )}
       </div>

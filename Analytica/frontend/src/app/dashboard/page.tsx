@@ -9,7 +9,6 @@ import {
   EyeOff,
   ShieldCheck,
   ArrowRight,
-  RefreshCw,
 } from "lucide-react";
 import CloseReasonChart from "../../components/dashboard/CloseReasonChart";
 import EquityCurve from "../../components/dashboard/EquityCurve";
@@ -296,7 +295,7 @@ export default function DashboardPage() {
           </motion.div>
         ) : (
           <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            <DateFilterBar availableSymbols={availableSymbols} />
+            <DateFilterBar availableSymbols={availableSymbols} onSync={handleSync} syncLoading={syncLoading} />
 
             {stats && (
               <>
@@ -321,11 +320,7 @@ export default function DashboardPage() {
 
                     <BalanceHero
                       currentBalance={overallBalance ?? stats.current_balance}
-                      netProfit={
-                        liveEquity !== null && overallBalance !== null
-                          ? liveEquity - overallBalance
-                          : stats.net_profit
-                      }
+                      netProfit={stats.net_profit}
                       totalTrades={stats.total_trades}
                       currency={selectedAccount?.currency}
                       accountName={selectedAccount?.name}
