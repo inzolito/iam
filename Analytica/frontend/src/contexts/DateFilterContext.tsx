@@ -3,15 +3,20 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 
 export type Period = "today" | "yesterday" | "week" | "lastweek" | "month" | "lastmonth" | "3m" | "6m" | "year" | "all" | "custom";
+export type AssetClass = "FOREX" | "METALS" | "INDICES" | "CRYPTO" | "COMMODITIES" | null;
 
 export interface DateFilterState {
   period: Period;
   dateFrom: string | null;
   dateTo: string | null;
+  assetClass: AssetClass;
+  symbol: string | null;
 }
 
 interface DateFilterContextType extends DateFilterState {
   setPeriod: (p: Period, customFrom?: string, customTo?: string) => void;
+  setAssetClass: (ac: AssetClass) => void;
+  setSymbol: (s: string | null) => void;
 }
 
 export function computeDates(
@@ -20,8 +25,6 @@ export function computeDates(
   customTo?: string,
 ): { dateFrom: string | null; dateTo: string | null } {
   const today = new Date();
-  // Use LOCAL date components — toISOString() returns UTC which causes "Hoy"
-  // to send the wrong date for users in timezones behind UTC.
   const fmt = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -37,15 +40,15 @@ export function computeDates(
 
     case "week": {
       const d = new Date(today);
-      d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // retroceder al lunes
+      d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
       return { dateFrom: fmt(d), dateTo: fmt(today) };
     }
 
     case "lastweek": {
       const endD = new Date(today);
-      endD.setDate(today.getDate() - ((today.getDay() + 6) % 7) - 1); // domingo pasado
+      endD.setDate(today.getDate() - ((today.getDay() + 6) % 7) - 1);
       const startD = new Date(endD);
-      startD.setDate(endD.getDate() - 6); // lunes de la semana pasada
+      startD.setDate(endD.getDate() - 6);
       return { dateFrom: fmt(startD), dateTo: fmt(endD) };
     }
 
@@ -93,14 +96,20 @@ const DateFilterContext = createContext<DateFilterContextType>({
   period: "today",
   dateFrom: null,
   dateTo: null,
+  assetClass: null,
+  symbol: null,
   setPeriod: () => {},
+  setAssetClass: () => {},
+  setSymbol: () => {},
 });
 
 export function DateFilterProvider({ children }: { children: ReactNode }) {
   const initialDates = computeDates("today");
   const [period, setPeriodState] = useState<Period>("today");
-  const [dateFrom, setDateFrom] = useState<string | null>(initialDates.dateFrom);
-  const [dateTo, setDateTo] = useState<string | null>(initialDates.dateTo);
+  const [dateFrom, setDateFrom]   = useState<string | null>(initialDates.dateFrom);
+  const [dateTo, setDateTo]       = useState<string | null>(initialDates.dateTo);
+  const [assetClass, setAssetClass] = useState<AssetClass>(null);
+  const [symbol, setSymbol]         = useState<string | null>(null);
 
   const setPeriod = (p: Period, customFrom?: string, customTo?: string) => {
     const dates = computeDates(p, customFrom, customTo);
@@ -110,7 +119,7 @@ export function DateFilterProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <DateFilterContext.Provider value={{ period, dateFrom, dateTo, setPeriod }}>
+    <DateFilterContext.Provider value={{ period, dateFrom, dateTo, assetClass, symbol, setPeriod, setAssetClass, setSymbol }}>
       {children}
     </DateFilterContext.Provider>
   );

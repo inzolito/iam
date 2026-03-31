@@ -28,6 +28,11 @@ async def startup_event():
             "ALTER TABLE trades ADD COLUMN IF NOT EXISTS comment TEXT",
             "ALTER TABLE trades ADD COLUMN IF NOT EXISTS mae_price NUMERIC(18,8)",
             "ALTER TABLE trades ADD COLUMN IF NOT EXISTS mfe_price NUMERIC(18,8)",
+            # Classify instrument asset classes based on ticker patterns
+            "UPDATE instruments SET asset_class = 'METALS' WHERE ticker ~* '^XAU|^XAG|^XPT|^XPD' AND asset_class != 'METALS'",
+            "UPDATE instruments SET asset_class = 'CRYPTO' WHERE ticker ~* '^(BTC|ETH|LTC|XRP|ADA|SOL|DOT|BNB|DOGE|AVAX|MATIC|UNI)' AND asset_class != 'METALS'",
+            "UPDATE instruments SET asset_class = 'INDICES' WHERE ticker ~* '(US30|US500|NAS100|UK100|GER40|FRA40|JPN225|AUS200|HK50|SPX|FTSE|NASDAQ|DJI)' AND asset_class = 'FOREX'",
+            "UPDATE instruments SET asset_class = 'COMMODITIES' WHERE ticker ~* '(OIL|BRENT|WTI|NGAS|NATGAS|COFFEE|SUGAR|WHEAT|CORN)' AND asset_class = 'FOREX'",
         ]
         for stmt in migrations:
             await conn.execute(text(stmt))

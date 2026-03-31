@@ -132,14 +132,29 @@ class StatsService:
         return filters
 
     @staticmethod
+    def _symbol_filters(symbol: Optional[str], asset_class: Optional[str]):
+        """Filter trades by symbol ticker and/or asset class."""
+        if not symbol and not asset_class:
+            return []
+        inst_q = select(Instrument.id)
+        if symbol:
+            inst_q = inst_q.where(Instrument.ticker == symbol)
+        if asset_class:
+            inst_q = inst_q.where(Instrument.asset_class == asset_class)
+        return [Trade.instrument_id.in_(inst_q)]
+
+    @staticmethod
     async def get_account_stats(
         db: AsyncSession,
         account_id: UUID,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
+        symbol: Optional[str] = None,
+        asset_class: Optional[str] = None,
     ) -> dict:
         date_filters = StatsService._date_filters(date_from, date_to)
-        base_where = [Trade.account_id == account_id] + date_filters
+        sym_filters  = StatsService._symbol_filters(symbol, asset_class)
+        base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
         # ── Main aggregate query ───────────────────────────────────────────────
         result = await db.execute(
@@ -381,9 +396,12 @@ class StatsService:
         account_id: UUID,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
+        symbol: Optional[str] = None,
+        asset_class: Optional[str] = None,
     ) -> list:
         date_filters = StatsService._date_filters(date_from, date_to)
-        base_where = [Trade.account_id == account_id] + date_filters
+        sym_filters  = StatsService._symbol_filters(symbol, asset_class)
+        base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
         result = await db.execute(
             select(
@@ -423,9 +441,12 @@ class StatsService:
         account_id: UUID,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
+        symbol: Optional[str] = None,
+        asset_class: Optional[str] = None,
     ) -> list:
         date_filters = StatsService._date_filters(date_from, date_to)
-        base_where = [Trade.account_id == account_id] + date_filters
+        sym_filters  = StatsService._symbol_filters(symbol, asset_class)
+        base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
         result = await db.execute(
             select(
@@ -473,9 +494,12 @@ class StatsService:
         account_id: UUID,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
+        symbol: Optional[str] = None,
+        asset_class: Optional[str] = None,
     ) -> list:
         date_filters = StatsService._date_filters(date_from, date_to)
-        base_where = [Trade.account_id == account_id] + date_filters
+        sym_filters  = StatsService._symbol_filters(symbol, asset_class)
+        base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
         result = await db.execute(
             select(
@@ -504,9 +528,12 @@ class StatsService:
         account_id: UUID,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
+        symbol: Optional[str] = None,
+        asset_class: Optional[str] = None,
     ) -> list:
         date_filters = StatsService._date_filters(date_from, date_to)
-        base_where = [Trade.account_id == account_id] + date_filters
+        sym_filters  = StatsService._symbol_filters(symbol, asset_class)
+        base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
         result = await db.execute(
             select(
@@ -581,6 +608,8 @@ class StatsService:
         account_id: UUID,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
+        symbol: Optional[str] = None,
+        asset_class: Optional[str] = None,
     ) -> dict:
         """
         Compute daily PnL correlation matrix between traded symbols.
@@ -589,7 +618,8 @@ class StatsService:
         import statistics as _stats
 
         date_filters = StatsService._date_filters(date_from, date_to)
-        base_where = [Trade.account_id == account_id] + date_filters
+        sym_filters  = StatsService._symbol_filters(symbol, asset_class)
+        base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
         result = await db.execute(
             select(
@@ -669,9 +699,12 @@ class StatsService:
         page_size: int = 50,
         sort_by: str = "close_time",
         sort_dir: str = "desc",
+        symbol: Optional[str] = None,
+        asset_class: Optional[str] = None,
     ) -> dict:
         date_filters = StatsService._date_filters(date_from, date_to)
-        base_where = [Trade.account_id == account_id] + date_filters
+        sym_filters  = StatsService._symbol_filters(symbol, asset_class)
+        base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
         count_result = await db.execute(
             select(func.count(Trade.id)).where(and_(*base_where))
@@ -746,6 +779,26 @@ class StatsService:
             "pages":     max(1, (total + page_size - 1) // page_size),
             "trades":    trades,
         }
+
+    # ── Symbols List (for filter dropdown) ────────────────────────────────────
+    @staticmethod
+    async def get_symbols_list(db: AsyncSession, account_id: UUID) -> list:
+        """All symbols traded in the account, with trade count and asset class."""
+        result = await db.execute(
+            select(
+                Instrument.ticker,
+                Instrument.asset_class,
+                func.count(Trade.id).label("trades"),
+            )
+            .join(Trade, Trade.instrument_id == Instrument.id)
+            .where(Trade.account_id == account_id)
+            .group_by(Instrument.ticker, Instrument.asset_class)
+            .order_by(func.count(Trade.id).desc())
+        )
+        return [
+            {"ticker": r.ticker, "asset_class": r.asset_class, "trades": r.trades}
+            for r in result.all()
+        ]
 
     # ── Phase 4: Monte Carlo ───────────────────────────────────────────────────
     @staticmethod

@@ -145,8 +145,9 @@ export default function DashboardPage() {
   const [inlineError, setInlineError] = useState("");
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState("");
+  const [availableSymbols, setAvailableSymbols] = useState<Array<{ ticker: string; asset_class: string; trades: number }>>([]);
 
-  const { dateFrom, dateTo } = useDateFilter();
+  const { dateFrom, dateTo, assetClass, symbol } = useDateFilter();
 
   useEffect(() => {
     const token = localStorage.getItem("analytica_token");
@@ -165,6 +166,8 @@ export default function DashboardPage() {
     const qs = new URLSearchParams();
     if (dFrom) qs.append("date_from", dFrom);
     if (dTo) qs.append("date_to", dTo);
+    if (assetClass) qs.append("asset_class", assetClass);
+    if (symbol) qs.append("symbol", symbol);
     const q = qs.toString() ? `?${qs}` : "";
     try {
       const [statsRes, equityRes, symbolRes, sessionRes, tradesRes, heatmapRes, correlRes] = await Promise.all([
@@ -198,7 +201,7 @@ export default function DashboardPage() {
       fetchStats(selectedAccount, dateFrom, dateTo);
     }, 150);
     return () => clearTimeout(timer);
-  }, [selectedAccount, fetchStats, dateFrom, dateTo]);
+  }, [selectedAccount, fetchStats, dateFrom, dateTo, assetClass, symbol]);
 
   // Fetch total trades ever (no date filter) to decide whether to show sync screen
   useEffect(() => {
@@ -215,6 +218,18 @@ export default function DashboardPage() {
           setOverallBalance(s.current_balance ?? null);
         }
       })
+      .catch(() => {});
+  }, [selectedAccount]);
+
+  // Fetch all symbols for the filter dropdown (no date/asset filter — always all-time)
+  useEffect(() => {
+    if (!selectedAccount) return;
+    const token = localStorage.getItem("analytica_token");
+    fetch(`${API_BASE}/api/v1/trading/symbols/${selectedAccount.id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => setAvailableSymbols(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, [selectedAccount]);
 
@@ -275,7 +290,7 @@ export default function DashboardPage() {
           </motion.div>
         ) : (
           <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            <DateFilterBar />
+            <DateFilterBar availableSymbols={availableSymbols} />
 
             {stats && (
               <>
