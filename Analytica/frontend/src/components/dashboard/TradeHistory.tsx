@@ -75,18 +75,37 @@ function fmtDuration(secs: number): string {
 
 type SortKey = "open_time" | "close_time" | "side" | "volume" | "open_price" | "close_price" | "net_profit";
 
-export default function TradeHistory({ accountId, currency = "USD" }: { accountId: string; currency?: string }) {
+interface TradeHistoryProps {
+  accountId: string;
+  currency?: string;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+}
+
+export default function TradeHistory({ accountId, currency = "USD", dateFrom: externalFrom, dateTo: externalTo }: TradeHistoryProps) {
+  const hasExternalFilter = externalFrom != null || externalTo != null;
+
   const [trades, setTrades]       = useState<Trade[]>([]);
   const [total, setTotal]         = useState(0);
   const [pages, setPages]         = useState(1);
   const [page, setPage]           = useState(1);
   const [loading, setLoading]     = useState(false);
-  const [period, setPeriod]       = useState<Period>("today");
-  const [customFrom, setCustomFrom] = useState("");
-  const [customTo, setCustomTo]   = useState("");
+  const [period, setPeriod]       = useState<Period>(hasExternalFilter ? "custom" : "today");
+  const [customFrom, setCustomFrom] = useState(externalFrom ?? "");
+  const [customTo, setCustomTo]   = useState(externalTo ?? "");
   const [sortBy, setSortBy]       = useState<SortKey>("close_time");
   const [sortDir, setSortDir]     = useState<"asc" | "desc">("desc");
   const [expanded, setExpanded]   = useState<string | null>(null);
+
+  // Sync with global date filter when it changes
+  useEffect(() => {
+    if (externalFrom != null || externalTo != null) {
+      setCustomFrom(externalFrom ?? "");
+      setCustomTo(externalTo ?? "");
+      setPeriod("custom");
+      setPage(1);
+    }
+  }, [externalFrom, externalTo]);
 
   const dates = period === "custom"
     ? { from: customFrom || null, to: customTo || null }
@@ -115,8 +134,8 @@ export default function TradeHistory({ accountId, currency = "USD" }: { accountI
 
   useEffect(() => { fetchTrades(); }, [fetchTrades]);
 
-  // Reset page when filters/sort changes
-  useEffect(() => { setPage(1); }, [period, customFrom, customTo, sortBy, sortDir]);
+  // Reset to page 1 on sort change
+  useEffect(() => { setPage(1); }, [sortBy, sortDir]);
 
   const handleSort = (col: SortKey) => {
     if (sortBy === col) setSortDir((d) => (d === "desc" ? "asc" : "desc"));
@@ -153,26 +172,39 @@ export default function TradeHistory({ accountId, currency = "USD" }: { accountI
     <div className="space-y-3">
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap">
-        {PERIODS.map((p) => (
-          <button
-            key={p.value}
-            onClick={() => setPeriod(p.value)}
-            className={`text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-lg border font-bold transition-all ${
-              period === p.value
-                ? "border-amber-500/50 bg-amber-500/8 text-amber-400"
-                : "border-white/5 bg-slate-900/40 text-slate-500 hover:text-white"
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
-        {period === "custom" && (
+        {hasExternalFilter ? (
+          /* Global filter is active — show date range as read-only badge */
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] uppercase tracking-widest text-slate-600 font-bold">Filtro:</span>
+            <span className="text-[10px] text-amber-400/80 border border-amber-500/20 bg-amber-500/5 rounded-lg px-2.5 py-1 font-mono">
+              {customFrom || "—"} → {customTo || "—"}
+            </span>
+          </div>
+        ) : (
+          /* No global filter — show internal period chips */
           <>
-            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)}
-              className="bg-slate-900 border border-white/8 rounded-lg px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-amber-500/40" />
-            <span className="text-slate-600 text-xs">—</span>
-            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)}
-              className="bg-slate-900 border border-white/8 rounded-lg px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-amber-500/40" />
+            {PERIODS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => { setPeriod(p.value); setPage(1); }}
+                className={`text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-lg border font-bold transition-all ${
+                  period === p.value
+                    ? "border-amber-500/50 bg-amber-500/8 text-amber-400"
+                    : "border-white/5 bg-slate-900/40 text-slate-500 hover:text-white"
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+            {period === "custom" && (
+              <>
+                <input type="date" value={customFrom} onChange={(e) => { setCustomFrom(e.target.value); setPage(1); }}
+                  className="bg-slate-900 border border-white/8 rounded-lg px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-amber-500/40" />
+                <span className="text-slate-600 text-xs">—</span>
+                <input type="date" value={customTo} onChange={(e) => { setCustomTo(e.target.value); setPage(1); }}
+                  className="bg-slate-900 border border-white/8 rounded-lg px-2 py-1 text-[11px] text-slate-300 focus:outline-none focus:border-amber-500/40" />
+              </>
+            )}
           </>
         )}
         {total > 0 && (

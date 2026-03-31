@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -146,7 +146,7 @@ export default function DashboardPage() {
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState("");
 
-  const { dateFrom, dateTo } = useDateFilter();
+  const { period, dateFrom, dateTo, setPeriod } = useDateFilter();
 
   useEffect(() => {
     const token = localStorage.getItem("analytica_token");
@@ -179,12 +179,6 @@ export default function DashboardPage() {
 
       const s = statsRes.ok ? await statsRes.json() : null;
 
-      // Si el período filtrado no tiene trades, reintentar sin filtro de fecha
-      if (s && s.total_trades === 0 && (dFrom || dTo)) {
-        fetchStats(account, null, null);
-        return;
-      }
-
       if (s) setStats(s);
       if (equityRes.ok) setEquityCurve(await equityRes.json());
       if (symbolRes.ok) setSymbolData(await symbolRes.json());
@@ -199,7 +193,11 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedAccount) fetchStats(selectedAccount, dateFrom, dateTo);
+    if (!selectedAccount) return;
+    const timer = setTimeout(() => {
+      fetchStats(selectedAccount, dateFrom, dateTo);
+    }, 150);
+    return () => clearTimeout(timer);
   }, [selectedAccount, fetchStats, dateFrom, dateTo]);
 
   // Fetch total trades ever (no date filter) to decide whether to show sync screen
@@ -241,7 +239,7 @@ export default function DashboardPage() {
       } catch { /* ignore */ }
     };
     poll();
-    const id = setInterval(poll, 3000);
+    const id = setInterval(poll, 15_000);
     return () => clearInterval(id);
   }, [selectedAccount]);
 
@@ -292,6 +290,22 @@ export default function DashboardPage() {
                     )}
                     <button onClick={handleSync} disabled={syncLoading} className="px-6 py-3 rounded-xl bg-amber-600 text-white text-[10px] font-bold uppercase tracking-widest">
                       {syncLoading ? "Sincronizando..." : "Reintentar sincronización"}
+                    </button>
+                  </div>
+                ) : stats.total_trades === 0 && (dateFrom || dateTo) ? (
+                  <div className="rounded-2xl border border-slate-700/40 bg-slate-900/40 p-10 flex flex-col items-center gap-6 max-w-xs mx-auto text-center">
+                    <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center">
+                      <span className="text-lg">📭</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white mb-1">Sin operaciones</p>
+                      <p className="text-xs text-slate-500">No hay trades cerrados en el período seleccionado.</p>
+                    </div>
+                    <button
+                      onClick={() => setPeriod("all")}
+                      className="px-5 py-2 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold uppercase tracking-widest hover:bg-amber-500/20 transition-all"
+                    >
+                      Ver todo el historial
                     </button>
                   </div>
                 ) : (
@@ -368,7 +382,7 @@ export default function DashboardPage() {
                     </CollapsibleSection>
 
                     <CollapsibleSection title="Historial de Operaciones" subtitle="Trades cerrados" defaultOpen={false}>
-                      <TradeHistory accountId={selectedAccount?.id ?? ""} currency={selectedAccount?.currency} />
+                      <TradeHistory accountId={selectedAccount?.id ?? ""} currency={selectedAccount?.currency} dateFrom={dateFrom} dateTo={dateTo} />
                     </CollapsibleSection>
                   </div>
                 )}
