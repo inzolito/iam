@@ -28,6 +28,9 @@ Thumbs.db
 *.log
 logs/
 
+# Build artifacts
+dist/
+
 # Test coverage
 coverage/
 lcov.info
