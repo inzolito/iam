@@ -12,6 +12,7 @@ describe('Environment Validation', () => {
         SUPABASE_URL: 'https://test.supabase.co',
         SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
         SUPABASE_ANON_KEY: 'test-anon-key',
+        JWT_SECRET: 'test-jwt-secret',
         PORT: '3000',
       };
 
@@ -23,6 +24,7 @@ describe('Environment Validation', () => {
         SUPABASE_URL: 'https://test.supabase.co',
         SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
         SUPABASE_ANON_KEY: 'test-anon-key',
+        JWT_SECRET: 'test-jwt-secret',
       };
 
       const result = validate(config);
@@ -39,6 +41,7 @@ describe('Environment Validation', () => {
       const config = {
         SUPABASE_SERVICE_ROLE_KEY: 'test-key',
         SUPABASE_ANON_KEY: 'test-anon-key',
+        JWT_SECRET: 'test-jwt-secret',
       };
 
       expect(() => validate(config)).toThrow('Environment validation failed');
@@ -48,6 +51,7 @@ describe('Environment Validation', () => {
       const config = {
         SUPABASE_URL: 'https://test.supabase.co',
         SUPABASE_ANON_KEY: 'test-anon-key',
+        JWT_SECRET: 'test-jwt-secret',
       };
 
       expect(() => validate(config)).toThrow('Environment validation failed');
@@ -57,6 +61,7 @@ describe('Environment Validation', () => {
       const config = {
         SUPABASE_URL: 'https://test.supabase.co',
         SUPABASE_SERVICE_ROLE_KEY: 'test-key',
+        JWT_SECRET: 'test-jwt-secret',
       };
 
       expect(() => validate(config)).toThrow('Environment validation failed');
@@ -67,6 +72,7 @@ describe('Environment Validation', () => {
         SUPABASE_URL: '',
         SUPABASE_SERVICE_ROLE_KEY: 'test-key',
         SUPABASE_ANON_KEY: 'test-anon-key',
+        JWT_SECRET: 'test-jwt-secret',
       };
 
       expect(() => validate(config)).toThrow('Environment validation failed');

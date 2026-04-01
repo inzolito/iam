@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { IsNotEmpty, IsString, IsNumber, validateSync } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, validateSync } from 'class-validator';
 
 export class EnvironmentVariables {
   @IsString()
@@ -13,6 +13,14 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   SUPABASE_ANON_KEY!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  JWT_SECRET!: string;
+
+  @IsString()
+  @IsOptional()
+  GOOGLE_CLIENT_ID?: string;
 
   @IsNumber()
   PORT: number = 3000;
