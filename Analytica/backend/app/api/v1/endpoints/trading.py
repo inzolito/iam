@@ -39,10 +39,11 @@ async def get_stats(
     date_to: Optional[date] = Query(None),
     symbol: Optional[str] = Query(None),
     asset_class: Optional[str] = Query(None),
+    tz: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     await _verify_account(db, account_id)
-    return await StatsService.get_account_stats(db, account_id, date_from, date_to, symbol, asset_class)
+    return await StatsService.get_account_stats(db, account_id, date_from, date_to, symbol, asset_class, tz)
 
 
 @router.get("/equity-curve/{account_id}", response_model=List[EquityCurvePoint])
@@ -50,10 +51,11 @@ async def get_equity_curve(
     account_id: UUID,
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
+    tz: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     await _verify_account(db, account_id)
-    return await StatsService.get_equity_curve(db, account_id, date_from, date_to)
+    return await StatsService.get_equity_curve(db, account_id, date_from, date_to, tz)
 
 
 @router.get("/by-symbol/{account_id}", response_model=List[SymbolStatsRow])
@@ -63,10 +65,11 @@ async def get_by_symbol(
     date_to: Optional[date] = Query(None),
     symbol: Optional[str] = Query(None),
     asset_class: Optional[str] = Query(None),
+    tz: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     await _verify_account(db, account_id)
-    return await StatsService.get_by_symbol(db, account_id, date_from, date_to, symbol, asset_class)
+    return await StatsService.get_by_symbol(db, account_id, date_from, date_to, symbol, asset_class, tz)
 
 
 @router.get("/by-session/{account_id}", response_model=List[SessionStatsRow])
@@ -76,10 +79,11 @@ async def get_by_session(
     date_to: Optional[date] = Query(None),
     symbol: Optional[str] = Query(None),
     asset_class: Optional[str] = Query(None),
+    tz: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     await _verify_account(db, account_id)
-    return await StatsService.get_by_session(db, account_id, date_from, date_to, symbol, asset_class)
+    return await StatsService.get_by_session(db, account_id, date_from, date_to, symbol, asset_class, tz)
 
 
 @router.get("/heatmap/{account_id}", response_model=List[HeatmapCell])
@@ -89,10 +93,11 @@ async def get_heatmap(
     date_to: Optional[date] = Query(None),
     symbol: Optional[str] = Query(None),
     asset_class: Optional[str] = Query(None),
+    tz: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     await _verify_account(db, account_id)
-    return await StatsService.get_heatmap(db, account_id, date_from, date_to, symbol, asset_class)
+    return await StatsService.get_heatmap(db, account_id, date_from, date_to, symbol, asset_class, tz)
 
 
 @router.get("/correlation/{account_id}")
@@ -102,10 +107,11 @@ async def get_correlation(
     date_to: Optional[date] = Query(None),
     symbol: Optional[str] = Query(None),
     asset_class: Optional[str] = Query(None),
+    tz: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     await _verify_account(db, account_id)
-    return await StatsService.get_correlation(db, account_id, date_from, date_to, symbol, asset_class)
+    return await StatsService.get_correlation(db, account_id, date_from, date_to, symbol, asset_class, tz)
 
 
 @router.get("/trades/{account_id}", response_model=List[TradeRow])
@@ -115,10 +121,11 @@ async def get_trades_list(
     date_to: Optional[date] = Query(None),
     symbol: Optional[str] = Query(None),
     asset_class: Optional[str] = Query(None),
+    tz: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     await _verify_account(db, account_id)
-    return await StatsService.get_trades_list(db, account_id, date_from, date_to, symbol, asset_class)
+    return await StatsService.get_trades_list(db, account_id, date_from, date_to, symbol, asset_class, tz)
 
 
 @router.get("/symbols/{account_id}")
@@ -187,11 +194,12 @@ async def get_trade_history(
     sort_dir: str = Query("desc"),
     symbol: Optional[str] = Query(None),
     asset_class: Optional[str] = Query(None),
+    tz: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     await _verify_account(db, account_id)
     return await StatsService.get_trade_history(
-        db, account_id, date_from, date_to, page, page_size, sort_by, sort_dir, symbol, asset_class
+        db, account_id, date_from, date_to, page, page_size, sort_by, sort_dir, symbol, asset_class, tz
     )
 
 

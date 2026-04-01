@@ -118,6 +118,8 @@ export default function TradeHistory({ accountId, currency = "USD", dateFrom: ex
     const qs = new URLSearchParams({ page: String(page), page_size: "50", sort_by: sortBy, sort_dir: sortDir });
     if (dates.from) qs.set("date_from", dates.from);
     if (dates.to)   qs.set("date_to",   dates.to);
+    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (userTz) qs.set("tz", userTz);
     try {
       const res = await fetch(`${API_BASE}/api/v1/trading/history/${accountId}?${qs}`, {
         headers: { Authorization: `Bearer ${token}` },

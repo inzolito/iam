@@ -174,6 +174,8 @@ export default function DashboardPage() {
     if (dTo)     qs.append("date_to",     dTo);
     if (acClass) qs.append("asset_class", acClass);
     if (sym)     qs.append("symbol",      sym);
+    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (userTz)  qs.append("tz", userTz);
     const q = qs.toString() ? `?${qs}` : "";
     try {
       const [statsRes, equityRes, symbolRes, sessionRes, tradesRes, heatmapRes, correlRes] = await Promise.all([

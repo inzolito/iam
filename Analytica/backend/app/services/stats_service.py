@@ -123,12 +123,20 @@ def _sqn_interpretation(z: Optional[float]) -> Optional[str]:
 class StatsService:
 
     @staticmethod
-    def _date_filters(date_from: Optional[date], date_to: Optional[date]):
+    def _local_date(tz: Optional[str] = None):
+        """close_time cast to DATE in the user's timezone (or UTC if not given)."""
+        if tz:
+            return cast(func.timezone(tz, Trade.close_time), Date)
+        return cast(Trade.close_time, Date)
+
+    @staticmethod
+    def _date_filters(date_from: Optional[date], date_to: Optional[date], tz: Optional[str] = None):
         filters = []
+        local_date = StatsService._local_date(tz)
         if date_from:
-            filters.append(cast(Trade.close_time, Date) >= date_from)
+            filters.append(local_date >= date_from)
         if date_to:
-            filters.append(cast(Trade.close_time, Date) <= date_to)
+            filters.append(local_date <= date_to)
         return filters
 
     @staticmethod
@@ -151,8 +159,9 @@ class StatsService:
         date_to: Optional[date] = None,
         symbol: Optional[str] = None,
         asset_class: Optional[str] = None,
+        tz: Optional[str] = None,
     ) -> dict:
-        date_filters = StatsService._date_filters(date_from, date_to)
+        date_filters = StatsService._date_filters(date_from, date_to, tz)
         sym_filters  = StatsService._symbol_filters(symbol, asset_class)
         base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
@@ -314,6 +323,7 @@ class StatsService:
         db: AsyncSession,
         account_id: UUID,
         day: date,
+        tz: Optional[str] = None,
     ) -> list:
         """Intraday equity curve: one point per closed trade, showing running balance."""
         # Balance at start of day = previous day's snapshot
@@ -330,12 +340,13 @@ class StatsService:
         )
         start_balance = float(prev.scalar() or 0)
 
+        local_day = StatsService._local_date(tz)
         result = await db.execute(
             select(Trade.close_time, Trade.net_profit)
             .where(
                 and_(
                     Trade.account_id == account_id,
-                    cast(Trade.close_time, Date) == day,
+                    local_day == day,
                 )
             )
             .order_by(Trade.close_time.asc())
@@ -363,10 +374,11 @@ class StatsService:
         account_id: UUID,
         date_from: Optional[date] = None,
         date_to: Optional[date] = None,
+        tz: Optional[str] = None,
     ) -> list:
         # Single-day filter → intraday per-trade curve
         if date_from and date_to and date_from == date_to:
-            return await StatsService._get_intraday_curve(db, account_id, date_from)
+            return await StatsService._get_intraday_curve(db, account_id, date_from, tz)
 
         filters = [DailySnapshot.account_id == account_id]
         if date_from:
@@ -398,8 +410,9 @@ class StatsService:
         date_to: Optional[date] = None,
         symbol: Optional[str] = None,
         asset_class: Optional[str] = None,
+        tz: Optional[str] = None,
     ) -> list:
-        date_filters = StatsService._date_filters(date_from, date_to)
+        date_filters = StatsService._date_filters(date_from, date_to, tz)
         sym_filters  = StatsService._symbol_filters(symbol, asset_class)
         base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
@@ -443,8 +456,9 @@ class StatsService:
         date_to: Optional[date] = None,
         symbol: Optional[str] = None,
         asset_class: Optional[str] = None,
+        tz: Optional[str] = None,
     ) -> list:
-        date_filters = StatsService._date_filters(date_from, date_to)
+        date_filters = StatsService._date_filters(date_from, date_to, tz)
         sym_filters  = StatsService._symbol_filters(symbol, asset_class)
         base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
@@ -496,8 +510,9 @@ class StatsService:
         date_to: Optional[date] = None,
         symbol: Optional[str] = None,
         asset_class: Optional[str] = None,
+        tz: Optional[str] = None,
     ) -> list:
-        date_filters = StatsService._date_filters(date_from, date_to)
+        date_filters = StatsService._date_filters(date_from, date_to, tz)
         sym_filters  = StatsService._symbol_filters(symbol, asset_class)
         base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
@@ -530,8 +545,9 @@ class StatsService:
         date_to: Optional[date] = None,
         symbol: Optional[str] = None,
         asset_class: Optional[str] = None,
+        tz: Optional[str] = None,
     ) -> list:
-        date_filters = StatsService._date_filters(date_from, date_to)
+        date_filters = StatsService._date_filters(date_from, date_to, tz)
         sym_filters  = StatsService._symbol_filters(symbol, asset_class)
         base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
@@ -610,6 +626,7 @@ class StatsService:
         date_to: Optional[date] = None,
         symbol: Optional[str] = None,
         asset_class: Optional[str] = None,
+        tz: Optional[str] = None,
     ) -> dict:
         """
         Compute daily PnL correlation matrix between traded symbols.
@@ -617,21 +634,22 @@ class StatsService:
         """
         import statistics as _stats
 
-        date_filters = StatsService._date_filters(date_from, date_to)
+        date_filters = StatsService._date_filters(date_from, date_to, tz)
         sym_filters  = StatsService._symbol_filters(symbol, asset_class)
         base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
+        local_day = StatsService._local_date(tz)
         result = await db.execute(
             select(
-                cast(Trade.close_time, Date).label("day"),
+                local_day.label("day"),
                 Instrument.ticker,
                 func.sum(Trade.net_profit).label("pnl"),
                 func.count(Trade.id).label("cnt"),
             )
             .join(Instrument, Trade.instrument_id == Instrument.id)
             .where(and_(*base_where))
-            .group_by(cast(Trade.close_time, Date), Instrument.ticker)
-            .order_by(cast(Trade.close_time, Date))
+            .group_by(local_day, Instrument.ticker)
+            .order_by(local_day)
         )
         rows = result.all()
 
@@ -701,8 +719,9 @@ class StatsService:
         sort_dir: str = "desc",
         symbol: Optional[str] = None,
         asset_class: Optional[str] = None,
+        tz: Optional[str] = None,
     ) -> dict:
-        date_filters = StatsService._date_filters(date_from, date_to)
+        date_filters = StatsService._date_filters(date_from, date_to, tz)
         sym_filters  = StatsService._symbol_filters(symbol, asset_class)
         base_where   = [Trade.account_id == account_id] + date_filters + sym_filters
 
