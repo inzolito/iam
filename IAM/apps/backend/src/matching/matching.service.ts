@@ -179,19 +179,15 @@ export class MatchingService {
 
     const client = this.supabaseService.getClient();
 
-    // Check if blocked
-    const { data: block } = await client
+    // Check if blocked (either direction between these two users)
+    const { data: blockList } = await client
       .from('blocks')
-      .select('id')
+      .select('blocker_id, blocked_id')
       .or(
-        `blocker_id.eq.${userId},blocked_id.eq.${userId}`,
-      )
-      .or(
-        `blocker_id.eq.${targetUserId},blocked_id.eq.${targetUserId}`,
-      )
-      .maybeSingle();
+        `and(blocker_id.eq.${userId},blocked_id.eq.${targetUserId}),and(blocker_id.eq.${targetUserId},blocked_id.eq.${userId})`,
+      );
 
-    if (block) {
+    if (blockList && blockList.length > 0) {
       throw new ForbiddenException('BLOCKED');
     }
 

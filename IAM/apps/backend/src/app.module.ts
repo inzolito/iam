@@ -8,6 +8,7 @@ import { UsersModule } from './users';
 import { SpinModule } from './spin';
 import { OnboardingModule } from './onboarding';
 import { MatchingModule } from './matching';
+import { ChatModule } from './chat';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { MatchingModule } from './matching';
     SpinModule,
     OnboardingModule,
     MatchingModule,
+    ChatModule,
   ],
 })
 export class AppModule {}
