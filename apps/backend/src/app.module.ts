@@ -9,6 +9,8 @@ import { SpinModule } from './spin';
 import { OnboardingModule } from './onboarding';
 import { MatchingModule } from './matching';
 import { ChatModule } from './chat';
+import { EsenciasModule } from './esencias';
+import { VenuesModule } from './venues';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { ChatModule } from './chat';
     OnboardingModule,
     MatchingModule,
     ChatModule,
+    EsenciasModule,
+    VenuesModule,
   ],
 })
 export class AppModule {}
