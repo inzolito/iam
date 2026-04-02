@@ -141,8 +141,8 @@ export class UsersService {
 
     if (error || !streak) return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
 
     if (!streak.last_login_date) {
       // First login ever
@@ -151,22 +151,22 @@ export class UsersService {
         .update({
           current_streak: 1,
           longest_streak: 1,
-          last_login_date: today.toISOString().split('T')[0],
+          last_login_date: todayStr,
         })
         .eq('user_id', userId);
       return;
     }
 
-    const lastLogin = new Date(streak.last_login_date);
-    lastLogin.setHours(0, 0, 0, 0);
-
-    const diffMs = today.getTime() - lastLogin.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
+    if (todayStr === streak.last_login_date) {
       // Already logged in today
       return;
     }
+
+    // Calculate diff in UTC days
+    const todayMs = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const parts = streak.last_login_date.split('-').map(Number);
+    const lastMs = Date.UTC(parts[0], parts[1] - 1, parts[2]);
+    const diffDays = Math.round((todayMs - lastMs) / (1000 * 60 * 60 * 24));
 
     if (diffDays === 1) {
       // Consecutive day — increment streak
@@ -176,7 +176,7 @@ export class UsersService {
         .update({
           current_streak: newStreak,
           longest_streak: Math.max(newStreak, streak.longest_streak),
-          last_login_date: today.toISOString().split('T')[0],
+          last_login_date: todayStr,
         })
         .eq('user_id', userId);
     } else if (diffDays <= 2) {
@@ -184,7 +184,7 @@ export class UsersService {
       await client
         .from('user_streaks')
         .update({
-          last_login_date: today.toISOString().split('T')[0],
+          last_login_date: todayStr,
         })
         .eq('user_id', userId);
     } else {
@@ -194,7 +194,7 @@ export class UsersService {
         .update({
           current_streak: 1,
           longest_streak: streak.longest_streak,
-          last_login_date: today.toISOString().split('T')[0],
+          last_login_date: todayStr,
         })
         .eq('user_id', userId);
     }

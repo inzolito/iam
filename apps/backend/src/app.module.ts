@@ -5,6 +5,9 @@ import { SupabaseModule } from './supabase';
 import { HealthModule } from './health';
 import { AuthModule } from './auth';
 import { UsersModule } from './users';
+import { SpinModule } from './spin';
+import { OnboardingModule } from './onboarding';
+import { MatchingModule } from './matching';
 
 @Module({
   imports: [
@@ -16,6 +19,9 @@ import { UsersModule } from './users';
     HealthModule,
     AuthModule,
     UsersModule,
+    SpinModule,
+    OnboardingModule,
+    MatchingModule,
   ],
 })
 export class AppModule {}
