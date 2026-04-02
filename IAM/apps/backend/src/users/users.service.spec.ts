@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import { RewardsService } from '../esencias/rewards.service';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -63,10 +64,15 @@ describe('UsersService', () => {
         }),
       };
 
+      const mockRewardsService = {
+        awardLoginBonus: jest.fn().mockResolvedValue(10),
+      };
+
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           UsersService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: RewardsService, useValue: mockRewardsService },
         ],
       }).compile();
 
@@ -98,10 +104,15 @@ describe('UsersService', () => {
         }),
       };
 
+      const mockRewardsService = {
+        awardLoginBonus: jest.fn().mockResolvedValue(10),
+      };
+
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           UsersService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: RewardsService, useValue: mockRewardsService },
         ],
       }).compile();
 
@@ -128,10 +139,15 @@ describe('UsersService', () => {
         }),
       };
 
+      const mockRewardsService = {
+        awardLoginBonus: jest.fn().mockResolvedValue(10),
+      };
+
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           UsersService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: RewardsService, useValue: mockRewardsService },
         ],
       }).compile();
 
@@ -159,10 +175,15 @@ describe('UsersService', () => {
         }),
       };
 
+      const mockRewardsService = {
+        awardLoginBonus: jest.fn().mockResolvedValue(10),
+      };
+
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           UsersService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: RewardsService, useValue: mockRewardsService },
         ],
       }).compile();
 
@@ -186,10 +207,15 @@ describe('UsersService', () => {
         }),
       };
 
+      const mockRewardsService = {
+        awardLoginBonus: jest.fn().mockResolvedValue(10),
+      };
+
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           UsersService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: RewardsService, useValue: mockRewardsService },
         ],
       }).compile();
 
@@ -217,10 +243,15 @@ describe('UsersService', () => {
         }),
       };
 
+      const mockRewardsService = {
+        awardLoginBonus: jest.fn().mockResolvedValue(10),
+      };
+
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           UsersService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: RewardsService, useValue: mockRewardsService },
         ],
       }).compile();
 
@@ -253,10 +284,15 @@ describe('UsersService', () => {
         }),
       };
 
+      const mockRewardsService = {
+        awardLoginBonus: jest.fn().mockResolvedValue(10),
+      };
+
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           UsersService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: RewardsService, useValue: mockRewardsService },
         ],
       }).compile();
 

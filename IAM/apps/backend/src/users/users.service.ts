@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import { RewardsService } from '../esencias/rewards.service';
 
 interface CreateUserInput {
   email: string;
@@ -31,7 +32,10 @@ interface UserRecord {
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly rewardsService: RewardsService,
+  ) {}
 
   /**
    * Busca un usuario por auth_id. Si no existe, lo crea.
@@ -126,7 +130,7 @@ export class UsersService {
 
   /**
    * Actualiza la racha del usuario al hacer login.
-   * Si la última sesión fue ayer → incrementa racha.
+   * Si la última sesión fue ayer → incrementa racha + otorga bonus.
    * Si fue hace más de 48 horas → resetea racha.
    * Si fue hoy → no hace nada.
    */
@@ -154,6 +158,9 @@ export class UsersService {
           last_login_date: todayStr,
         })
         .eq('user_id', userId);
+
+      // Award day 1 login bonus
+      await this.rewardsService.awardLoginBonus(userId, 1);
       return;
     }
 
@@ -179,6 +186,9 @@ export class UsersService {
           last_login_date: todayStr,
         })
         .eq('user_id', userId);
+
+      // Award login bonus for this streak day
+      await this.rewardsService.awardLoginBonus(userId, newStreak);
     } else if (diffDays <= 2) {
       // Within 48h grace period — maintain streak but don't increment
       await client
@@ -197,6 +207,9 @@ export class UsersService {
           last_login_date: todayStr,
         })
         .eq('user_id', userId);
+
+      // Award day 1 login bonus for new streak
+      await this.rewardsService.awardLoginBonus(userId, 1);
     }
   }
 }

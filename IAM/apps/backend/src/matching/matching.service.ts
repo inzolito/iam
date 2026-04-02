@@ -1,5 +1,6 @@
 import { Injectable, Logger, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import { RewardsService } from '../esencias/rewards.service';
 
 const DEFAULT_RADIUS_METERS = 15000; // 15km default search radius
 const FEED_PAGE_SIZE = 20;
@@ -24,7 +25,10 @@ interface FeedProfile extends UserProfile {
 export class MatchingService {
   private readonly logger = new Logger(MatchingService.name);
 
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly rewardsService: RewardsService,
+  ) {}
 
   /**
    * Get feed — profiles within radius, sorted by match score.
@@ -240,6 +244,9 @@ export class MatchingService {
           .single();
 
         if (!matchError && match) {
+          // Award match creation bonus to both users
+          await this.rewardsService.awardMatchBonus(userId, targetUserId);
+
           return { matched: true, match };
         }
       }

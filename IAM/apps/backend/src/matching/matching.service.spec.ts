@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { MatchingService } from './matching.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import { RewardsService } from '../esencias/rewards.service';
 
 describe('MatchingService', () => {
   let service: MatchingService;
@@ -123,10 +124,18 @@ describe('MatchingService', () => {
   }
 
   async function createService(opts: Parameters<typeof buildMock>[0] = {}) {
+    const mockRewardsService = {
+      awardMatchBonus: jest.fn().mockResolvedValue({
+        user1Award: 25,
+        user2Award: 25,
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MatchingService,
         { provide: SupabaseService, useValue: buildMock(opts) },
+        { provide: RewardsService, useValue: mockRewardsService },
       ],
     }).compile();
 
