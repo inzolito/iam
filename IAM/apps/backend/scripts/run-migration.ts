@@ -14,14 +14,21 @@ async function runMigrations(): Promise<void> {
 
   const ref = new URL(supabaseUrl).hostname.split('.')[0];
 
+  // Try direct connection first, fallback to connection pooler
+  const host = process.env.DB_HOST || `db.${ref}.supabase.co`;
+  const port = parseInt(process.env.DB_PORT || '5432', 10);
+  const user = process.env.DB_USER || 'postgres';
+
   const client = new Client({
-    host: `db.${ref}.supabase.co`,
-    port: 5432,
+    host,
+    port,
     database: 'postgres',
-    user: 'postgres',
+    user,
     password: process.env.DB_PASSWORD,
     ssl: { rejectUnauthorized: false },
   });
+
+  console.log(`Connecting to ${host}:${port} as ${user}...`);
 
   try {
     await client.connect();
