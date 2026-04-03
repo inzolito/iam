@@ -151,9 +151,16 @@ export default function TradeHistory({ accountId, currency = "USD", dateFrom: ex
       : <ChevronUp   size={10} className="text-amber-400" />;
   };
 
-  const totalPnl = trades.reduce((s, t) => s + t.net_profit, 0);
+  const totalPnl = trades.reduce((s, t) => s + (t.net_profit || 0), 0);
+  // Promedio de variación porcentual del precio capturada por los trades.
+  // FÓRMULA: ((close_price - open_price) / open_price) * multiplier * 100
   const avgPct   = trades.length > 0
-    ? trades.reduce((s, t) => s + (t.open_price > 0 ? (t.net_profit / t.open_price) * 100 : 0), 0) / trades.length
+    ? trades.reduce((s, t) => {
+        if (!t || !t.open_price || t.open_price <= 0) return s;
+        const sideMult = t.side === "BUY" ? 1 : -1;
+        const diff = (t.close_price || 0) - (t.open_price || 0);
+        return s + ((diff / t.open_price) * sideMult * 100);
+      }, 0) / trades.length
     : 0;
 
   const COLS: { label: string; key?: SortKey; cls?: string }[] = [
@@ -247,8 +254,9 @@ export default function TradeHistory({ accountId, currency = "USD", dateFrom: ex
               </thead>
               <tbody>
                 {trades.map((t) => {
-                  const isWin = t.net_profit >= 0;
-                  const pct   = t.open_price > 0 ? (t.net_profit / t.open_price) * 100 : null;
+                  const isWin = (t.net_profit || 0) >= 0;
+                  // Fórmula: (Dif / open_price) * (COMPRA:1, VENTA:-1) * 100
+                  const pct   = (t && t.open_price > 0) ? (((t.close_price || 0) - t.open_price) / t.open_price) * (t.side === "BUY" ? 1 : -1) * 100 : null;
                   const isExp = expanded === t.id;
 
                   return (
