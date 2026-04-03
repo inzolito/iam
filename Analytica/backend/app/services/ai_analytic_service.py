@@ -184,38 +184,34 @@ class AIAnalyticService:
             "macro_events_high_impact": [m for m in macro if m.get("impact") == "High"],
         }
 
-        prompt = f"""Eres un analista cuantitativo de trading con acceso a métricas de comportamiento de un sistema algorítmico.
+        prompt = f"""Eres un analista cuantitativo implacable dirigido a un TRADER HUMANO (prohibido usar 'el algoritmo', 'el bot', 'el sistema' o 'tu lógica'). Háblale directo sobre su operativa.
 
-DATOS (ya calculados, no los repitas):
+DATOS CRÚDOS CALCULADOS (No repitas tablas, cruza la información):
 {json.dumps(data, indent=2, default=str)}
 
-REGLA CRÍTICA: NO digas "el par X tiene el mejor win rate" ni "evita el par Y" — eso ya está visible en los datos.
-Tu trabajo es encontrar PATRONES NO OBVIOS que el trader NO puede ver en las tablas.
+REGLAS ABSOLUTAS (Si las rompes, el análisis falla):
+1. CERO RELLENO: Prohibido decir "revisa tu estrategia", "ajusta tus entradas", "evalúa las condiciones". Eso es relleno inútil.
+2. EL SL NO ES UN ERROR: Que un trade toque Stop Loss es inherente al trading. NINGÚN trade falla "porque tocó el SL". Si hablas de SL, debes hacerlo usando la DURACIÓN de las pérdidas (duration_bias) para demostrar que aguanta perdedores.
+3. SÓLO DATOS DUROS: Cada afirmación debe estar justificada numéricamente. Ejemplo de lo que SÍ hacer: "Tus pérdidas en AUDNZD duran 10.9h mientras que tus ganancias apenas 9.5h, estás cortando los ganadores muy rápido."
+4. ACCIONABLES MATEMÁTICOS DIRECTOS: Dile exactamente qué bloquear o alterar basándote en la asimetría BUY/SELL. 
 
-ANALIZA ESPECÍFICAMENTE:
+ANALIZA:
+1. Asimetría de Duración: Busca la diferencia en horas entre ganancias y pérdidas por par. Demuestra con horas si el trader tiene apego emocional al trade perdedor. 
+2. Sesgo Direccional: Compara PnL promedio de BUY vs SELL por par. Si la asimetría es salvaje (ej. pierde consistentemente en SELL y gana en BUY), ordénale que detenga las ventas en ese activo.
+3. Rachas de Pérdida vs Macro: Cruza las rachas ("loss_clusters_of_3plus_consecutive") con los "macro_events_high_impact" para ver si fue la volatilidad la causa.
 
-1. SESGO DE DURACIÓN (duration_bias): Para cada símbolo con "cuts winners early" o "lets losers run", explica qué significa en términos de gestión emocional/algorítmica. ¿El sistema está siendo sacado del mercado antes de que el trade madure, o está aguantando perdedores con la esperanza de recuperación? Cita los números concretos de avg_win_duration_h vs avg_loss_duration_h.
-
-2. SESGO DIRECCIONAL (side_bias): Si un símbolo muestra "BUY outperforms" o "SELL outperforms", ¿qué implica? ¿La estrategia tiene mejor lógica para detectar tendencias alcistas que bajistas en ese par? ¿O hay un horario donde las ventas funcionan peor? Cita avg_buy_pnl vs avg_sell_pnl.
-
-3. CLUSTERING DE PÉRDIDAS: Si hay rachas de 3+ pérdidas consecutivas, esto es una señal de que el mercado entró en un régimen adverso para la estrategia (alta correlación intra-día, falsos breakouts, etc.). ¿Cuántas rachas hay y qué sugiere sobre la resiliencia del sistema?
-
-4. CORRELACIÓN MACRO ESPECÍFICA: Si hay eventos de alto impacto en el período, ¿coinciden temporalmente con los clusters de pérdidas? Cita el evento y la fecha exacta si hay coincidencia.
-
-5. CIERRE POR RAZÓN: Para los pares con más pérdidas, ¿cuál es el close_reason dominante? Si "sl" domina en un par específico, el problema es la entrada o el SL demasiado estrecho para ESE par. Si "manual" domina en las pérdidas, hay un problema de disciplina o de lógica de salida.
-
-RESPONDE ÚNICAMENTE EN JSON (sin texto fuera del JSON):
+RESPONDE ÚNICAMENTE EN JSON (sin texto adicional):
 {{
-    "summary": "2-3 frases con el hallazgo más importante y no obvio del período",
-    "trade_failures": "análisis específico con números concretos de duration_bias y close_reason",
-    "macro_impact": "correlación específica con eventos o 'Sin eventos de alto impacto coincidentes' si no hay",
-    "entry_improvements": "basado en side_bias y duration_bias, qué ajuste concreto haría diferencia",
-    "pairs_to_favor": ["TICKER — razón basada en side_bias y duration equilibrado, no solo win rate"],
-    "pairs_to_avoid": ["TICKER — razón basada en el patrón específico que encontraste"],
+    "summary": "1 sola frase contundente sobre su mayor ineficiencia matemática o sesgo psicológico detectado en los datos.",
+    "trade_failures": "Exposición del sesgo de retención de pérdidas vs ganancias (duration_bias). Menciona horas exactas. Ej: 'En GBPJPY dejas correr pérdidas 15h pero cortas ganancias a las 2h.'",
+    "macro_impact": "Verificación de si los clusters de pérdidas (tachas rojas múltiples) coinciden temporalmente con noticias macro de alto impacto. Si no, indica 'Las pérdidas no tienen justificación macro.'",
+    "entry_improvements": "Directrices matemáticas del 'side_bias'. Ej: 'Frena por completo las VENTAS en AUDCAD; tu promedio en SELL es profundamente negativo (-$15) frente al BUY (+$17).' (No uses la palabra 'lógica' o 'estrategia').",
+    "pairs_to_favor": ["TICKER — Únicamente la razón estadística por eficiencia asimétrica BUY vs SELL y duración equilibrada."],
+    "pairs_to_avoid": ["TICKER — Argumento cuantitativo basado en cuántas horas de arrastre tiene en pérdidas o su pésima asimetría direccional."],
     "suggestions": [
-        "sugerencia 1 concreta basada en los datos (menciona números)",
-        "sugerencia 2 concreta basada en los datos",
-        "sugerencia 3 concreta basada en los datos"
+        "Plan accionable 1: Métrica dura (ej. 'Recorta tu SL temporal en par X dado que los trades que pasan de Y horas siempre terminan en pérdida').",
+        "Plan accionable 2: Enfocada estrictamente en detener las operaciones en contra del 'side_bias'.",
+        "Plan accionable 3: Sobre los tiempos de retención ('cuts winners early') usando horas exactas."
     ]
 }}"""
 
@@ -277,31 +273,28 @@ RESPONDE ÚNICAMENTE EN JSON (sin texto fuera del JSON):
             "session_changes_vs_historical": degradation,
         }
 
-        prompt = f"""Eres un analista de performance de trading algorítmico. Tienes acceso a métricas de sesión con comparación histórica ya calculada.
+        prompt = f"""Eres un analista cuantitativo comunicándose con un TRADER HUMANO. Tu objetivo es optimizar sus sesiones de mercado basándote en desviaciones estadísticas de sus operaciones reales. PROHIBIDO usar palabras como 'el algoritmo', 'el bot', 'evalúa tu estrategia'. Háblale directo sobre las decisiones que está tomando.
 
 DATOS:
 {json.dumps(data, indent=2, default=str)}
 
-REGLA CRÍTICA: NO digas simplemente "la sesión X es la mejor/peor" — eso está en los datos.
-Busca CAMBIOS DE RÉGIMEN, SOBREOPERACIÓN, y DEGRADACIÓN SILENCIOSA.
+REGLAS ABSOLUTAS:
+1. CERO RELLENOS: Nada de sugerencias inútiles como "es recomendable analizar las condiciones del mercado actual". Da órdenes operativas numéricas. 
+2. ENFÓCATE EN LA DEGRADACIÓN REAL: Compara activamente el 'session_changes_vs_historical'. Si el trader está operando un horario que históricamente pagaba pero en este periodo cayó en picado, enróstraselo usando los deltas crudos (ej. "Tus trades en Londres se han degradado, tu winrate colapsó un -15%").
+3. SOBREOPERACIÓN: Detecta sesiones de alto volumen de trades pero bajo PnL ('alta frecuencia baja calidad'). Dile exactamente que el volumen de tickets cerrados ahí no justifica el esfuerzo.
 
 ANALIZA:
+1. Degradación Silenciosa: Indica exactamente qué sesión solía ser rentable históricamente y ahora arruina su rentabilidad diaria (usa los 'session_changes_vs_historical').
+2. Trampa de Volumen: Identifica dónde opera casi por ego (muchísimos trades) logrando un 'avg_pnl' miserable.
+3. Eficiencia: Encuentra la sesión oro oculto (pocos trades, un 'avg_pnl' y 'win_rate' brutal estadísticamente).
 
-1. CAMBIO DE RÉGIMEN: En "session_changes_vs_historical", ¿hay sesiones que históricamente eran rentables pero en el período actual tienen win_rate_delta negativo? Esto indica que el mercado cambió en esa sesión — la estrategia ya no funciona igual en ese horario.
-
-2. TRAMPA DE VOLUMEN: Busca sesiones con "sobreoperación detectada" o "alta frecuencia baja calidad". ¿El sistema opera más en la sesión incorrecta? Más trades con menor avg_pnl es una señal de que el algoritmo está forzando entradas cuando el mercado no está en condiciones favorables.
-
-3. SESIÓN OCULTA: ¿Hay alguna sesión con pocos trades pero win_rate alto? Eso es oro — el sistema funciona bien ahí pero opera poco. ¿Por qué?
-
-4. RECOMENDACIÓN OPERATIVA: Basada en los deltas histórico vs período, ¿cuáles sesiones activar, cuáles desactivar, y cuáles reducir el tamaño de posición?
-
-RESPONDE ÚNICAMENTE EN JSON:
+RESPONDE ÚNICAMENTE EN JSON (sin formato Markdown adicional):
 {{
-    "summary": "el hallazgo más importante — cambio de régimen o sesión sobreoperada, con números concretos",
-    "best_sessions": "sesión con mejor eficiencia (no solo PnL total sino avg_pnl y win_rate combinados)",
-    "worst_sessions": "sesión con peor eficiencia, incluyendo si hay sobreoperación",
-    "historical_comparison": "qué sesiones degradaron o mejoraron y en qué magnitud (cita los deltas)",
-    "recommendation": "horario concreto de activación/desactivación con justificación en los datos"
+    "summary": "1 frase muy directa sobre la mayor ineficiencia detectada en sus sesiones operativas (ej. 'Estás machacando tu cuenta operando compulsivamente en la sesión de NY para un PnL promedio negativo').",
+    "best_sessions": "La validación matemática de su mejor sesión comparando PnL contra volumen bajo. Habla con datos crudos, no consejos vagos.",
+    "worst_sessions": "Exhibe explícitamente el horario trampa o de sobreoperación, usando sus números avergonzantes.",
+    "historical_comparison": "Análisis duro: indica cuántos puntos de % Win Rate perdió o recuperó exactamente respecto a su propia operativa histórica.",
+    "recommendation": "Orden cronológica y exacta. (Ej. 'Cancela totalmente la operativa en sesión Londres (degradación total) e incrementa capital en sesión Asia (alta eficiencia / baja exposición)')."
 }}"""
 
         return await self._call_gemini(prompt)
@@ -344,33 +337,28 @@ RESPONDE ÚNICAMENTE EN JSON:
             "consistently_bad_in_both": consistently_bad,
         }
 
-        prompt = f"""Eres un analista cuantitativo especializado en microestructura de mercado y optimización horaria.
+        prompt = f"""Eres el analista estadístico personal de un TRADER HUMANO. Tu misión es proteger su capital ordenándole matemáticamente bloquear horas tóxicas y enfocarse en ventajas estadísticas probadas. PROHIBIDO hablar de 'algoritmos', 'sistemas' o 'tu lógica'.
 
-DATOS (avg_pnl = PnL promedio por trade en ese slot día/hora UTC):
+DATOS:
 {json.dumps(data, indent=2, default=str)}
 
-REGLA CRÍTICA: Los slots con "reliable: false" (< 4 trades) NO son conclusivos — dilo explícitamente si los menciones.
-NO listes simplemente los mejores y peores slots — eso está en los datos.
+REGLAS ABSOLUTAS:
+1. NADA DE CONSEJOS VAGOS ("te recomendamos evaluar la apertura"). Debes dar sentencias directas: "Los Martes a las 14:00 UTC tienes un PnL de -$25 consistentemente, corta eso."
+2. SOLO USA LOS SLOTS CON 'reliable: true' para asignar fiabilidad. Si algo falló pocas veces di "muestra debilidad, pero no tiene relevancia estadística".
+3. FOCOS CRÍTICOS: Lo vital están en los 'consistently_bad_in_both'. Esa es su "zona de sangría recurrente". Es donde el trader consistentemente arruina meses enteros por operar mal.
 
 ANALIZA:
+1. Ubica los bloques específicos intradiarios donde pierde dinero todos los meses sistemáticamente (consistently_bad_in_both).
+2. Valida los bloques donde gana, filtrando para que aparezca en el 'period' actual y en el 'historical' a la vez. No hables de los slots del periodo actual si resulta que no sirven estadísticamente (reliable: false).
+3. Evalúa si rinde mejor en la semana: "Lunes y Miércoles logran X% del PnL".
 
-1. CONSISTENCIA REAL: De los mejores slots del período, ¿cuántos también aparecen en el histórico? Solo los que aparecen en AMBAS listas son genuinamente buenos. Los que solo aparecen en el período podrían ser ruido estadístico.
-
-2. ZONAS DE DESTRUCCIÓN SISTEMÁTICA: "consistently_bad_in_both" son los slots donde el sistema SIEMPRE pierde, período e histórico. Estos son los más importantes para desactivar. ¿Qué tienen en común en términos de horario de mercado?
-
-3. PATRÓN INTRADIARIO: Mirando los mejores slots, ¿hay una ventana de horas del día donde la estrategia funciona bien independientemente del día? ¿O el rendimiento está muy fragmentado (un slot aquí, otro allá sin coherencia)?
-
-4. APERTURA/CIERRE DE MERCADO: ¿Los peores slots coinciden con los primeros 30-60 minutos de apertura de Londres (08:00-09:00 UTC) o NY (13:00-14:00 UTC)? Esos suelen ser momentos de alta volatilidad desordenada donde las estrategias algorítmicas pierden más.
-
-5. HORARIO OPTIMIZADO: Propón un horario de activación específico basado SOLO en slots con reliable=true que aparecen en histórico Y período. Formato: "Lun-Vie 09:00-12:00 UTC, excluir 13:00-14:00 UTC".
-
-RESPONDE ÚNICAMENTE EN JSON:
+RESPONDE ÚNICAMENTE EN JSON (sin formato Markdown adicional):
 {{
-    "summary": "hallazgo principal sobre consistencia o zonas de destrucción, con números concretos",
-    "golden_hours": "slots confirmados en período E histórico con reliable=true (los únicos en los que confiar)",
-    "avoid_hours": "slots de 'consistently_bad_in_both' y por qué son estructuralmente malos",
-    "weekly_pattern": "¿hay días de la semana donde los buenos slots se concentran? ¿o días donde todo va mal?",
-    "schedule_recommendation": "horario concreto basado solo en slots estadísticamente confiables"
+    "summary": "Afirmación severa nombrando el peor agujero micro-horario de la operativa, o la mayor ventana de beneficios. (Apunta directamente al trader)",
+    "golden_hours": "Nombra y valida las horas EXACTAS (Ej. 'Los Jueves a las 09:00 UTC promedias +$30 por trade') probadas en ambos historiales. Basado siempre en reliable=true.",
+    "avoid_hours": "Indica el bloque horario exacto y el día que aparece en 'consistently_bad_in_both'. Explica con números cuánto le cuesta al trader operar en esas ventanas para que apague los terminales.",
+    "weekly_pattern": "Un desglose rápido señalando en qué día colapsa el win rate en la semana y cuándo rinde más basándose puramente en su 'avg_pnl'.",
+    "schedule_recommendation": "Bloques concretos que debe permitir y prohibir, especificando UTC y días concretos. Directo, como una receta médica ineludible."
 }}"""
 
         return await self._call_gemini(prompt)
