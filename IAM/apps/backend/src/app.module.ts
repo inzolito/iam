@@ -12,6 +12,7 @@ import { ChatModule } from './chat';
 import { EsenciasModule } from './esencias';
 import { VenuesModule } from './venues';
 import { BodyDoublingModule } from './body-doubling';
+import { MeetupsModule } from './meetups';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { BodyDoublingModule } from './body-doubling';
     EsenciasModule,
     VenuesModule,
     BodyDoublingModule,
+    MeetupsModule,
   ],
 })
 export class AppModule {}
