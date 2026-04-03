@@ -14,6 +14,7 @@ import { VenuesModule } from './venues';
 import { BodyDoublingModule } from './body-doubling';
 import { MeetupsModule } from './meetups';
 import { NotificationsModule } from './notifications';
+import { AdminModule } from './admin';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { NotificationsModule } from './notifications';
     BodyDoublingModule,
     MeetupsModule,
     NotificationsModule,
+    AdminModule,
   ],
 })
 export class AppModule {}
