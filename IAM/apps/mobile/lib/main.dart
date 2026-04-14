@@ -8,6 +8,7 @@ import 'core/services/auth_service.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/router/app_router.dart';
 import 'features/onboarding/onboarding_provider.dart';
+import 'features/feed/feed_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +56,9 @@ class _IamAppState extends State<IamApp> {
         ChangeNotifierProvider<AuthProvider>.value(value: _authProvider),
         ChangeNotifierProvider<OnboardingProvider>(
           create: (ctx) => OnboardingProvider(ctx.read<ApiService>()),
+        ),
+        ChangeNotifierProvider<FeedProvider>(
+          create: (ctx) => FeedProvider(api: ctx.read<ApiService>()),
         ),
       ],
       child: Consumer<AuthProvider>(

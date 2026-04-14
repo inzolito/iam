@@ -6,6 +6,7 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/splash_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/home/home_shell.dart';
+import '../../features/feed/feed_screen.dart';
 
 /// Rutas de la aplicación con redirección según estado de auth.
 class AppRouter {
@@ -35,7 +36,7 @@ class AppRouter {
         routes: [
           GoRoute(
             path: '/feed',
-            builder: (context, state) => const _PlaceholderPage('Feed'),
+            builder: (context, state) => const FeedScreen(),
           ),
           GoRoute(
             path: '/chat',
