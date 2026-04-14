@@ -7,6 +7,8 @@ import '../../features/auth/splash_screen.dart';
 import '../../features/onboarding/onboarding_screen.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/feed/feed_screen.dart';
+import '../../features/chat/chat_list_screen.dart';
+import '../../features/chat/chat_screen.dart';
 
 /// Rutas de la aplicación con redirección según estado de auth.
 class AppRouter {
@@ -40,7 +42,15 @@ class AppRouter {
           ),
           GoRoute(
             path: '/chat',
-            builder: (context, state) => const _PlaceholderPage('Chat'),
+            builder: (context, state) => const ChatListScreen(),
+            routes: [
+              GoRoute(
+                path: ':matchId',
+                builder: (context, state) => ChatScreen(
+                  matchId: state.pathParameters['matchId']!,
+                ),
+              ),
+            ],
           ),
           GoRoute(
             path: '/explore',

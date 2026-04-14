@@ -142,7 +142,8 @@ LoginScreen → signInWithGoogle() / signInWithApple()
 | `/login` | LoginScreen | Solo en unauthenticated |
 | `/onboarding` | OnboardingScreen | Solo en onboarding |
 | `/feed` | FeedScreen | authenticated, tab activa |
-| `/chat` | PlaceholderPage | authenticated |
+| `/chat` | ChatListScreen | authenticated |
+| `/chat/:matchId` | ChatScreen | authenticated |
 | `/explore` | PlaceholderPage | authenticated |
 | `/profile` | PlaceholderPage | authenticated |
 
@@ -296,11 +297,108 @@ Cuando se agotan todos → pantalla "No hay mas perfiles" + botón actualizar
 
 ---
 
+## F4 — Chat
+
+**Objetivo**: Mensajería entre matches — lista de conversaciones, historial de mensajes, envío, mark-read.
+
+### Flujo del chat
+
+```
+ChatListScreen monta → chatProvider.loadConversations()
+                          └─ GET /matches → lista de ChatConversation
+                               (match + otherUser + lastMessage + unreadCount)
+
+ChatListScreen → tap conversación → ChatScreen(matchId)
+                                       └─ openConversation(matchId)
+                                            ├─ GET /matches/:id/messages?page=0
+                                            └─ PATCH /matches/:id/read (auto mark-read)
+
+ChatScreen:
+  ├─ Scroll arriba → loadOlderMessages() (paginación 50/página)
+  ├─ Escribir + enviar → POST /matches/:id/messages {content}
+  │   └─ Mensaje agregado a lista local + lastMessage actualizado
+  └─ Volver → closeConversation()
+```
+
+### Modelos
+
+| Clase | Campos |
+|-------|--------|
+| `ChatMessage` | id, matchId, senderId, content, createdAt, readAt, isRead |
+| `ChatUser` | id, displayName?, avatarUrl? |
+| `ChatConversation` | matchId, otherUser, lastMessage?, unreadCount, hasUnread |
+
+### Archivos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lib/features/chat/chat_models.dart` | ChatMessage, ChatUser, ChatConversation con fromJson |
+| `lib/features/chat/chat_provider.dart` | ChangeNotifier: conversaciones, mensajes, envío, mark-read |
+| `lib/features/chat/chat_list_screen.dart` | Lista de conversaciones con avatar, último mensaje, unread badge |
+| `lib/features/chat/chat_screen.dart` | Chat individual con burbujas, input, scroll-to-load |
+
+### ChatProvider — Métodos
+
+| Método | Descripción |
+|--------|-------------|
+| `loadConversations()` | GET /matches → lista de conversaciones |
+| `openConversation(matchId)` | Cargar mensajes + auto mark-read |
+| `loadOlderMessages()` | Paginación hacia atrás (50/página) |
+| `sendMessage(content)` | POST mensaje, actualiza lastMessage en conv |
+| `markAsRead(matchId)` | PATCH /matches/:id/read, actualiza unread local |
+| `closeConversation()` | Limpiar estado de mensajes activos |
+| `totalUnreadCount` | Suma de unread de todas las conversaciones |
+
+### Rutas
+
+| Ruta | Pantalla |
+|------|----------|
+| `/chat` | ChatListScreen (lista) |
+| `/chat/:matchId` | ChatScreen (conversación individual) |
+
+### Tests (27 tests)
+
+**`test/chat_provider_test.dart`**
+
+**Happy Path** (9):
+- Estado inicial limpio
+- loadConversations carga lista
+- totalUnreadCount suma todos los unread
+- openConversation carga mensajes
+- sendMessage agrega a la lista
+- loadOlderMessages agrega al inicio
+- markAsRead actualiza unread local
+- closeConversation limpia estado
+- clearError limpia error
+
+**Error Forzado** (6):
+- loadConversations con error
+- openConversation con match inexistente
+- sendMessage con contenido vacío
+- sendMessage sin conversación activa
+- sendMessage con error del servidor
+- loadOlderMessages con error revierte página
+
+**Peor Caso** (6):
+- Conversaciones vacías
+- Mensajes vacíos
+- loadOlderMessages con hasMore=false
+- loadOlderMessages sin conversación activa
+- sendMessage actualiza lastMessage en conversación
+- markAsRead silencia errores
+
+**ChatModels** (6):
+- ChatMessage.fromJson completo + isRead
+- ChatMessage sin readAt
+- ChatUser.fromJson completo + mínimo
+- ChatConversation.fromJson completo + sin lastMessage
+
+---
+
 ## Etapas pendientes
 
 | Etapa | Nombre | Descripción |
 |-------|--------|-------------|
-| F4 | Chat | Mensajería en tiempo real entre matches |
 | F5 | Esencias | Token economy, balance, transfers, unlocks |
 | F6 | Venues | Mapa de venues seguros, check-in |
 | F7 | Body Doubling | Sesiones de coworking virtual |
@@ -319,7 +417,8 @@ Cuando se agotan todos → pantalla "No hay mas perfiles" + botón actualizar
 | `test/auth_provider_test.dart` | 18 | F2 |
 | `test/onboarding_provider_test.dart` | 26 | F2 (pre-existente) |
 | `test/feed_provider_test.dart` | 33 | F3 |
+| `test/chat_provider_test.dart` | 27 | F4 |
 | `test/widget_test.dart` | 1 | F1 |
-| **Total** | **95** | |
+| **Total** | **122** | |
 
 Todos los tests pasan con `flutter test`.
