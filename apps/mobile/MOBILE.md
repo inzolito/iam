@@ -141,7 +141,7 @@ LoginScreen → signInWithGoogle() / signInWithApple()
 | `/splash` | SplashScreen | Solo en estado initial |
 | `/login` | LoginScreen | Solo en unauthenticated |
 | `/onboarding` | OnboardingScreen | Solo en onboarding |
-| `/feed` | PlaceholderPage | authenticated, tab activa |
+| `/feed` | FeedScreen | authenticated, tab activa |
 | `/chat` | PlaceholderPage | authenticated |
 | `/explore` | PlaceholderPage | authenticated |
 | `/profile` | PlaceholderPage | authenticated |
@@ -176,11 +176,130 @@ LoginScreen → signInWithGoogle() / signInWithApple()
 
 ---
 
+## F3 — Feed & Matching
+
+**Objetivo**: Pantalla de descubrimiento de perfiles con like/pass, matches mutuos, bloqueo y reportes.
+
+### Flujo del feed
+
+```
+FeedScreen monta → feedProvider.loadFeed()
+                     └─ GET /feed?page=0&radius=15000
+                          → Lista de FeedProfile (20 por página)
+
+Usuario ve ProfileCard:
+  ├─ Like → POST /swipes {targetUserId, direction:'like'}
+  │   ├─ matched: false → avanza al siguiente
+  │   └─ matched: true → MatchDialog + avanza
+  ├─ Pass → POST /swipes {targetUserId, direction:'pass'} → avanza
+  ├─ Bloquear → POST /blocks {userId} → elimina del feed
+  └─ Reportar → POST /reports {userId, reason, description?}
+
+Cuando quedan <3 perfiles → loadMore() automático (paginación)
+Cuando se agotan todos → pantalla "No hay mas perfiles" + botón actualizar
+```
+
+### FeedProfile — Modelo
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | String | UUID del usuario |
+| `displayName` | String? | Nombre visible |
+| `avatarUrl` | String? | URL del avatar |
+| `isTeen` | bool | Menor de 18 |
+| `energyLevel` | int | Nivel de energía (1-3) |
+| `msnStatus` | String? | Estado MSN (160 chars) |
+| `spin` | List\<String\> | Tags de intereses especiales |
+| `matchScore` | double | Compatibilidad (0-1), 70% SpIn + 30% proximidad |
+| `distance` | double | Distancia en metros |
+
+**Helpers**: `formattedDistance` (5.2 km / 800 m), `compatibilityPercent` (87%)
+
+### Archivos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lib/features/feed/feed_profile.dart` | Modelo FeedProfile con fromJson y helpers |
+| `lib/features/feed/feed_provider.dart` | ChangeNotifier: loadFeed, like, pass, block, report, paginación |
+| `lib/features/feed/feed_screen.dart` | Pantalla principal: estados loading/error/vacío/card |
+| `lib/features/feed/widgets/profile_card.dart` | Card con avatar, nombre, distancia, compatibilidad, SpIn tags, botones |
+| `lib/features/feed/widgets/match_dialog.dart` | Dialog de match mutuo con opción de mensaje |
+
+### FeedProvider — Métodos
+
+| Método | Descripción |
+|--------|-------------|
+| `loadFeed({radius?})` | Cargar primera página del feed |
+| `loadMore({radius?})` | Cargar siguiente página (auto cuando quedan <3) |
+| `like(targetUserId)` | Dar like, detecta match mutuo |
+| `pass(targetUserId)` | Pasar perfil |
+| `blockUser(userId)` | Bloquear y eliminar del feed local |
+| `reportUser(userId, reason, {description?})` | Enviar reporte |
+| `clearLastMatch()` | Limpiar match después de cerrar dialog |
+| `clearError()` | Limpiar error |
+
+### FeedProvider — Estado
+
+| Propiedad | Tipo | Descripción |
+|-----------|------|-------------|
+| `profiles` | List\<FeedProfile\> | Perfiles cargados |
+| `currentIndex` | int | Índice del perfil visible |
+| `currentProfile` | FeedProfile? | Perfil actual (null si agotado) |
+| `isLoading` | bool | Cargando datos |
+| `error` | String? | Último error |
+| `hasMore` | bool | Hay más páginas disponibles |
+| `lastMatch` | Map? | Datos del último match (para dialog) |
+| `isEmpty` | bool | Feed vacío sin loading |
+| `isExhausted` | bool | Se acabaron todos los perfiles |
+
+### Tests (33 tests)
+
+**`test/feed_provider_test.dart`**
+
+**Happy Path** (11):
+- Estado inicial vacío sin loading
+- loadFeed carga perfiles del backend
+- loadFeed con radius pasa query param
+- like avanza al siguiente perfil
+- pass avanza al siguiente perfil
+- like con match mutuo guarda lastMatch
+- clearLastMatch limpia el match
+- loadMore agrega perfiles a la lista
+- blockUser elimina perfil del feed
+- reportUser envía reporte al backend
+- clearError limpia error
+
+**Error Forzado** (6):
+- loadFeed con error del servidor
+- loadFeed con excepción genérica
+- like con error no avanza perfil
+- loadMore con error revierte página
+- blockUser con error mantiene perfil
+- reportUser con error setea error
+
+**Peor Caso** (9):
+- loadFeed con respuesta vacía
+- isExhausted cuando se acabaron todos
+- hasMore false con <20 perfiles
+- hasMore true con 20 perfiles
+- loadMore no hace nada si hasMore=false
+- loadMore no hace nada si ya loading
+- loadFeed resetea estado previo
+- like sin match no guarda lastMatch
+- blockUser ajusta index
+
+**FeedProfile** (7):
+- fromJson parsea todos los campos
+- fromJson con campos mínimos
+- formattedDistance km y metros
+- compatibilityPercent formatos (0%, 87%, 100%)
+
+---
+
 ## Etapas pendientes
 
 | Etapa | Nombre | Descripción |
 |-------|--------|-------------|
-| F3 | Feed & Matching | Feed de perfiles, swipe, sistema de matches |
 | F4 | Chat | Mensajería en tiempo real entre matches |
 | F5 | Esencias | Token economy, balance, transfers, unlocks |
 | F6 | Venues | Mapa de venues seguros, check-in |
@@ -199,7 +318,8 @@ LoginScreen → signInWithGoogle() / signInWithApple()
 | `test/theme_test.dart` | 8 | F1 |
 | `test/auth_provider_test.dart` | 18 | F2 |
 | `test/onboarding_provider_test.dart` | 26 | F2 (pre-existente) |
+| `test/feed_provider_test.dart` | 33 | F3 |
 | `test/widget_test.dart` | 1 | F1 |
-| **Total** | **62** | |
+| **Total** | **95** | |
 
 Todos los tests pasan con `flutter test`.
