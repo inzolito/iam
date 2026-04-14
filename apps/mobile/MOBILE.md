@@ -1,0 +1,205 @@
+# IAM Mobile — Documentación por Etapas
+
+## Visión General
+
+App Flutter para conexiones neurodiversas. Temas adaptativos por diagnóstico (TEA, TDAH, AACC, Dislexia), autenticación OAuth (Google/Apple), onboarding con selección de diagnóstico e intereses especiales (SpIn).
+
+**Stack**: Flutter 3.x · Provider · GoRouter · FlutterSecureStorage · Google Sign In · Apple Sign In
+
+**Ejecución**:
+```bash
+flutter run --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...
+flutter test
+```
+
+---
+
+## F1 — Fundamentos
+
+**Objetivo**: Establecer la base arquitectónica de la app.
+
+### Archivos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lib/main.dart` | Entry point. MultiProvider, tema dinámico por diagnóstico, MaterialApp.router |
+| `lib/core/config/env.dart` | Variables de entorno via `--dart-define` |
+| `lib/core/services/api_service.dart` | Cliente HTTP con JWT auto-header. GET/POST/PATCH. ApiException tipada |
+| `lib/core/services/storage_service.dart` | FlutterSecureStorage wrapper. Tokens JWT, userId, diagnóstico, onboarding |
+| `lib/core/theme/iam_themes.dart` | 4 temas por diagnóstico + default |
+| `lib/features/home/home_shell.dart` | Shell con NavigationBar inferior (Feed, Chat, Explorar, Perfil) |
+
+### Temas por diagnóstico
+
+| Diagnóstico | Brightness | Primary | Font | Enfoque UX |
+|-------------|-----------|---------|------|------------|
+| TEA | light | `#7EB8D4` | Nunito | Calma, predecibilidad |
+| TDAH | dark | `#7C6AF7` | Nunito | Energía controlada |
+| AACC | light | `#4A7C59` | Nunito | Profundidad intelectual |
+| Dislexia | light | `#2E7D6E` | OpenDyslexic | Legibilidad máxima |
+
+### Arquitectura
+
+```
+lib/
+├── core/
+│   ├── config/env.dart          # Variables de entorno
+│   ├── services/                # Capa de servicios
+│   │   ├── api_service.dart     # HTTP client
+│   │   └── storage_service.dart # Almacenamiento seguro
+│   ├── providers/               # Estado global
+│   │   └── auth_provider.dart   # Autenticación
+│   ├── router/                  # Navegación
+│   │   └── app_router.dart      # GoRouter + guards
+│   └── theme/                   # Temas visuales
+│       └── iam_themes.dart
+├── features/
+│   ├── auth/                    # Login + Splash
+│   ├── home/                    # Shell con nav inferior
+│   └── onboarding/              # Flujo de onboarding
+```
+
+### Tests (9 tests)
+
+**`test/api_service_test.dart`**
+- Happy Path: crear con baseUrl custom, setToken, ApiException con statusCode/message, toString
+- Error Forzado: ApiException con códigos 400/500, mensaje vacío
+- Peor Caso: setToken con string vacío, sobreescribir token
+
+**`test/theme_test.dart`** (8 tests)
+- Happy Path: TEA light con color calmado, TDAH dark con energía, AACC light con profundidad, Dislexia light con claridad, default es TEA
+- Peor Caso: fontFamily Nunito excepto Dislexia (OpenDyslexic), surface/onSurface definidos, TDAH único dark
+
+---
+
+## F2 — Autenticación
+
+**Objetivo**: Login con Google/Apple, gestión de sesión, router con guards.
+
+### Flujo de auth
+
+```
+App inicia → SplashScreen → authProvider.initialize()
+                               ├─ token guardado → restoreSession() → /auth/me
+                               │   ├─ user con onboarding completo → authenticated → /feed
+                               │   ├─ user sin onboarding → onboarding → /onboarding
+                               │   └─ token inválido → tryRefresh → unauthenticated → /login
+                               └─ sin token → unauthenticated → /login
+
+LoginScreen → signInWithGoogle() / signInWithApple()
+                ├─ OAuth → idToken → POST /auth/{provider}
+                │   ├─ success + newUser → onboarding → /onboarding
+                │   ├─ success + existingUser → authenticated → /feed
+                │   └─ error → mostrar mensaje amigable
+                └─ cancelado → LOGIN_CANCELLED (sin cambiar estado)
+```
+
+### AuthProvider — Estados
+
+| Estado | Significado | Ruta |
+|--------|-------------|------|
+| `initial` | Verificando sesión | `/splash` |
+| `unauthenticated` | Sin sesión activa | `/login` |
+| `onboarding` | Autenticado, falta onboarding | `/onboarding` |
+| `authenticated` | Sesión completa | `/feed` |
+
+### Archivos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lib/core/services/auth_service.dart` | OAuth Google/Apple, backend auth, restore session, token refresh, signOut |
+| `lib/core/providers/auth_provider.dart` | ChangeNotifier con 4 estados, isLoading, error handling |
+| `lib/core/router/app_router.dart` | GoRouter con redirect por AuthStatus. ShellRoute para tabs |
+| `lib/features/auth/splash_screen.dart` | Logo "IAM" + spinner, llama initialize() en mount |
+| `lib/features/auth/login_screen.dart` | Botones Google/Apple, errores amigables, footer legal |
+
+### AuthService — Métodos
+
+| Método | Descripción |
+|--------|-------------|
+| `signInWithGoogle()` | OAuth → idToken → POST /auth/google → guardar tokens |
+| `signInWithApple()` | OAuth → idToken → POST /auth/apple → guardar tokens |
+| `restoreSession()` | Leer token → GET /auth/me → AuthUser. Auto-refresh si 401 |
+| `signOut()` | Limpiar Google session + tokens + storage |
+| `isAppleSignInAvailable` | true solo en iOS/macOS |
+
+### AuthProvider — Métodos
+
+| Método | Descripción |
+|--------|-------------|
+| `initialize()` | Restaurar sesión guardada, determinar estado |
+| `signInWithGoogle()` | Login Google → isLoading → resultado |
+| `signInWithApple()` | Login Apple → isLoading → resultado |
+| `completeOnboarding()` | Marcar onboarding completo → authenticated |
+| `signOut()` | Limpiar todo → unauthenticated |
+| `clearError()` | Limpiar error actual |
+
+### Router — Rutas
+
+| Ruta | Pantalla | Guard |
+|------|----------|-------|
+| `/splash` | SplashScreen | Solo en estado initial |
+| `/login` | LoginScreen | Solo en unauthenticated |
+| `/onboarding` | OnboardingScreen | Solo en onboarding |
+| `/feed` | PlaceholderPage | authenticated, tab activa |
+| `/chat` | PlaceholderPage | authenticated |
+| `/explore` | PlaceholderPage | authenticated |
+| `/profile` | PlaceholderPage | authenticated |
+
+### Tests (18 tests)
+
+**`test/auth_provider_test.dart`**
+
+**Happy Path** (9):
+- Estado inicial es `initial`
+- initialize con sesión activa → `authenticated`
+- initialize sin sesión → `unauthenticated`
+- initialize con usuario nuevo → `onboarding`
+- signInWithGoogle exitoso → `authenticated`
+- signInWithGoogle usuario nuevo → `onboarding`
+- completeOnboarding cambia a `authenticated`
+- signOut limpia estado
+- isAppleSignInAvailable refleja el servicio
+
+**Error Forzado** (3):
+- signInWithGoogle fallido setea error y isLoading=false
+- signInWithGoogle cancelado no cambia status
+- signInWithApple fallido setea error
+
+**Peor Caso** (6):
+- initialize con excepción → `unauthenticated`
+- doble signOut no falla
+- isLoading correcta después de completar signIn
+- AuthUser.fromJson con campos mínimos
+- AuthUser.fromJson con todos los campos
+- clearError limpia error
+
+---
+
+## Etapas pendientes
+
+| Etapa | Nombre | Descripción |
+|-------|--------|-------------|
+| F3 | Feed & Matching | Feed de perfiles, swipe, sistema de matches |
+| F4 | Chat | Mensajería en tiempo real entre matches |
+| F5 | Esencias | Token economy, balance, transfers, unlocks |
+| F6 | Venues | Mapa de venues seguros, check-in |
+| F7 | Body Doubling | Sesiones de coworking virtual |
+| F8 | Meetups | Confirmación de meetups presenciales |
+| F9 | Notificaciones | Push notifications, preferencias |
+| F10 | Perfil | Edición de perfil, settings, diagnóstico |
+
+---
+
+## Resumen de Tests
+
+| Test file | Tests | Etapa |
+|-----------|-------|-------|
+| `test/api_service_test.dart` | 9 | F1 |
+| `test/theme_test.dart` | 8 | F1 |
+| `test/auth_provider_test.dart` | 18 | F2 |
+| `test/onboarding_provider_test.dart` | 26 | F2 (pre-existente) |
+| `test/widget_test.dart` | 1 | F1 |
+| **Total** | **62** | |
+
+Todos los tests pasan con `flutter test`.
