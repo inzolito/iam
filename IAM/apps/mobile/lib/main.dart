@@ -9,6 +9,7 @@ import 'core/providers/auth_provider.dart';
 import 'core/router/app_router.dart';
 import 'features/onboarding/onboarding_provider.dart';
 import 'features/feed/feed_provider.dart';
+import 'features/chat/chat_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +60,9 @@ class _IamAppState extends State<IamApp> {
         ),
         ChangeNotifierProvider<FeedProvider>(
           create: (ctx) => FeedProvider(api: ctx.read<ApiService>()),
+        ),
+        ChangeNotifierProvider<ChatProvider>(
+          create: (ctx) => ChatProvider(api: ctx.read<ApiService>()),
         ),
       ],
       child: Consumer<AuthProvider>(
