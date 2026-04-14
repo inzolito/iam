@@ -2,11 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:iam_mobile/main.dart';
 
 void main() {
-  testWidgets('IamApp renders onboarding screen', (WidgetTester tester) async {
+  testWidgets('IamApp renders splash screen on launch', (WidgetTester tester) async {
     await tester.pumpWidget(const IamApp());
 
-    // Onboarding step 1: Diagnosis selection
-    expect(find.text('I AM...'), findsOneWidget);
-    expect(find.text('Diagnóstico'), findsOneWidget);
+    // Splash screen muestra el logo IAM y subtítulo
+    expect(find.text('IAM'), findsOneWidget);
+    expect(find.text('I Am Me'), findsOneWidget);
   });
 }
