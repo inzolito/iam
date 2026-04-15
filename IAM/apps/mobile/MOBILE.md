@@ -144,7 +144,7 @@ LoginScreen → signInWithGoogle() / signInWithApple()
 | `/feed` | FeedScreen | authenticated, tab activa |
 | `/chat` | ChatListScreen | authenticated |
 | `/chat/:matchId` | ChatScreen | authenticated |
-| `/explore` | PlaceholderPage | authenticated |
+| `/explore` | EsenciasScreen | authenticated |
 | `/profile` | PlaceholderPage | authenticated |
 
 ### Tests (18 tests)
@@ -395,6 +395,66 @@ ChatScreen:
 
 ---
 
+## F5 — Esencias (Token Economy)
+
+**Objetivo**: Balance de Esencias, historial de transacciones, transferencias P2P, tienda de desbloqueos por diagnóstico.
+
+### Flujo
+
+```
+EsenciasScreen (3 tabs):
+  ├─ Balance → GET /esencias/balance → {balance, totalEarned, totalSpent}
+  ├─ Historial → GET /esencias/transactions → lista de transacciones
+  └─ Tienda → GET /unlocks/rules + GET /unlocks/my-unlocks
+                 → lista de features con botón de desbloqueo
+                 → POST /unlocks/:id/unlock (deduce balance)
+
+Transfer: POST /esencias/transfer {toUserId, amount, message?}
+```
+
+### Modelos
+
+| Clase | Campos clave |
+|-------|-------------|
+| `EsenciasBalance` | balance, totalEarned, totalSpent |
+| `EsenciasTransaction` | id, fromUserId?, toUserId, amount, reason, type, reasonLabel |
+| `UnlockRule` | id, diagnosis, featureKey, featureName, requiredEsencias, category, uiSettings |
+| `UserUnlock` | id, unlockId, featureKey, featureName, unlockedAt, isActive |
+
+### Archivos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lib/features/esencias/esencias_models.dart` | 4 modelos con fromJson |
+| `lib/features/esencias/esencias_provider.dart` | Balance, transacciones, transfers, unlocks |
+| `lib/features/esencias/esencias_screen.dart` | 3 tabs: Balance, Historial, Tienda |
+
+### EsenciasProvider — Métodos
+
+| Método | Descripción |
+|--------|-------------|
+| `loadBalance()` | GET /esencias/balance |
+| `loadTransactions()` | GET /esencias/transactions con paginación |
+| `transfer(toUserId, amount, message?)` | POST /esencias/transfer |
+| `loadUnlockRules(diagnosis?)` | GET /unlocks/rules o /unlocks/rules/:diagnosis |
+| `loadUserUnlocks()` | GET /unlocks/my-unlocks → unlockedFeatureKeys set |
+| `unlockFeature(unlockId)` | POST /unlocks/:id/unlock → actualiza balance y unlocks |
+| `isFeatureUnlocked(featureKey)` | Check local en unlockedFeatureKeys |
+
+### Tests (27 tests)
+
+**`test/esencias_provider_test.dart`**
+
+**Happy Path** (9): estado inicial, loadBalance, loadTransactions, transfer, loadUnlockRules (con/sin diagnosis), loadUserUnlocks, unlockFeature, clearError
+
+**Error Forzado** (5): loadBalance error, transfer insuficiente, unlockFeature diagnosis mismatch, loadTransactions timeout, transfer error genérico
+
+**Peor Caso** (5): respuesta vacía, loadUserUnlocks vacío, transfer actualiza totalSpent, isFeatureUnlocked sin cargar, unlockFeature success=false
+
+**Models** (8): EsenciasBalance, EsenciasTransaction (grant/transfer/deduction/default reason), UnlockRule, UserUnlock (con/sin isActive)
+
+---
+
 ## Etapas pendientes
 
 | Etapa | Nombre | Descripción |
@@ -418,7 +478,8 @@ ChatScreen:
 | `test/onboarding_provider_test.dart` | 26 | F2 (pre-existente) |
 | `test/feed_provider_test.dart` | 33 | F3 |
 | `test/chat_provider_test.dart` | 27 | F4 |
+| `test/esencias_provider_test.dart` | 27 | F5 |
 | `test/widget_test.dart` | 1 | F1 |
-| **Total** | **122** | |
+| **Total** | **149** | |
 
 Todos los tests pasan con `flutter test`.
