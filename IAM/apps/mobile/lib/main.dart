@@ -11,6 +11,7 @@ import 'features/onboarding/onboarding_provider.dart';
 import 'features/feed/feed_provider.dart';
 import 'features/chat/chat_provider.dart';
 import 'features/esencias/esencias_provider.dart';
+import 'features/profile/profile_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,6 +68,9 @@ class _IamAppState extends State<IamApp> {
         ),
         ChangeNotifierProvider<EsenciasProvider>(
           create: (ctx) => EsenciasProvider(api: ctx.read<ApiService>()),
+        ),
+        ChangeNotifierProvider<ProfileProvider>(
+          create: (ctx) => ProfileProvider(api: ctx.read<ApiService>()),
         ),
       ],
       child: Consumer<AuthProvider>(

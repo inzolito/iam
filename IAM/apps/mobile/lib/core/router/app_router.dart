@@ -10,6 +10,7 @@ import '../../features/feed/feed_screen.dart';
 import '../../features/chat/chat_list_screen.dart';
 import '../../features/chat/chat_screen.dart';
 import '../../features/esencias/esencias_screen.dart';
+import '../../features/profile/profile_screen.dart';
 
 /// Rutas de la aplicación con redirección según estado de auth.
 class AppRouter {
@@ -59,7 +60,7 @@ class AppRouter {
           ),
           GoRoute(
             path: '/profile',
-            builder: (context, state) => const _PlaceholderPage('Perfil'),
+            builder: (context, state) => const ProfileScreen(),
           ),
         ],
       ),
