@@ -59,6 +59,42 @@ class ApiService {
     return _handleResponse(response);
   }
 
+  /// Upload multipart — envía bytes como archivo.
+  ///
+  /// [field] nombre del field en el form (ej: 'file', 'avatar').
+  /// [filename] nombre con extensión (ej: 'avatar.jpg').
+  /// [method] POST (default), o PATCH.
+  /// [extraFields] campos adicionales de texto.
+  ///
+  /// Nota: el Content-Type del part se infiere del backend a partir
+  /// de la extensión del filename (NestJS/Fastify/Express manejan esto).
+  Future<Map<String, dynamic>> uploadFile(
+    String path, {
+    required List<int> bytes,
+    required String field,
+    required String filename,
+    String method = 'POST',
+    Map<String, String>? extraFields,
+  }) async {
+    final uri = Uri.parse('$_baseUrl$path');
+    final request = http.MultipartRequest(method, uri);
+
+    if (_accessToken != null) {
+      request.headers['Authorization'] = 'Bearer $_accessToken';
+    }
+    if (extraFields != null) {
+      request.fields.addAll(extraFields);
+    }
+
+    request.files.add(
+      http.MultipartFile.fromBytes(field, bytes, filename: filename),
+    );
+
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+    return _handleResponse(response);
+  }
+
   Map<String, dynamic> _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return {};

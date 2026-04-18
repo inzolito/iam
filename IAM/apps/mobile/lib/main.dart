@@ -6,6 +6,7 @@ import 'core/theme/iam_themes.dart';
 import 'core/services/api_service.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/auth_service.dart';
+import 'core/services/media_service.dart';
 import 'core/services/push_notification_service.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/router/app_router.dart';
@@ -14,6 +15,7 @@ import 'features/feed/feed_provider.dart';
 import 'features/chat/chat_provider.dart';
 import 'features/esencias/esencias_provider.dart';
 import 'features/profile/profile_provider.dart';
+import 'features/profile/media_provider.dart';
 import 'features/venues/venues_provider.dart';
 import 'features/body_doubling/body_doubling_provider.dart';
 import 'features/meetups/meetups_provider.dart';
@@ -37,6 +39,7 @@ class _IamAppState extends State<IamApp> {
   late final ApiService _apiService;
   late final StorageService _storageService;
   late final AuthService _authService;
+  late final MediaService _mediaService;
   late final AuthProvider _authProvider;
   late final AppRouter _appRouter;
   late final PushNotificationService _pushService;
@@ -47,6 +50,7 @@ class _IamAppState extends State<IamApp> {
 
     _apiService = ApiService();
     _storageService = StorageService();
+    _mediaService = MediaService();
     _authService = AuthService(
       api: _apiService,
       storage: _storageService,
@@ -84,6 +88,7 @@ class _IamAppState extends State<IamApp> {
         Provider<ApiService>.value(value: _apiService),
         Provider<StorageService>.value(value: _storageService),
         Provider<AuthService>.value(value: _authService),
+        Provider<MediaService>.value(value: _mediaService),
         ChangeNotifierProvider<AuthProvider>.value(value: _authProvider),
         ChangeNotifierProvider<OnboardingProvider>(
           create: (ctx) => OnboardingProvider(ctx.read<ApiService>()),
@@ -99,6 +104,12 @@ class _IamAppState extends State<IamApp> {
         ),
         ChangeNotifierProvider<ProfileProvider>(
           create: (ctx) => ProfileProvider(api: ctx.read<ApiService>()),
+        ),
+        ChangeNotifierProvider<MediaProvider>(
+          create: (ctx) => MediaProvider(
+            api: ctx.read<ApiService>(),
+            media: ctx.read<MediaService>(),
+          ),
         ),
         ChangeNotifierProvider<VenuesProvider>(
           create: (ctx) => VenuesProvider(api: ctx.read<ApiService>()),
