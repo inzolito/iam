@@ -26,6 +26,8 @@ class HomeShell extends StatelessWidget {
         description: 'Encuentros presenciales con matches'),
     _ExtraRoute(icon: Icons.notifications_outlined, label: 'Notificaciones',
         path: '/notifications', description: 'Tus alertas y mensajes del sistema'),
+    _ExtraRoute(icon: Icons.settings_outlined, label: 'Configuración',
+        path: '/settings', description: 'Privacidad, bloqueos y preferencias'),
   ];
 
   @override
