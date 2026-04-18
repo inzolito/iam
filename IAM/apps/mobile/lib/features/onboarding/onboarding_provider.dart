@@ -115,7 +115,7 @@ class OnboardingProvider extends ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final response = await _api.get('/v1/spin/categories?lang=es');
+      final response = await _api.get('/spin/categories?lang=es');
       _categories = List<Map<String, dynamic>>.from(response['data'] ?? []);
     } catch (e) {
       _error = 'Error cargando categorías';
@@ -134,7 +134,7 @@ class OnboardingProvider extends ChangeNotifier {
 
     try {
       final response = await _api.get(
-        '/v1/spin/tags?search=${Uri.encodeComponent(query)}&limit=15',
+        '/spin/tags?search=${Uri.encodeComponent(query)}&limit=15',
       );
       _searchResults =
           List<Map<String, dynamic>>.from(response['data'] ?? []);
@@ -206,14 +206,14 @@ class OnboardingProvider extends ChangeNotifier {
 
     try {
       // 1. Save diagnoses
-      final diagResponse = await _api.post('/v1/users/me/diagnoses', body: {
+      final diagResponse = await _api.post('/users/me/diagnoses', body: {
         'diagnoses': _selectedDiagnoses.toList(),
         'primary': _primaryDiagnosis,
       });
       _themeConfig = diagResponse['theme'] as Map<String, dynamic>?;
 
       // 2. Save SpIn
-      await _api.post('/v1/users/me/spin', body: {
+      await _api.post('/users/me/spin', body: {
         'tagIds': _selectedTagIds.toList(),
       });
 
@@ -229,11 +229,11 @@ class OnboardingProvider extends ChangeNotifier {
         profileData['birthDate'] = _birthDate;
       }
       if (profileData.isNotEmpty) {
-        await _api.patch('/v1/users/me/profile', body: profileData);
+        await _api.patch('/users/me/profile', body: profileData);
       }
 
       // 4. Mark onboarding complete
-      await _api.post('/v1/users/me/complete');
+      await _api.post('/users/me/complete');
 
       return true;
     } catch (e) {

@@ -8,7 +8,7 @@ class ApiService {
   String? _accessToken;
 
   ApiService({String? baseUrl})
-      : _baseUrl = baseUrl ?? '${Env.supabaseUrl}/functions/v1';
+      : _baseUrl = baseUrl ?? Env.effectiveApiBaseUrl;
 
   void setToken(String token) {
     _accessToken = token;
