@@ -1,3 +1,4 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,6 +6,7 @@ import 'core/theme/iam_themes.dart';
 import 'core/services/api_service.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/auth_service.dart';
+import 'core/services/push_notification_service.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/router/app_router.dart';
 import 'features/onboarding/onboarding_provider.dart';
@@ -17,8 +19,9 @@ import 'features/body_doubling/body_doubling_provider.dart';
 import 'features/meetups/meetups_provider.dart';
 import 'features/notifications/notifications_provider.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const IamApp());
 }
 
@@ -35,6 +38,7 @@ class _IamAppState extends State<IamApp> {
   late final AuthService _authService;
   late final AuthProvider _authProvider;
   late final AppRouter _appRouter;
+  late final PushNotificationService _pushService;
 
   @override
   void initState() {
@@ -51,6 +55,25 @@ class _IamAppState extends State<IamApp> {
       storage: _storageService,
     );
     _appRouter = AppRouter(authProvider: _authProvider);
+    _pushService = PushNotificationService(
+      api: _apiService,
+      storage: _storageService,
+    );
+
+    // Inicializar push notifications después de auth
+    _authProvider.addListener(_onAuthStateChange);
+  }
+
+  void _onAuthStateChange() {
+    if (_authProvider.status == AuthStatus.authenticated) {
+      _pushService.initialize();
+    }
+  }
+
+  @override
+  void dispose() {
+    _authProvider.removeListener(_onAuthStateChange);
+    super.dispose();
   }
 
   @override
