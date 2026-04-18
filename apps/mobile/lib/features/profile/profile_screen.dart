@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/providers/auth_provider.dart';
+import '../../core/services/media_service.dart';
+import 'media_provider.dart';
 import 'profile_provider.dart';
+import 'widgets/photo_gallery.dart';
 
 /// Pantalla de perfil del usuario — ver y editar datos.
 class ProfileScreen extends StatefulWidget {
@@ -20,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final provider = context.read<ProfileProvider>();
       provider.loadProfile();
       provider.loadDiagnoses();
+      context.read<MediaProvider>().loadPhotos();
     });
   }
 
@@ -73,24 +77,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: ListView(
                     padding: const EdgeInsets.all(24),
                     children: [
-                      // Avatar
+                      // Avatar con botón editar
                       Center(
-                        child: CircleAvatar(
-                          radius: 48,
-                          backgroundColor: theme.colorScheme.primary
-                              .withValues(alpha: 0.2),
-                          backgroundImage: profile.avatarUrl != null
-                              ? NetworkImage(profile.avatarUrl!)
-                              : null,
-                          child: profile.avatarUrl == null
-                              ? Text(
-                                  profile.initials,
-                                  style: TextStyle(
-                                    fontSize: 36,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                )
-                              : null,
+                        child: _AvatarWithEdit(
+                          profile: profile,
+                          theme: theme,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -135,6 +126,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
 
                       const SizedBox(height: 32),
+
+                      // Galería de fotos
+                      _SectionCard(
+                        title: 'Galería',
+                        icon: Icons.photo_library_outlined,
+                        theme: theme,
+                        child: const PhotoGallery(),
+                      ),
+
+                      const SizedBox(height: 16),
 
                       // Diagnósticos
                       _SectionCard(
@@ -329,6 +330,118 @@ class _SectionCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarWithEdit extends StatelessWidget {
+  final dynamic profile;
+  final ThemeData theme;
+
+  const _AvatarWithEdit({required this.profile, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    final media = context.watch<MediaProvider>();
+    final avatarUrl = media.avatarUrl ?? profile.avatarUrl;
+
+    return Stack(
+      children: [
+        CircleAvatar(
+          radius: 48,
+          backgroundColor:
+              theme.colorScheme.primary.withValues(alpha: 0.2),
+          backgroundImage:
+              avatarUrl != null ? NetworkImage(avatarUrl) : null,
+          child: avatarUrl == null
+              ? Text(
+                  profile.initials,
+                  style: TextStyle(
+                    fontSize: 36,
+                    color: theme.colorScheme.primary,
+                  ),
+                )
+              : null,
+        ),
+        if (media.isUploading)
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black38,
+              ),
+              child: const Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: Material(
+            color: theme.colorScheme.primary,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: () => _showAvatarSheet(context, media),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Icon(Icons.camera_alt,
+                    size: 16, color: theme.colorScheme.onPrimary),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showAvatarSheet(BuildContext context, MediaProvider media) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Elegir de galería'),
+              onTap: () {
+                Navigator.pop(ctx);
+                media.pickAndUploadAvatar(source: ImageSourceType.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Tomar foto'),
+              onTap: () {
+                Navigator.pop(ctx);
+                media.pickAndUploadAvatar(source: ImageSourceType.camera);
+              },
+            ),
           ],
         ),
       ),
