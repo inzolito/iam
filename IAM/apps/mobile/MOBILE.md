@@ -455,16 +455,255 @@ Transfer: POST /esencias/transfer {toUserId, amount, message?}
 
 ---
 
-## Etapas pendientes
+---
 
-| Etapa | Nombre | Descripción |
-|-------|--------|-------------|
-| F5 | Esencias | Token economy, balance, transfers, unlocks |
-| F6 | Venues | Mapa de venues seguros, check-in |
-| F7 | Body Doubling | Sesiones de coworking virtual |
-| F8 | Meetups | Confirmación de meetups presenciales |
-| F9 | Notificaciones | Push notifications, preferencias |
-| F10 | Perfil | Edición de perfil, settings, diagnóstico |
+## F6 — Perfil de Usuario
+
+**Objetivo**: Visualizar y editar el perfil del usuario autenticado — nombre, username, estado MSN, diagnósticos, nivel de energía.
+
+### Archivos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lib/features/profile/profile_models.dart` | UserProfile (id, email, username, displayName, birthDate, isTeen, avatarUrl, msnStatus, energyLevel, notifLevel, isActive, onboardingCompleted, createdAt) + UserDiagnosis. Helper: `initials` |
+| `lib/features/profile/profile_provider.dart` | loadProfile, loadDiagnoses, updateProfile, clearError. `primaryDiagnosis` getter |
+| `lib/features/profile/profile_screen.dart` | Avatar, nombre, username, MSN status, chips de diagnósticos, filas de info, bottom sheet edición, botón cerrar sesión |
+
+### ProfileProvider — Métodos
+
+| Método | Descripción |
+|--------|-------------|
+| `loadProfile()` | GET /profile/me → UserProfile |
+| `loadDiagnoses()` | GET /profile/diagnoses → List\<UserDiagnosis\> (silencia errores) |
+| `updateProfile({displayName?, username?, msnStatus?, energyLevel?, notifLevel?})` | PATCH /profile/me → UserProfile actualizado. Retorna false si no hay campos |
+| `clearError()` | Limpiar error |
+
+### Tests (21 tests)
+
+**`test/profile_provider_test.dart`**
+
+**Happy Path** (6): estado inicial, loadProfile carga perfil, loadDiagnoses (2 diagnósticos), updateProfile (displayName+msnStatus), updateProfile con username, clearError
+
+**Error Forzado** (4): loadProfile con error, updateProfile con USERNAME_TAKEN, updateProfile sin campos retorna false, loadDiagnoses silencia errores
+
+**Peor Caso** (3): perfil con campos mínimos, diagnósticos vacíos, primaryDiagnosis sin primary flag
+
+**ProfileModels** (8): UserProfile.fromJson completo/mínimo, initials con displayName/username/sin nombre, UserDiagnosis.fromJson completo/isPrimary default false
+
+---
+
+## F7 — Venues
+
+**Objetivo**: Descubrir lugares seguros y accesibles para neurodivergentes — cafeterías, bibliotecas, coworkings — con filtros por categoría, rating sensorial y distancia.
+
+### Archivos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lib/features/venues/venues_provider.dart` | VenueSummary model + VenuesProvider |
+| `lib/features/venues/venues_screen.dart` | Lista de venues con filtros, tarjetas con sensoryRating y distancia |
+
+### VenueSummary — Modelo
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | String | UUID del venue |
+| `name` | String | Nombre del lugar |
+| `category` | String? | cafe, biblioteca, parque, etc. |
+| `address` | String? | Dirección textual |
+| `sensoryRating` | double? | Rating sensorial (0-5) |
+| `averageRating` | double? | Rating general (0-5) |
+| `reviewCount` | int | Número de reseñas |
+| `distance` | double? | Distancia en metros |
+| `imageUrl` | String? | URL de imagen |
+| `isFavorite` | bool | Marcado como favorito |
+
+**Helper**: `formattedDistance` → "750 m" / "2.5 km" / "" si null
+
+### VenuesProvider — Métodos
+
+| Método | Descripción |
+|--------|-------------|
+| `loadNearby({lat, lng, radius?, category?})` | GET /venues/nearby/me con query params |
+| `loadFavorites()` | GET /venues/user/favorites (silencia errores) |
+| `toggleFavorite(venueId)` | POST /venues/:id/favorite |
+| `checkIn(venueId, {lat, lng})` | POST /venues/:id/checkin |
+| `clearError()` | Limpiar error |
+
+### Tests (18 tests)
+
+**`test/venues_provider_test.dart`**
+
+**Happy Path** (7): estado inicial, loadNearby, loadNearby con filtros (radius+category), loadFavorites, toggleFavorite, checkIn, clearError
+
+**Error Forzado** (5): loadNearby ApiException, excepción genérica, toggleFavorite error, checkIn error, loadFavorites silencia errores
+
+**Peor Caso** (6): venues vacíos, respuesta sin campo venues, formattedDistance metros/km/null, venue campos mínimos
+
+---
+
+## F8 — Body Doubling
+
+**Objetivo**: Sesiones de trabajo compartido para neurodivergentes — crear/unirse a sesiones de foco con otros usuarios de la comunidad.
+
+### Archivos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lib/features/body_doubling/body_doubling_provider.dart` | BdSession model + BodyDoublingProvider |
+| `lib/features/body_doubling/body_doubling_screen.dart` | Lista de sesiones activas, FAB para crear, tarjetas con estado y cupo |
+
+### BdSession — Modelo
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | String | UUID |
+| `hostId` | String | Usuario anfitrión |
+| `hostName` | String? | Nombre del anfitrión |
+| `title` | String | Título de la sesión |
+| `activityType` | String | study / work / creative / exercise |
+| `durationMinutes` | int | Duración (25, 45, 60, 90) |
+| `maxParticipants` | int | Cupo máximo (default 5) |
+| `currentParticipants` | int | Participantes actuales |
+| `status` | String | waiting / active |
+| `isPublic` | bool | Sesión pública |
+
+**Helpers**: `isFull`, `isActive`, `isWaiting`
+
+### BodyDoublingProvider — Métodos
+
+| Método | Descripción |
+|--------|-------------|
+| `loadSessions({activity?})` | GET /body-doubling/sessions |
+| `loadMySessions()` | GET /body-doubling/my-sessions (silencia errores) |
+| `createSession({title, activityType, durationMinutes, description?, maxParticipants?})` | POST y recarga |
+| `joinSession(sessionId)` | POST /body-doubling/sessions/:id/join |
+| `leaveSession(sessionId)` | POST /body-doubling/sessions/:id/leave |
+| `clearError()` | Limpiar error |
+
+### Tests (20 tests)
+
+**`test/body_doubling_provider_test.dart`**
+
+**Happy Path** (8): estado inicial, loadSessions, loadSessions con filtro actividad, loadMySessions, createSession, joinSession, leaveSession, clearError
+
+**Error Forzado** (6): loadSessions ApiException/genérica, createSession INVALID_DURATION, joinSession SESSION_FULL, leaveSession error, loadMySessions silencia errores
+
+**Peor Caso** (6): sesiones vacías, respuesta sin campo sessions, BdSession.isFull, isActive, isWaiting, campos mínimos
+
+---
+
+## F9 — Meetups
+
+**Objetivo**: Gestión de encuentros presenciales con matches — iniciar, confirmar y disputar meetups con expiración.
+
+### Archivos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lib/features/meetups/meetups_provider.dart` | Meetup model + MeetupsProvider |
+| `lib/features/meetups/meetups_screen.dart` | 2 tabs: Pendientes / Historial. Tarjetas con confirmaciones y acciones |
+
+### Meetup — Modelo
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | String | UUID |
+| `matchId` | String | Match relacionado |
+| `status` | String | pending / confirmed |
+| `userAConfirmed` | bool | Confirmación usuario A |
+| `userBConfirmed` | bool | Confirmación usuario B |
+| `expiresAt` | DateTime? | Fecha de expiración |
+| `createdAt` | DateTime | Creación |
+
+**Helpers**: `isPending`, `isConfirmed`, `isExpired`
+
+### MeetupsProvider — Métodos
+
+| Método | Descripción |
+|--------|-------------|
+| `loadMeetups({status?})` | GET /meetups con filtro opcional |
+| `loadPending()` | GET /meetups/pending (silencia errores) |
+| `initiateMeetup(matchId, {lat?, lng?})` | POST /meetups/initiate |
+| `confirmMeetup(meetupId, {lat?, lng?})` | POST /meetups/:id/confirm |
+| `disputeMeetup(meetupId)` | POST /meetups/:id/dispute |
+| `clearError()` | Limpiar error |
+
+### Tests (22 tests)
+
+**`test/meetups_provider_test.dart`**
+
+**Happy Path** (9): estado inicial, loadMeetups, loadMeetups con filtro status, loadPending, initiateMeetup, initiateMeetup con coordenadas (verifica body), confirmMeetup, disputeMeetup, clearError
+
+**Error Forzado** (6): loadMeetups ApiException/genérica, initiateMeetup MEETUP_EXISTS, confirmMeetup EXPIRED, disputeMeetup error, loadPending silencia errores
+
+**Peor Caso** (7): meetups vacíos, sin campo meetups, Meetup.isPending, isConfirmed, isExpired (fecha pasada/sin fecha), campos mínimos snake_case, ambos confirmados
+
+---
+
+## F10 — Notificaciones
+
+**Objetivo**: Centro de notificaciones — historial de alertas (match, mensaje, meetup, esencias, sistema) con mark-read individual y masivo.
+
+### Archivos
+
+| Archivo | Descripción |
+|---------|-------------|
+| `lib/features/notifications/notifications_provider.dart` | AppNotification model + NotificationsProvider |
+| `lib/features/notifications/notifications_screen.dart` | Lista con indicador de no-leído, FAB "marcar todo", tap para marcar leído |
+
+### AppNotification — Modelo
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `id` | String | UUID |
+| `type` | String | match / message / meetup / esencias / system / general |
+| `title` | String | Título de la notificación |
+| `body` | String? | Cuerpo del mensaje |
+| `actionUrl` | String? | Ruta interna para navegar |
+| `isRead` | bool | Estado de lectura |
+| `createdAt` | DateTime | Timestamp |
+
+**Helper**: `typeLabel` → "Match" / "Mensaje" / "Meetup" / "Esencias" / "Sistema" / "General"
+
+### NotificationsProvider — Métodos
+
+| Método | Descripción |
+|--------|-------------|
+| `loadNotifications({limit?, offset?})` | GET /notifications?limit=50&offset=0. Calcula unreadCount |
+| `loadUnreadCount()` | GET /notifications/unread-count (silencia errores) |
+| `markAsRead(notificationId)` | POST /notifications/:id/read. Actualiza lista local + unreadCount |
+| `markAllAsRead()` | POST /notifications/read-all. Marca todo local |
+| `clearError()` | Limpiar error |
+
+### Tests (20 tests)
+
+**`test/notifications_provider_test.dart`**
+
+**Happy Path** (7): estado inicial, loadNotifications (2 notifs / 1 unread), loadNotifications con paginación, loadUnreadCount, markAsRead (actualiza lista local y unreadCount), markAllAsRead (todo a 0), clearError
+
+**Error Forzado** (5): loadNotifications ApiException/genérica, markAsRead error, markAllAsRead error, loadUnreadCount silencia errores
+
+**Peor Caso** (8): notificaciones vacías, sin campo notifications, markAsRead id inexistente no rompe, typeLabel para los 6 tipos, notificación campos mínimos, snake_case (action_url/is_read), todas leídas → unreadCount=0
+
+---
+
+## Router — Rutas Completas
+
+| Ruta | Pantalla | Guard |
+|------|----------|-------|
+| `/splash` | SplashScreen | Solo `initial` |
+| `/login` | LoginScreen | Solo `unauthenticated` |
+| `/onboarding` | OnboardingScreen | Solo `onboarding` |
+| `/feed` | FeedScreen | `authenticated` |
+| `/chat` | ChatListScreen | `authenticated` |
+| `/chat/:matchId` | ChatScreen | `authenticated` |
+| `/explore` | EsenciasScreen | `authenticated` |
+| `/profile` | ProfileScreen | `authenticated` |
+| `/venues` | VenuesScreen | `authenticated` |
+| `/body-doubling` | BodyDoublingScreen | `authenticated` |
+| `/meetups` | MeetupsScreen | `authenticated` |
+| `/notifications` | NotificationsScreen | `authenticated` |
 
 ---
 
@@ -474,12 +713,17 @@ Transfer: POST /esencias/transfer {toUserId, amount, message?}
 |-----------|-------|-------|
 | `test/api_service_test.dart` | 9 | F1 |
 | `test/theme_test.dart` | 8 | F1 |
+| `test/widget_test.dart` | 1 | F1 |
 | `test/auth_provider_test.dart` | 18 | F2 |
 | `test/onboarding_provider_test.dart` | 26 | F2 (pre-existente) |
 | `test/feed_provider_test.dart` | 33 | F3 |
 | `test/chat_provider_test.dart` | 27 | F4 |
 | `test/esencias_provider_test.dart` | 27 | F5 |
-| `test/widget_test.dart` | 1 | F1 |
-| **Total** | **149** | |
+| `test/profile_provider_test.dart` | 21 | F6 |
+| `test/venues_provider_test.dart` | 18 | F7 |
+| `test/body_doubling_provider_test.dart` | 20 | F8 |
+| `test/meetups_provider_test.dart` | 22 | F9 |
+| `test/notifications_provider_test.dart` | 20 | F10 |
+| **Total** | **250** | |
 
 Todos los tests pasan con `flutter test`.
