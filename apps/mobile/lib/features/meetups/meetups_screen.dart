@@ -162,7 +162,7 @@ class _MeetupCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Match ${meetup.matchId.substring(0, 8)}...',
+                    'Match ${meetup.matchId.length > 8 ? '${meetup.matchId.substring(0, 8)}...' : meetup.matchId}',
                     style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 16),
                   ),
