@@ -43,3 +43,15 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase (contienen credenciales, usar .example como plantilla)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+ios/firebase_app_id_file.json
+
+# Variables de entorno (usar .env.*.example como plantilla)
+.env
+.env.dev
+.env.staging
+.env.prod
+.env.local
