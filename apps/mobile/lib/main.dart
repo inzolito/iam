@@ -12,6 +12,10 @@ import 'features/feed/feed_provider.dart';
 import 'features/chat/chat_provider.dart';
 import 'features/esencias/esencias_provider.dart';
 import 'features/profile/profile_provider.dart';
+import 'features/venues/venues_provider.dart';
+import 'features/body_doubling/body_doubling_provider.dart';
+import 'features/meetups/meetups_provider.dart';
+import 'features/notifications/notifications_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +75,18 @@ class _IamAppState extends State<IamApp> {
         ),
         ChangeNotifierProvider<ProfileProvider>(
           create: (ctx) => ProfileProvider(api: ctx.read<ApiService>()),
+        ),
+        ChangeNotifierProvider<VenuesProvider>(
+          create: (ctx) => VenuesProvider(api: ctx.read<ApiService>()),
+        ),
+        ChangeNotifierProvider<BodyDoublingProvider>(
+          create: (ctx) => BodyDoublingProvider(api: ctx.read<ApiService>()),
+        ),
+        ChangeNotifierProvider<MeetupsProvider>(
+          create: (ctx) => MeetupsProvider(api: ctx.read<ApiService>()),
+        ),
+        ChangeNotifierProvider<NotificationsProvider>(
+          create: (ctx) => NotificationsProvider(api: ctx.read<ApiService>()),
         ),
       ],
       child: Consumer<AuthProvider>(

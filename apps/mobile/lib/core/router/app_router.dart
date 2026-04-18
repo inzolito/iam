@@ -11,6 +11,10 @@ import '../../features/chat/chat_list_screen.dart';
 import '../../features/chat/chat_screen.dart';
 import '../../features/esencias/esencias_screen.dart';
 import '../../features/profile/profile_screen.dart';
+import '../../features/venues/venues_screen.dart';
+import '../../features/body_doubling/body_doubling_screen.dart';
+import '../../features/meetups/meetups_screen.dart';
+import '../../features/notifications/notifications_screen.dart';
 
 /// Rutas de la aplicación con redirección según estado de auth.
 class AppRouter {
@@ -61,6 +65,22 @@ class AppRouter {
           GoRoute(
             path: '/profile',
             builder: (context, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: '/venues',
+            builder: (context, state) => const VenuesScreen(),
+          ),
+          GoRoute(
+            path: '/body-doubling',
+            builder: (context, state) => const BodyDoublingScreen(),
+          ),
+          GoRoute(
+            path: '/meetups',
+            builder: (context, state) => const MeetupsScreen(),
+          ),
+          GoRoute(
+            path: '/notifications',
+            builder: (context, state) => const NotificationsScreen(),
           ),
         ],
       ),
