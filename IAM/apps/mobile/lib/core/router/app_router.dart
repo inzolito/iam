@@ -15,6 +15,7 @@ import '../../features/venues/venues_screen.dart';
 import '../../features/body_doubling/body_doubling_screen.dart';
 import '../../features/meetups/meetups_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
+import '../../features/settings/settings_screen.dart';
 
 /// Rutas de la aplicación con redirección según estado de auth.
 class AppRouter {
@@ -81,6 +82,10 @@ class AppRouter {
           GoRoute(
             path: '/notifications',
             builder: (context, state) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
           ),
         ],
       ),

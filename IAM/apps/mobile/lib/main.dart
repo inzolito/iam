@@ -18,6 +18,7 @@ import 'features/venues/venues_provider.dart';
 import 'features/body_doubling/body_doubling_provider.dart';
 import 'features/meetups/meetups_provider.dart';
 import 'features/notifications/notifications_provider.dart';
+import 'features/settings/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -110,6 +111,9 @@ class _IamAppState extends State<IamApp> {
         ),
         ChangeNotifierProvider<NotificationsProvider>(
           create: (ctx) => NotificationsProvider(api: ctx.read<ApiService>()),
+        ),
+        ChangeNotifierProvider<SettingsProvider>(
+          create: (ctx) => SettingsProvider(api: ctx.read<ApiService>()),
         ),
       ],
       child: Consumer<AuthProvider>(
