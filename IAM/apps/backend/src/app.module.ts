@@ -15,6 +15,7 @@ import { BodyDoublingModule } from './body-doubling';
 import { MeetupsModule } from './meetups';
 import { NotificationsModule } from './notifications';
 import { AdminModule } from './admin';
+import { PhotosModule } from './photos/photos.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { AdminModule } from './admin';
     MeetupsModule,
     NotificationsModule,
     AdminModule,
+    PhotosModule,
   ],
 })
 export class AppModule {}

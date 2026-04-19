@@ -48,4 +48,71 @@ export class SupabaseService implements OnModuleInit {
       return false;
     }
   }
+
+  /**
+   * Sube un archivo a Supabase Storage y retorna su URL pública.
+   * @param bucket - Nombre del bucket ('avatars' o 'gallery')
+   * @param path - Ruta del archivo (e.g., 'user-123/avatar.jpg')
+   * @param buffer - Contenido del archivo
+   * @param mimeType - Tipo MIME del archivo
+   * @returns URL pública del archivo
+   */
+  async uploadFile(
+    bucket: string,
+    path: string,
+    buffer: Buffer,
+    mimeType: string,
+  ): Promise<string> {
+    try {
+      const { data, error } = await this.client.storage.from(bucket).upload(path, buffer, {
+        contentType: mimeType,
+        upsert: false, // Fallar si ya existe
+      });
+
+      if (error) {
+        this.logger.error(`Upload failed for ${bucket}/${path}: ${error.message}`);
+        throw new Error(`Storage upload failed: ${error.message}`);
+      }
+
+      // Generar URL pública
+      const { data: urlData } = this.client.storage.from(bucket).getPublicUrl(data.path);
+      this.logger.log(`File uploaded successfully: ${bucket}/${path}`);
+      return urlData.publicUrl;
+    } catch (err) {
+      this.logger.error(`Upload exception for ${bucket}/${path}: ${String(err)}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Elimina un archivo de Supabase Storage.
+   * @param bucket - Nombre del bucket
+   * @param path - Ruta del archivo
+   */
+  async deleteFile(bucket: string, path: string): Promise<void> {
+    try {
+      const { error } = await this.client.storage.from(bucket).remove([path]);
+
+      if (error) {
+        this.logger.error(`Delete failed for ${bucket}/${path}: ${error.message}`);
+        throw new Error(`Storage delete failed: ${error.message}`);
+      }
+
+      this.logger.log(`File deleted successfully: ${bucket}/${path}`);
+    } catch (err) {
+      this.logger.error(`Delete exception for ${bucket}/${path}: ${String(err)}`);
+      throw err;
+    }
+  }
+
+  /**
+   * Genera una URL pública para un archivo en Storage.
+   * @param bucket - Nombre del bucket
+   * @param path - Ruta del archivo
+   * @returns URL pública
+   */
+  getPublicUrl(bucket: string, path: string): string {
+    const { data } = this.client.storage.from(bucket).getPublicUrl(path);
+    return data.publicUrl;
+  }
 }
