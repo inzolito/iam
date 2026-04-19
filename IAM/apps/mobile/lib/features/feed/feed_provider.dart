@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../core/services/api_service.dart';
+import 'feed_filters.dart';
 import 'feed_profile.dart';
 
 /// Provider del feed de descubrimiento y swipes.
@@ -30,7 +31,24 @@ class FeedProvider extends ChangeNotifier {
   Map<String, dynamic>? _lastMatch;
   Map<String, dynamic>? get lastMatch => _lastMatch;
 
+  /// Filtros activos aplicados al feed.
+  FeedFilters _filters = FeedFilters.none;
+  FeedFilters get filters => _filters;
+
   FeedProvider({required ApiService api}) : _api = api;
+
+  /// Construye la query string combinando filtros + paginación + radius legacy.
+  String _buildQuery({int? radius, int page = 0}) {
+    final params = Map<String, String>.from(_filters.toQueryParams());
+    // radius explícito en llamada sobrescribe el del filtro
+    if (radius != null) params['radius'] = '$radius';
+    params['page'] = '$page';
+    final parts = params.entries
+        .map((e) =>
+            '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .toList();
+    return '?${parts.join('&')}';
+  }
 
   /// Cargar perfiles del feed (primera página).
   Future<void> loadFeed({int? radius}) async {
@@ -41,8 +59,7 @@ class FeedProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final query = radius != null ? '?radius=$radius&page=0' : '?page=0';
-      final response = await _api.get('/feed$query');
+      final response = await _api.get('/feed${_buildQuery(radius: radius)}');
       final list = response['profiles'] as List<dynamic>? ?? [];
 
       _profiles =
@@ -70,9 +87,8 @@ class FeedProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final query =
-          radius != null ? '?radius=$radius&page=$_page' : '?page=$_page';
-      final response = await _api.get('/feed$query');
+      final response =
+          await _api.get('/feed${_buildQuery(radius: radius, page: _page)}');
       final list = response['profiles'] as List<dynamic>? ?? [];
 
       final newProfiles =
@@ -92,6 +108,36 @@ class FeedProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// Aplicar filtros nuevos y recargar el feed desde el inicio.
+  ///
+  /// Devuelve `false` si los filtros son inválidos (no se recarga).
+  Future<bool> applyFilters(FeedFilters newFilters) async {
+    if (!newFilters.isValid) {
+      _error = 'Filtros inválidos (revisa el rango de edad)';
+      notifyListeners();
+      return false;
+    }
+    if (newFilters == _filters) return true; // no-op
+    _filters = newFilters;
+    notifyListeners();
+    await loadFeed();
+    return true;
+  }
+
+  /// Limpiar todos los filtros y recargar.
+  Future<void> clearFilters() async {
+    if (!_filters.hasActiveFilters) return;
+    _filters = FeedFilters.none;
+    notifyListeners();
+    await loadFeed();
+  }
+
+  /// Actualizar filtros sin recargar (para preview en sheet).
+  void setFiltersLocal(FeedFilters newFilters) {
+    _filters = newFilters;
+    notifyListeners();
   }
 
   /// Dar like a un perfil.

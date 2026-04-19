@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'feed_provider.dart';
+import 'widgets/filter_sheet.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/match_dialog.dart';
 
@@ -34,6 +35,7 @@ class _FeedScreenState extends State<FeedScreen> {
       });
     }
 
+    final filterCount = feed.filters.activeCount;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -47,9 +49,27 @@ class _FeedScreenState extends State<FeedScreen> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Badge(
+              isLabelVisible: filterCount > 0,
+              label: Text('$filterCount'),
+              child: const Icon(Icons.tune),
+            ),
+            tooltip: 'Filtros',
+            onPressed: () => _openFilterSheet(context, feed),
+          ),
+        ],
       ),
       body: _buildBody(context, feed, theme),
     );
+  }
+
+  Future<void> _openFilterSheet(BuildContext context, FeedProvider feed) async {
+    final result = await FilterSheet.show(context, initial: feed.filters);
+    if (result != null) {
+      await feed.applyFilters(result);
+    }
   }
 
   Widget _buildBody(BuildContext context, FeedProvider feed, ThemeData theme) {
@@ -132,6 +152,14 @@ class _FeedScreenState extends State<FeedScreen> {
                 icon: const Icon(Icons.refresh),
                 label: const Text('Actualizar'),
               ),
+              if (feed.filters.hasActiveFilters) ...[
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  onPressed: () => feed.clearFilters(),
+                  icon: const Icon(Icons.filter_alt_off_outlined),
+                  label: const Text('Limpiar filtros'),
+                ),
+              ],
             ],
           ),
         ),
