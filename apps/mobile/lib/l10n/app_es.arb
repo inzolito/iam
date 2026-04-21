@@ -1,0 +1,43 @@
+{
+  "@@locale": "es",
+  "appTitle": "IAM",
+  "@appTitle": {
+    "description": "Nombre de la aplicación"
+  },
+
+  "commonRetry": "Reintentar",
+  "commonCancel": "Cancelar",
+  "commonSave": "Guardar",
+  "commonDelete": "Eliminar",
+  "commonConfirm": "Confirmar",
+  "commonLoading": "Cargando...",
+  "commonError": "Error",
+  "commonClose": "Cerrar",
+  "commonSend": "Enviar",
+  "commonNext": "Siguiente",
+  "commonBack": "Volver",
+  "commonSearch": "Buscar",
+
+  "authLoginWithGoogle": "Continuar con Google",
+  "authLoginWithApple": "Continuar con Apple",
+  "authTermsFooter": "Al continuar, aceptas nuestros Términos y Política de Privacidad",
+  "authLogout": "Cerrar sesión",
+  "authLogoutConfirmTitle": "¿Cerrar sesión?",
+  "authLogoutConfirmBody": "Tendrás que volver a iniciar sesión.",
+
+  "onboardingDiagnosis": "Diagnóstico",
+  "onboardingSpin": "SpIn",
+  "onboardingProfile": "Perfil",
+
+  "feedEmpty": "No hay mas perfiles",
+  "feedError": "No se pudo cargar el feed",
+
+  "chatTitle": "Mensajes",
+  "chatEmpty": "Sin conversaciones",
+
+  "settingsTitle": "Configuración",
+  "settingsNotifications": "Notificaciones",
+  "settingsPrivacy": "Privacidad",
+  "settingsModeration": "Moderación",
+  "settingsAccount": "Cuenta"
+}
