@@ -162,6 +162,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(width: 8),
           IconButton(
+            tooltip: 'Enviar mensaje',
             onPressed: _isSending ? null : () => _send(chat),
             icon: _isSending
                 ? SizedBox(

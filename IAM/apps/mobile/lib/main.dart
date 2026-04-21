@@ -1,5 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'core/theme/iam_themes.dart';
@@ -136,6 +138,8 @@ class _IamAppState extends State<IamApp> {
             title: 'IAM',
             debugShowCheckedModeBanner: false,
             theme: theme,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: _appRouter.router,
           );
         },

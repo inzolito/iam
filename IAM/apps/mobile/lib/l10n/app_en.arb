@@ -1,0 +1,40 @@
+{
+  "@@locale": "en",
+  "appTitle": "IAM",
+
+  "commonRetry": "Retry",
+  "commonCancel": "Cancel",
+  "commonSave": "Save",
+  "commonDelete": "Delete",
+  "commonConfirm": "Confirm",
+  "commonLoading": "Loading...",
+  "commonError": "Error",
+  "commonClose": "Close",
+  "commonSend": "Send",
+  "commonNext": "Next",
+  "commonBack": "Back",
+  "commonSearch": "Search",
+
+  "authLoginWithGoogle": "Continue with Google",
+  "authLoginWithApple": "Continue with Apple",
+  "authTermsFooter": "By continuing, you agree to our Terms and Privacy Policy",
+  "authLogout": "Log out",
+  "authLogoutConfirmTitle": "Log out?",
+  "authLogoutConfirmBody": "You will need to sign in again.",
+
+  "onboardingDiagnosis": "Diagnosis",
+  "onboardingSpin": "SpIn",
+  "onboardingProfile": "Profile",
+
+  "feedEmpty": "No more profiles",
+  "feedError": "Could not load feed",
+
+  "chatTitle": "Messages",
+  "chatEmpty": "No conversations",
+
+  "settingsTitle": "Settings",
+  "settingsNotifications": "Notifications",
+  "settingsPrivacy": "Privacy",
+  "settingsModeration": "Moderation",
+  "settingsAccount": "Account"
+}

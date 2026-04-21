@@ -21,7 +21,10 @@ class ProfileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
+    return Semantics(
+      label: 'Perfil de ${profile.displayName}',
+      container: true,
+      child: Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       clipBehavior: Clip.antiAlias,
@@ -124,6 +127,7 @@ class ProfileCard extends StatelessWidget {
                     right: 12,
                     child: IconButton(
                       icon: const Icon(Icons.more_vert, color: Colors.white),
+                      tooltip: 'Más opciones',
                       onPressed: onReport,
                     ),
                   ),
@@ -190,6 +194,7 @@ class ProfileCard extends StatelessWidget {
                   color: Colors.red.shade300,
                   onPressed: onPass,
                   size: 56,
+                  semanticLabel: 'Rechazar perfil',
                 ),
                 // Like
                 _ActionButton(
@@ -197,12 +202,14 @@ class ProfileCard extends StatelessWidget {
                   color: theme.colorScheme.primary,
                   onPressed: onLike,
                   size: 64,
+                  semanticLabel: 'Me gusta',
                 ),
               ],
             ),
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -236,12 +243,14 @@ class _ActionButton extends StatelessWidget {
   final Color color;
   final VoidCallback onPressed;
   final double size;
+  final String? semanticLabel;
 
   const _ActionButton({
     required this.icon,
     required this.color,
     required this.onPressed,
     required this.size,
+    this.semanticLabel,
   });
 
   @override
@@ -258,7 +267,7 @@ class _ActionButton extends StatelessWidget {
           foregroundColor: color,
           elevation: 0,
         ),
-        child: Icon(icon, size: size * 0.45),
+        child: Icon(icon, size: size * 0.45, semanticLabel: semanticLabel),
       ),
     );
   }
