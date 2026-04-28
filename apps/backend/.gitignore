@@ -14,6 +14,14 @@ build/
 # Local uploads (dev only)
 uploads/
 
+# Scripts SQL temporales (consolidados generados en runtime, no commitear)
+supabase/migrations/000_consolidated_idempotent.sql
+supabase/migrations/__all_migrations_clean.sql
+supabase/migrations/__reset_db.sql
+
+# Test artifacts
+test-connection.ts
+
 # Environment
 .env
 .env.local
