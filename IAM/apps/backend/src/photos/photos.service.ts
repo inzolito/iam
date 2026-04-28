@@ -171,7 +171,7 @@ export class PhotosService {
     // Verificar cuántas fotos tiene el usuario
     const { data: existingPhotos, error: countError } = await client
       .from('user_photos')
-      .select('id, position, file_size')
+      .select('id, position, file_size, public_url')
       .eq('user_id', userId);
 
     if (countError) {
