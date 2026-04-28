@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import { FileStorageService } from './file-storage.service';
 
 export interface UserPhotos {
   avatar_url: string | null;
@@ -47,7 +48,10 @@ export class PhotosService {
   private readonly MAX_GALLERY_PHOTOS = 5;
   private readonly ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'];
 
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly fileStorage: FileStorageService,
+  ) {}
 
   /**
    * Sube un avatar para el usuario.
@@ -63,7 +67,7 @@ export class PhotosService {
     const storagePath = `avatars/${userId}/avatar-${Date.now()}`;
 
     try {
-      const publicUrl = await this.supabaseService.uploadFile(
+      const publicUrl = await this.fileStorage.uploadFile(
         'avatars',
         storagePath,
         file.buffer,
@@ -79,7 +83,7 @@ export class PhotosService {
       if (error) {
         // Intentar eliminar el archivo que subimos si falla la actualización
         try {
-          await this.supabaseService.deleteFile('avatars', storagePath);
+          await this.fileStorage.deleteFile('avatars', storagePath);
         } catch (delErr) {
           this.logger.warn(`Failed to cleanup uploaded avatar: ${String(delErr)}`);
         }
@@ -121,7 +125,7 @@ export class PhotosService {
     try {
       // Extraer path del storage de la URL pública
       const storagePath = this.extractStoragePath(user.avatar_url);
-      await this.supabaseService.deleteFile('avatars', storagePath);
+      await this.fileStorage.deleteFile('avatars', storagePath);
 
       // Actualizar avatar_url a null
       const { error: updateError } = await client
@@ -210,7 +214,7 @@ export class PhotosService {
       if (photoAtPosition) {
         try {
           const oldPath = this.extractStoragePath(photoAtPosition.public_url);
-          await this.supabaseService.deleteFile('gallery', oldPath);
+          await this.fileStorage.deleteFile('gallery', oldPath);
         } catch (delErr) {
           this.logger.warn(
             `Failed to cleanup old gallery photo at position ${position}: ${String(delErr)}`,
@@ -238,7 +242,7 @@ export class PhotosService {
       if (upsertError) {
         // Intentar eliminar el archivo subido
         try {
-          await this.supabaseService.deleteFile('gallery', storagePath);
+          await this.fileStorage.deleteFile('gallery', storagePath);
         } catch (delErr) {
           this.logger.warn(`Failed to cleanup uploaded gallery photo: ${String(delErr)}`);
         }
@@ -322,7 +326,7 @@ export class PhotosService {
 
     try {
       const storagePath = this.extractStoragePath(photo.public_url);
-      await this.supabaseService.deleteFile('gallery', storagePath);
+      await this.fileStorage.deleteFile('gallery', storagePath);
 
       // Eliminar de la BD
       const { error: deleteError } = await client
@@ -405,7 +409,7 @@ export class PhotosService {
       for (const photo of photos) {
         try {
           const storagePath = this.extractStoragePath(photo.public_url);
-          await this.supabaseService.deleteFile('gallery', storagePath);
+          await this.fileStorage.deleteFile('gallery', storagePath);
         } catch (err) {
           this.logger.warn(`Failed to delete photo from storage: ${String(err)}`);
         }
@@ -422,7 +426,7 @@ export class PhotosService {
     if (!userError && user?.avatar_url) {
       try {
         const avatarPath = this.extractStoragePath(user.avatar_url);
-        await this.supabaseService.deleteFile('avatars', avatarPath);
+        await this.fileStorage.deleteFile('avatars', avatarPath);
       } catch (err) {
         this.logger.warn(`Failed to delete avatar from storage: ${String(err)}`);
       }
@@ -462,7 +466,7 @@ export class PhotosService {
 
     try {
       const storagePath = this.extractStoragePath(photo.public_url);
-      await this.supabaseService.deleteFile('gallery', storagePath);
+      await this.fileStorage.deleteFile('gallery', storagePath);
 
       // Eliminar de la BD
       const { error: deleteError } = await client
