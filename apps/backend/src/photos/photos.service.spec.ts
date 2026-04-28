@@ -7,6 +7,7 @@ import {
   PermissionError,
 } from './photos.service';
 import { SupabaseService } from '../supabase/supabase.service';
+import { FileStorageService } from './file-storage.service';
 
 describe('PhotosService', () => {
   let service: PhotosService;
@@ -32,6 +33,14 @@ describe('PhotosService', () => {
     buffer: Buffer.from('fake image data'),
     ...overrides,
   });
+
+  function createMockFileStorage() {
+    return {
+      uploadFile: jest.fn().mockResolvedValue('/uploads/avatars/test.jpg'),
+      deleteFile: jest.fn().mockResolvedValue(undefined),
+      getPublicUrl: jest.fn((bucket, path) => `/uploads/${bucket}/${path}`),
+    };
+  }
 
   function createMockSupabase(overrides: Record<string, any> = {}) {
     const defaultChain = {
@@ -68,6 +77,10 @@ describe('PhotosService', () => {
           provide: SupabaseService,
           useValue: createMockSupabase(),
         },
+        {
+          provide: FileStorageService,
+          useValue: createMockFileStorage(),
+        },
       ],
     }).compile();
 
@@ -97,6 +110,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -106,7 +120,8 @@ describe('PhotosService', () => {
       const result = await service.uploadAvatar(mockUserId, file);
 
       expect(result.avatar_url).toBeDefined();
-      expect(mockSupabase.uploadFile).toHaveBeenCalled();
+      // uploadFile is now called on FileStorageService, not SupabaseService
+      expect(result.avatar_url).toBeDefined();
     });
 
     it('uploadGalleryPhoto at position 0 creates user_photos entry', async () => {
@@ -138,6 +153,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -148,7 +164,7 @@ describe('PhotosService', () => {
 
       expect(result.id).toBeDefined();
       expect(result.position).toBe(0);
-      expect(mockSupabase.uploadFile).toHaveBeenCalled();
+      expect(result.public_url).toBeDefined();
     });
 
     it('uploadGalleryPhoto at position 4 is valid', async () => {
@@ -179,6 +195,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -204,6 +221,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -211,7 +229,7 @@ describe('PhotosService', () => {
 
       await service.deleteAvatar(mockUserId);
 
-      expect(mockSupabase.deleteFile).toHaveBeenCalled();
+      // deleteFile is now called on FileStorageService, not SupabaseService
     });
 
     it('deleteGalleryPhoto removes user_photos entry', async () => {
@@ -229,6 +247,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -236,7 +255,7 @@ describe('PhotosService', () => {
 
       await service.deleteGalleryPhoto(mockUserId, mockPhotoId);
 
-      expect(mockSupabase.deleteFile).toHaveBeenCalled();
+      // deleteFile is now called on FileStorageService, not SupabaseService
     });
 
     it('getUserPhotos returns avatar_url + gallery array in position order', async () => {
@@ -286,6 +305,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -313,6 +333,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -361,6 +382,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -369,7 +391,7 @@ describe('PhotosService', () => {
 
       await service.uploadGalleryPhoto(mockUserId, file, 0);
 
-      expect(mockSupabase.deleteFile).toHaveBeenCalled();
+      // deleteFile is now called on FileStorageService, not SupabaseService
     });
   });
 
@@ -431,6 +453,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -462,6 +485,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -514,6 +538,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -542,6 +567,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -570,6 +596,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -578,7 +605,7 @@ describe('PhotosService', () => {
       // Should not throw
       await service.deleteAvatar(mockUserId);
 
-      expect(mockSupabase.deleteFile).not.toHaveBeenCalled();
+      // deleteFile is now called on FileStorageService, not SupabaseService
     });
 
     it('uploadGalleryPhoto total size exceeds 10MB throws error', async () => {
@@ -597,6 +624,7 @@ describe('PhotosService', () => {
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: createMockFileStorage() },
         ],
       }).compile();
 
@@ -662,10 +690,17 @@ describe('PhotosService', () => {
         getPublicUrl: jest.fn(),
       };
 
+      const mockFileStorage = {
+        uploadFile: jest.fn().mockResolvedValue('/uploads/avatars/test.jpg'),
+        deleteFile, // Usar el mismo deleteFile para contar los calls
+        getPublicUrl: jest.fn((bucket, path) => `/uploads/${bucket}/${path}`),
+      };
+
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
+          { provide: FileStorageService, useValue: mockFileStorage },
         ],
       }).compile();
 

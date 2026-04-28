@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { validate } from './config/env.validation';
 import { SupabaseModule } from './supabase';
 import { HealthModule } from './health';
@@ -23,6 +25,15 @@ import { PhotosModule } from './photos/photos.module';
       isGlobal: true,
       validate,
     }),
+    // Servir archivos estáticos desde uploads/ en desarrollo
+    ...(process.env.NODE_ENV !== 'production'
+      ? [
+          ServeStaticModule.forRoot({
+            rootPath: join(__dirname, '..', 'uploads'),
+            serveRoot: '/uploads',
+          }),
+        ]
+      : []),
     SupabaseModule,
     HealthModule,
     AuthModule,
