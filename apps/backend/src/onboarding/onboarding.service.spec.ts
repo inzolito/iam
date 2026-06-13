@@ -3,6 +3,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { OnboardingService } from './onboarding.service';
 import { SupabaseService } from '../supabase/supabase.service';
 import { SpinService } from '../spin/spin.service';
+import { FeatureFlagsService } from '../feature-flags/feature-flags.service';
 
 describe('OnboardingService', () => {
   let service: OnboardingService;
@@ -76,11 +77,19 @@ describe('OnboardingService', () => {
 
   let mockSpinService: any;
 
-  async function createService(supabaseOverrides: Record<string, any> = {}) {
+  async function createService(
+    supabaseOverrides: Record<string, any> = {},
+    featureFlagOverrides: { teenModeEnabled?: boolean } = {},
+  ) {
     mockSpinService = {
       setUserSpin: jest.fn().mockResolvedValue([]),
       getUserSpin: jest.fn().mockResolvedValue([]),
       createCustomTag: jest.fn().mockResolvedValue({ id: 'tag-1', slug: 'test', display_name: 'Test', category_id: 'cat-1' }),
+    };
+
+    const mockFeatureFlagsService = {
+      isEnabled: jest.fn().mockResolvedValue(featureFlagOverrides.teenModeEnabled ?? true),
+      invalidateCache: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -88,6 +97,7 @@ describe('OnboardingService', () => {
         OnboardingService,
         { provide: SupabaseService, useValue: buildMockSupabase(supabaseOverrides) },
         { provide: SpinService, useValue: mockSpinService },
+        { provide: FeatureFlagsService, useValue: mockFeatureFlagsService },
       ],
     }).compile();
 
@@ -243,6 +253,7 @@ describe('OnboardingService', () => {
           OnboardingService,
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: SpinService, useValue: mockSpinService },
+          { provide: FeatureFlagsService, useValue: { isEnabled: jest.fn().mockResolvedValue(true), invalidateCache: jest.fn() } },
         ],
       }).compile();
 
@@ -362,11 +373,14 @@ describe('OnboardingService', () => {
         }),
       };
 
+      const mockFF = { isEnabled: jest.fn().mockResolvedValue(true), invalidateCache: jest.fn() };
+
       const module = await Test.createTestingModule({
         providers: [
           OnboardingService,
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: SpinService, useValue: { setUserSpin: jest.fn(), getUserSpin: jest.fn() } },
+          { provide: FeatureFlagsService, useValue: mockFF },
         ],
       }).compile();
 
@@ -393,11 +407,14 @@ describe('OnboardingService', () => {
         }),
       };
 
+      const mockFF2 = { isEnabled: jest.fn().mockResolvedValue(true), invalidateCache: jest.fn() };
+
       const module = await Test.createTestingModule({
         providers: [
           OnboardingService,
           { provide: SupabaseService, useValue: mockSupabase },
           { provide: SpinService, useValue: { setUserSpin: jest.fn(), getUserSpin: jest.fn() } },
+          { provide: FeatureFlagsService, useValue: mockFF2 },
         ],
       }).compile();
 
@@ -511,6 +528,79 @@ describe('OnboardingService', () => {
 
       expect(updateCapture!.is_teen).toBe(true);
       expect(updateCapture!.birth_date).toBeDefined();
+    });
+  });
+
+  // ============================================================
+  // FEATURE FLAG — teen_mode_enabled
+  // ============================================================
+
+  describe('Feature Flag teen_mode_enabled', () => {
+    it('teen_mode desactivado — usuario 16 no puede registrarse', async () => {
+      service = await createService(
+        { users: { id: 'u1' } },
+        { teenModeEnabled: false },
+      );
+
+      const birthDate = new Date();
+      birthDate.setFullYear(birthDate.getFullYear() - 16);
+      birthDate.setMonth(birthDate.getMonth() - 1);
+
+      await expect(
+        service.updateProfile('u1', {
+          birthDate: birthDate.toISOString().split('T')[0],
+        }),
+      ).rejects.toThrow('TEEN_MODE_DISABLED');
+    });
+
+    it('teen_mode desactivado — usuario 17 no puede registrarse', async () => {
+      service = await createService(
+        { users: { id: 'u1' } },
+        { teenModeEnabled: false },
+      );
+
+      const birthDate = new Date();
+      birthDate.setFullYear(birthDate.getFullYear() - 17);
+
+      await expect(
+        service.updateProfile('u1', {
+          birthDate: birthDate.toISOString().split('T')[0],
+        }),
+      ).rejects.toThrow('TEEN_MODE_DISABLED');
+    });
+
+    it('teen_mode desactivado — adulto de 18 sí puede registrarse', async () => {
+      service = await createService(
+        { users: { id: 'u1' } },
+        { teenModeEnabled: false },
+      );
+
+      const birthDate = new Date();
+      birthDate.setFullYear(birthDate.getFullYear() - 18);
+      birthDate.setMonth(birthDate.getMonth() - 1);
+
+      await service.updateProfile('u1', {
+        birthDate: birthDate.toISOString().split('T')[0],
+      });
+
+      expect(updateCapture!.is_teen).toBe(false);
+    });
+
+    it('teen_mode activado — usuario 16 puede registrarse', async () => {
+      service = await createService(
+        { users: { id: 'u1' } },
+        { teenModeEnabled: true },
+      );
+
+      const birthDate = new Date();
+      birthDate.setFullYear(birthDate.getFullYear() - 16);
+      birthDate.setMonth(birthDate.getMonth() - 1);
+
+      await service.updateProfile('u1', {
+        birthDate: birthDate.toISOString().split('T')[0],
+      });
+
+      expect(updateCapture!.is_teen).toBe(true);
     });
   });
 });

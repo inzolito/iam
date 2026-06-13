@@ -4,6 +4,30 @@ Este archivo es mi manual de operaciones. Lo leo al inicio de cada sesión para 
 
 ---
 
+## LEER ESTO PRIMERO — Estado del Proyecto
+
+**Última actualización: 2026-06-13**
+
+Antes de hacer cualquier cosa, revisar `git log --oneline -10` para ver el avance reciente.
+
+### Completado
+- **Backend**: 14 módulos implementados, 485 tests pasando (21 suites, 0 skipped). Conectado a Supabase prod.
+  - Auth, Onboarding, SpIn, Users+Streaks, Matching, Chat+WebSocket, Esencias+Rewards, Venues, Body Doubling, Meetups, Notifications, Photos, Admin
+- **Mobile**: F1–F13 implementados. Widget tests F1–F13 cubiertos (19 tests F11-F13 añadidos). i18n ES/EN + a11y. CI/CD con GitHub Actions. Firebase FCM configurado.
+
+### Pendientes (por orden de prioridad)
+1. Tests de integración real contra Supabase (los actuales son unitarios con mocks)
+
+### Etapa 8 — Moderación ✅ completada
+- Rate limiting global: `ThrottlerModule` configurado en `AppModule`, 200 req/min por IP, guard global vía `APP_GUARD`
+- Feature flag `teen_mode_enabled`: `FeatureFlagsService` con caché de 5 min, integrado en `OnboardingService` — registro de menores bloqueado si el flag está desactivado
+- Tests: 22 suites, 499 tests pasando (0 skipped)
+
+### Regla de sesión
+No asumir nada sin leer el código. No avanzar a una etapa nueva si la anterior tiene tests rojos o pendientes abiertos.
+
+---
+
 ## Qué es IAM
 
 App móvil de conexión social y citas **exclusivamente para personas neurodivergentes** (TEA, TDAH, AACC, Dislexia, etc.). El diferenciador central no es el matching digital — es **facilitar encuentros reales** entre personas que se entienden entre sí. El modelo de negocio combina freemium, venue partnerships y una economía de tokens digitales con recompensas físicas.

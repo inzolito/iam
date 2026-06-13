@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { SpinService } from '../spin/spin.service';
+import { FeatureFlagsService, FEATURE_FLAGS } from '../feature-flags/feature-flags.service';
 
 const VALID_DIAGNOSES = ['TEA', 'TDAH', 'AACC', 'DISLEXIA', 'AUTOIDENTIFIED', 'OTHER'];
 const MIN_AGE = 16;
@@ -53,6 +54,7 @@ export class OnboardingService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly spinService: SpinService,
+    private readonly featureFlagsService: FeatureFlagsService,
   ) {}
 
   async getProfile(userId: string) {
@@ -122,8 +124,15 @@ export class OnboardingService {
       if (age < MIN_AGE) {
         throw new BadRequestException(`AGE_TOO_YOUNG: debes tener al menos ${MIN_AGE} años`);
       }
+      const isTeen = age < 18;
+      if (isTeen) {
+        const teenModeEnabled = await this.featureFlagsService.isEnabled(FEATURE_FLAGS.TEEN_MODE);
+        if (!teenModeEnabled) {
+          throw new BadRequestException('TEEN_MODE_DISABLED: el registro de menores no está disponible en este momento');
+        }
+      }
       updateData.birth_date = updates.birthDate;
-      updateData.is_teen = age < 18;
+      updateData.is_teen = isTeen;
     }
 
     if (updates.msnStatus !== undefined) {

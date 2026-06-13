@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { validate } from './config/env.validation';
@@ -18,6 +20,7 @@ import { MeetupsModule } from './meetups';
 import { NotificationsModule } from './notifications';
 import { AdminModule } from './admin';
 import { PhotosModule } from './photos/photos.module';
+import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 
 @Module({
   imports: [
@@ -25,6 +28,13 @@ import { PhotosModule } from './photos/photos.module';
       isGlobal: true,
       validate,
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000,  // ventana de 1 minuto (ms)
+        limit: 200,  // 200 requests por minuto por IP
+      },
+    ]),
     // Servir archivos estáticos desde uploads/ en desarrollo
     ...(process.env.NODE_ENV !== 'production'
       ? [
@@ -49,6 +59,13 @@ import { PhotosModule } from './photos/photos.module';
     NotificationsModule,
     AdminModule,
     PhotosModule,
+    FeatureFlagsModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

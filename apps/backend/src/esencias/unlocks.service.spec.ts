@@ -34,18 +34,39 @@ describe('UnlocksService', () => {
 
     const userUnlocks = overrides.userUnlocks ?? [];
 
+    // Chainable mock — any Supabase filter chain can be awaited directly.
+    // Methods that don't change the result (eq, neq, in, order filters) return
+    // `self`, so `.eq().eq().neq()` etc. all stay awaitable.
+    function makeChainable(data: any[], error: any = null) {
+      const self: any = {
+        eq: () => self,
+        neq: () => self,
+        in: () => self,
+        order: () => Promise.resolve({ data, error }),
+        single: async () => ({
+          data: data[0] ?? null,
+          error: data.length === 0 ? { message: 'not found' } : null,
+        }),
+        then: (resolve: (v: any) => any, reject?: (e: any) => any) =>
+          Promise.resolve({ data, error }).then(resolve, reject),
+        catch: (fn: (e: any) => any) =>
+          Promise.resolve({ data, error }).catch(fn),
+      };
+      return self;
+    }
+
     return {
       getClient: () => ({
         from: (table: string) => {
           if (table === 'unlock_rules') {
+            const rulesData = overrides.unlockError ? [] : unlockRules;
+            const ruleError = overrides.unlockError ? { message: 'not found' } : null;
             return {
               select: () => ({
-                eq: (col: string, val: string) => ({
+                eq: (_col: string, _val: string) => ({
                   single: async () => ({
                     data: unlockRules[0] || null,
-                    error: overrides.unlockError
-                      ? { message: 'not found' }
-                      : null,
+                    error: ruleError,
                   }),
                   in: () => ({
                     single: async () => ({
@@ -53,13 +74,10 @@ describe('UnlocksService', () => {
                       error: null,
                     }),
                   }),
+                  order: () => Promise.resolve({ data: rulesData, error: ruleError }),
                 }),
+                order: () => Promise.resolve({ data: rulesData, error: ruleError }),
               }),
-              order: (field: string, opts?: any) =>
-                Promise.resolve({
-                  data: unlockRules,
-                  error: null,
-                }),
             };
           }
 
@@ -79,43 +97,24 @@ describe('UnlocksService', () => {
             return {
               select: (cols?: string) => {
                 if (cols?.includes('unlock_rules')) {
-                  // Complex select for joins
-                  return {
-                    eq: (col: string, val: any) => ({
-                      eq: () => Promise.resolve({
-                        data: userUnlocks,
-                        error: null,
-                      }),
-                    }),
-                  };
+                  // Join selects (getUserUnlocks, getUnlockedFeatureKeys)
+                  return makeChainable(userUnlocks);
                 }
-
-                // Simple select for existence checks
-                return {
-                  eq: (col: string, val: any) => ({
-                    eq: () => ({
-                      eq: () => ({
-                        single: async () => ({
-                          data: overrides.existingUnlock || null,
-                          error: overrides.existingUnlock ? null : { message: 'not found' },
-                        }),
-                      }),
-                    }),
-                  }),
-                  in: () =>
-                    Promise.resolve({
-                      data: userUnlocks,
-                      error: null,
-                    }),
-                };
+                if (cols === 'unlock_id') {
+                  // isFeatureUnlocked second query
+                  return makeChainable(userUnlocks);
+                }
+                // Existence check — single() must reflect existingUnlock
+                return makeChainable(
+                  overrides.existingUnlock ? [overrides.existingUnlock] : [],
+                );
               },
               update: () => ({
-                eq: (col: string, val: any) => ({
+                eq: (_col: string, _val: any) => ({
                   eq: () => Promise.resolve({ error: null }),
                 }),
               }),
-              insert: () =>
-                Promise.resolve({ error: null }),
+              insert: () => Promise.resolve({ error: null }),
             };
           }
 
@@ -170,8 +169,7 @@ describe('UnlocksService', () => {
   // ============================================================
 
   describe('Happy Path', () => {
-    it.skip('getUnlockRules returns rules', async () => {
-      // Mock setup for complex Supabase chains needs refinement
+    it('getUnlockRules returns rules', async () => {
       service = await createService();
 
       const rules = await service.getUnlockRules();
@@ -243,8 +241,7 @@ describe('UnlocksService', () => {
       expect(result.newBalance).toBe(50); // 100 - 50
     });
 
-    it.skip('isFeatureUnlocked handles query', async () => {
-      // Mock setup for complex Supabase chains needs refinement
+    it('isFeatureUnlocked handles query', async () => {
       service = await createService();
 
       // Just verify the method doesn't throw
@@ -350,8 +347,7 @@ describe('UnlocksService', () => {
   // ============================================================
 
   describe('Peor Caso', () => {
-    it.skip('Unlock multiple features for a diagnosis', async () => {
-      // Mock setup for complex Supabase chains needs refinement
+    it('Unlock multiple features for a diagnosis', async () => {
       const features = [
         {
           id: 'u1',
@@ -451,8 +447,7 @@ describe('UnlocksService', () => {
       expect(true).toBe(true);
     });
 
-    it.skip('GetUnlockRules with multiple features', async () => {
-      // Mock setup for complex Supabase chains needs refinement
+    it('GetUnlockRules with multiple features', async () => {
       service = await createService();
 
       const rules = await service.getUnlockRules();
