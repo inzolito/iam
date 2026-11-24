@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'notifications_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Pantalla de notificaciones del usuario.
 class NotificationsScreen extends StatefulWidget {
@@ -62,7 +63,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.notifications_none,
+                          Icon(PhosphorIcons.bell(PhosphorIconsStyle.regular),
                               size: 64,
                               color: theme.colorScheme.onSurface
                                   .withValues(alpha: 0.3)),
@@ -158,17 +159,17 @@ class _NotifTile extends StatelessWidget {
   IconData _iconForType(String type) {
     switch (type) {
       case 'match':
-        return Icons.favorite;
+        return PhosphorIcons.heart(PhosphorIconsStyle.fill);
       case 'message':
-        return Icons.chat_bubble;
+        return PhosphorIcons.chatCircle(PhosphorIconsStyle.fill);
       case 'meetup':
-        return Icons.handshake;
+        return PhosphorIcons.handshake(PhosphorIconsStyle.fill);
       case 'esencias':
-        return Icons.auto_awesome;
+        return PhosphorIcons.sparkle(PhosphorIconsStyle.fill);
       case 'system':
-        return Icons.info;
+        return PhosphorIcons.info(PhosphorIconsStyle.fill);
       default:
-        return Icons.notifications;
+        return PhosphorIcons.bell(PhosphorIconsStyle.fill);
     }
   }
 }

@@ -17,12 +17,13 @@ export class VenuesController {
     @Query('radius') radius?: string,
     @Query('category') category?: string,
   ) {
-    return this.venuesService.getNearbyVenues(
+    const venues = await this.venuesService.getNearbyVenues(
       parseFloat(lat),
       parseFloat(lng),
       radius ? parseInt(radius) : 5000,
       category,
     );
+    return { venues };
   }
 
   /**
@@ -38,13 +39,14 @@ export class VenuesController {
     @Query('radius') radius?: string,
     @Query('category') category?: string,
   ) {
-    return this.venuesService.getNearbyVenues(
+    const venues = await this.venuesService.getNearbyVenues(
       parseFloat(lat),
       parseFloat(lng),
       radius ? parseInt(radius) : 5000,
       category,
       req.user.id,
     );
+    return { venues };
   }
 
   /**
@@ -56,10 +58,11 @@ export class VenuesController {
     @Query('q') query: string,
     @Query('limit') limit?: string,
   ) {
-    return this.venuesService.searchVenues(
+    const venues = await this.venuesService.searchVenues(
       query,
       limit ? parseInt(limit) : 10,
     );
+    return { venues };
   }
 
   /**
@@ -184,6 +187,7 @@ export class VenuesController {
   @UseGuards(JwtAuthGuard)
   @Get('user/favorites')
   async getUserFavorites(@Request() req: any) {
-    return this.venuesService.getUserFavorites(req.user.id);
+    const venues = await this.venuesService.getUserFavorites(req.user.id);
+    return { venues };
   }
 }

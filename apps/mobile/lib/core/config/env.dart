@@ -27,6 +27,13 @@ class Env {
     defaultValue: '',
   );
 
+  /// Client ID web de Google OAuth. Requerido en Android para que
+  /// GoogleSignIn devuelva un idToken (serverClientId).
+  static const String googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+    defaultValue: '',
+  );
+
   /// Entorno actual: dev | staging | prod
   static const String environment = String.fromEnvironment(
     'ENV',

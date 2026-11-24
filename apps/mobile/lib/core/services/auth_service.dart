@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../config/env.dart';
 import 'api_service.dart';
 import 'storage_service.dart';
 
@@ -29,6 +30,7 @@ class AuthUser {
   final String? avatarUrl;
   final String? diagnosis;
   final bool onboardingComplete;
+  final bool isTeen;
 
   const AuthUser({
     required this.id,
@@ -37,6 +39,7 @@ class AuthUser {
     this.avatarUrl,
     this.diagnosis,
     this.onboardingComplete = false,
+    this.isTeen = false,
   });
 
   factory AuthUser.fromJson(Map<String, dynamic> json) {
@@ -46,7 +49,8 @@ class AuthUser {
       displayName: json['display_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       diagnosis: json['diagnosis'] as String?,
-      onboardingComplete: json['onboarding_complete'] as bool? ?? false,
+      onboardingComplete: json['onboarding_completed'] as bool? ?? false,
+      isTeen: json['is_teen'] as bool? ?? false,
     );
   }
 }
@@ -63,7 +67,14 @@ class AuthService {
     GoogleSignIn? googleSignIn,
   })  : _api = api,
         _storage = storage,
-        _googleSignIn = googleSignIn ?? GoogleSignIn(scopes: ['email']);
+        _googleSignIn = googleSignIn ??
+            GoogleSignIn(
+              scopes: ['email'],
+              // En Android, sin serverClientId el idToken llega null.
+              serverClientId: Env.googleServerClientId.isNotEmpty
+                  ? Env.googleServerClientId
+                  : null,
+            );
 
   // ── Google Sign In ──
 
@@ -143,7 +154,7 @@ class AuthService {
         await _storage.saveDiagnosis(diagnosis);
       }
 
-      final onboardingDone = user['onboarding_complete'] as bool? ?? false;
+      final onboardingDone = user['onboarding_completed'] as bool? ?? false;
       await _storage.setOnboardingComplete(onboardingDone);
 
       return AuthResult(

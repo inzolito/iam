@@ -14,7 +14,8 @@ export class SpinController {
 
   @Get('categories')
   async getCategories(@Query('lang') lang?: string) {
-    return this.spinService.getCategories(lang ?? 'es');
+    const data = await this.spinService.getCategories(lang ?? 'es');
+    return { data };
   }
 
   @Get('tags')
@@ -24,12 +25,13 @@ export class SpinController {
     @Query('limit') limit?: string,
   ) {
     if (!search || search.trim().length === 0) {
-      return [];
+      return { data: [] };
     }
-    return this.spinService.searchTags(
+    const data = await this.spinService.searchTags(
       search.trim(),
       categoryId,
       limit ? Math.min(parseInt(limit, 10) || 10, 50) : 10,
     );
+    return { data };
   }
 }

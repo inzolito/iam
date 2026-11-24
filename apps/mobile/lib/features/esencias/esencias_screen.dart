@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'esencias_provider.dart';
 import 'esencias_models.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Pantalla principal de Esencias — balance, transacciones, unlocks.
 class EsenciasScreen extends StatefulWidget {
@@ -88,7 +89,7 @@ class _BalanceTab extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.diamond_outlined,
+              PhosphorIcons.diamond(PhosphorIconsStyle.regular),
               size: 64,
               color: theme.colorScheme.primary,
             ),
@@ -115,14 +116,14 @@ class _BalanceTab extends StatelessWidget {
                 _StatCard(
                   label: 'Ganadas',
                   value: '${balance.totalEarned}',
-                  icon: Icons.arrow_upward,
+                  icon: PhosphorIcons.arrowUp(PhosphorIconsStyle.bold),
                   color: Colors.green,
                   theme: theme,
                 ),
                 _StatCard(
                   label: 'Gastadas',
                   value: '${balance.totalSpent}',
-                  icon: Icons.arrow_downward,
+                  icon: PhosphorIcons.arrowDown(PhosphorIconsStyle.bold),
                   color: Colors.orange,
                   theme: theme,
                 ),
@@ -233,7 +234,7 @@ class _TransactionTile extends StatelessWidget {
         backgroundColor: (isPositive ? Colors.green : Colors.orange)
             .withValues(alpha: 0.15),
         child: Icon(
-          isPositive ? Icons.add : Icons.remove,
+          isPositive ? PhosphorIcons.plus(PhosphorIconsStyle.bold) : PhosphorIcons.minus(PhosphorIconsStyle.bold),
           color: isPositive ? Colors.green : Colors.orange,
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../feed_profile.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Card de perfil en el feed — muestra info del usuario.
 class ProfileCard extends StatelessWidget {
@@ -91,7 +92,7 @@ class ProfileCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Icon(Icons.location_on,
+                          Icon(PhosphorIcons.mapPin(PhosphorIconsStyle.fill),
                               size: 14,
                               color: Colors.white.withValues(alpha: 0.8)),
                           const SizedBox(width: 4),
@@ -103,7 +104,7 @@ class ProfileCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 16),
-                          Icon(Icons.favorite,
+                          Icon(PhosphorIcons.heart(PhosphorIconsStyle.fill),
                               size: 14,
                               color: Colors.white.withValues(alpha: 0.8)),
                           const SizedBox(width: 4),
@@ -126,7 +127,7 @@ class ProfileCard extends StatelessWidget {
                     top: 12,
                     right: 12,
                     child: IconButton(
-                      icon: const Icon(Icons.more_vert, color: Colors.white),
+                      icon: Icon(PhosphorIcons.dotsThreeVertical(PhosphorIconsStyle.bold), color: Colors.white),
                       tooltip: 'Más opciones',
                       onPressed: onReport,
                     ),
@@ -190,7 +191,7 @@ class ProfileCard extends StatelessWidget {
               children: [
                 // Pass
                 _ActionButton(
-                  icon: Icons.close,
+                  icon: PhosphorIcons.x(PhosphorIconsStyle.bold),
                   color: Colors.red.shade300,
                   onPressed: onPass,
                   size: 56,
@@ -198,7 +199,7 @@ class ProfileCard extends StatelessWidget {
                 ),
                 // Like
                 _ActionButton(
-                  icon: Icons.favorite,
+                  icon: PhosphorIcons.heart(PhosphorIconsStyle.fill),
                   color: theme.colorScheme.primary,
                   onPressed: onLike,
                   size: 64,

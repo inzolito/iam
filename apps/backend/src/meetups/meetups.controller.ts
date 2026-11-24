@@ -50,11 +50,12 @@ export class MeetupsController {
     @Query('status') status?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.meetupsService.getMyMeetups(
+    const meetups = await this.meetupsService.getMyMeetups(
       req.user.id,
       status,
       limit ? parseInt(limit) : 20,
     );
+    return { meetups };
   }
 
   /**
@@ -63,7 +64,8 @@ export class MeetupsController {
    */
   @Get('pending')
   async getPendingMeetups(@Request() req: any) {
-    return this.meetupsService.getPendingMeetups(req.user.id);
+    const meetups = await this.meetupsService.getPendingMeetups(req.user.id);
+    return { meetups };
   }
 
   /**

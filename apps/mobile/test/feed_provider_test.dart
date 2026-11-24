@@ -513,7 +513,8 @@ void main() {
     });
 
     test('compatibilityPercent formatea correctamente', () {
-      final profile = FeedProfile(id: 'x', matchScore: 0.87);
+      // matchScore ya viene en escala 0-100 desde el backend.
+      final profile = FeedProfile(id: 'x', matchScore: 87);
       expect(profile.compatibilityPercent, '87%');
     });
 
@@ -522,8 +523,8 @@ void main() {
       expect(profile.compatibilityPercent, '0%');
     });
 
-    test('compatibilityPercent con 1.0', () {
-      final profile = FeedProfile(id: 'x', matchScore: 1.0);
+    test('compatibilityPercent con 100', () {
+      final profile = FeedProfile(id: 'x', matchScore: 100);
       expect(profile.compatibilityPercent, '100%');
     });
   });

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../core/services/media_service.dart';
 import '../media_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Grilla de fotos editable (añadir, borrar, marcar como principal).
 class PhotoGallery extends StatelessWidget {
@@ -85,7 +86,7 @@ class PhotoGallery extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
+              leading: Icon(PhosphorIcons.imagesSquare(PhosphorIconsStyle.regular)),
               title: const Text('Elegir de galería'),
               onTap: () {
                 Navigator.pop(ctx);
@@ -95,7 +96,7 @@ class PhotoGallery extends StatelessWidget {
             ),
             if (media.isUploading == false)
               ListTile(
-                leading: const Icon(Icons.camera_alt_outlined),
+                leading: Icon(PhosphorIcons.camera(PhosphorIconsStyle.regular)),
                 title: const Text('Tomar foto'),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -127,7 +128,7 @@ class _PhotoTile extends StatelessWidget {
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
               color: theme.colorScheme.surfaceContainerHighest,
-              child: const Icon(Icons.broken_image_outlined),
+              child: Icon(PhosphorIcons.imageBroken(PhosphorIconsStyle.regular)),
             ),
           ),
         ),
@@ -159,9 +160,9 @@ class _PhotoTile extends StatelessWidget {
             child: InkWell(
               customBorder: const CircleBorder(),
               onTap: () => _showActions(context),
-              child: const Padding(
-                padding: EdgeInsets.all(4),
-                child: Icon(Icons.more_vert,
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(PhosphorIcons.dotsThreeVertical(PhosphorIconsStyle.bold),
                     size: 16, color: Colors.white),
               ),
             ),
@@ -181,7 +182,7 @@ class _PhotoTile extends StatelessWidget {
           children: [
             if (!photo.isPrimary)
               ListTile(
-                leading: const Icon(Icons.star_outline),
+                leading: Icon(PhosphorIcons.star(PhosphorIconsStyle.regular)),
                 title: const Text('Marcar como principal'),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -189,7 +190,7 @@ class _PhotoTile extends StatelessWidget {
                 },
               ),
             ListTile(
-              leading: Icon(Icons.delete_outline,
+              leading: Icon(PhosphorIcons.trash(PhosphorIconsStyle.regular),
                   color: theme.colorScheme.error),
               title: Text('Eliminar',
                   style: TextStyle(color: theme.colorScheme.error)),
@@ -227,7 +228,7 @@ class _AddPhotoTile extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: Icon(Icons.add_a_photo_outlined,
+          child: Icon(PhosphorIcons.cameraPlus(PhosphorIconsStyle.regular),
               color: theme.colorScheme.primary, size: 32),
         ),
       ),

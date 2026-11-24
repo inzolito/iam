@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/providers/auth_provider.dart';
 import 'settings_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Pantalla de Configuración / Ajustes.
 class SettingsScreen extends StatefulWidget {
@@ -43,14 +44,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: const Text('Alertas en tiempo real'),
                 value: provider.preferences.pushEnabled,
                 onChanged: (_) => provider.togglePush(),
-                secondary: const Icon(Icons.notifications_outlined),
+                secondary: Icon(PhosphorIcons.bell(PhosphorIconsStyle.regular)),
               ),
               SwitchListTile(
                 title: const Text('Notificaciones por email'),
                 subtitle: const Text('Resúmenes diarios'),
                 value: provider.preferences.emailEnabled,
                 onChanged: (_) => provider.toggleEmail(),
-                secondary: const Icon(Icons.email_outlined),
+                secondary: Icon(PhosphorIcons.envelopeSimple(PhosphorIconsStyle.regular)),
               ),
 
               _SectionHeader(label: 'Privacidad', theme: theme),
@@ -60,7 +61,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Si lo desactivas, nadie nuevo podrá encontrarte'),
                 value: provider.preferences.showInFeed,
                 onChanged: (_) => provider.toggleShowInFeed(),
-                secondary: const Icon(Icons.visibility_outlined),
+                secondary: Icon(PhosphorIcons.eye(PhosphorIconsStyle.regular)),
               ),
               SwitchListTile(
                 title: const Text('Compartir ubicación'),
@@ -68,33 +69,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const Text('Necesario para venues y meetups cercanos'),
                 value: provider.preferences.shareLocation,
                 onChanged: (_) => provider.toggleShareLocation(),
-                secondary: const Icon(Icons.location_on_outlined),
+                secondary: Icon(PhosphorIcons.mapPin(PhosphorIconsStyle.regular)),
               ),
 
               _SectionHeader(label: 'Moderación', theme: theme),
               ListTile(
-                leading: const Icon(Icons.block),
+                leading: Icon(PhosphorIcons.prohibit(PhosphorIconsStyle.regular)),
                 title: const Text('Usuarios bloqueados'),
                 subtitle: Text('${provider.blocks.length} usuario(s)'),
-                trailing: const Icon(Icons.chevron_right),
+                trailing: Icon(PhosphorIcons.caretRight(PhosphorIconsStyle.bold)),
                 onTap: () => _showBlocksSheet(context, provider),
               ),
               ListTile(
-                leading: const Icon(Icons.report_outlined),
+                leading: Icon(PhosphorIcons.warning(PhosphorIconsStyle.regular)),
                 title: const Text('Mis reportes'),
                 subtitle: Text('${provider.reports.length} reporte(s)'),
-                trailing: const Icon(Icons.chevron_right),
+                trailing: Icon(PhosphorIcons.caretRight(PhosphorIconsStyle.bold)),
                 onTap: () => _showReportsSheet(context, provider),
               ),
 
               _SectionHeader(label: 'Cuenta', theme: theme),
               ListTile(
-                leading: Icon(Icons.logout, color: theme.colorScheme.primary),
+                leading: Icon(PhosphorIcons.signOut(PhosphorIconsStyle.regular), color: theme.colorScheme.primary),
                 title: const Text('Cerrar sesión'),
                 onTap: () => _confirmLogout(context),
               ),
               ListTile(
-                leading: Icon(Icons.delete_forever,
+                leading: Icon(PhosphorIcons.trash(PhosphorIconsStyle.fill),
                     color: theme.colorScheme.error),
                 title: Text(
                   'Eliminar cuenta',
@@ -341,11 +342,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   IconData _statusIcon(String status) {
     switch (status) {
       case 'resolved':
-        return Icons.check_circle_outline;
+        return PhosphorIcons.checkCircle(PhosphorIconsStyle.regular);
       case 'dismissed':
-        return Icons.cancel_outlined;
+        return PhosphorIcons.xCircle(PhosphorIconsStyle.regular);
       default:
-        return Icons.pending_outlined;
+        return PhosphorIcons.hourglass(PhosphorIconsStyle.regular);
     }
   }
 

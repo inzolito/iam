@@ -6,6 +6,7 @@ import '../../core/services/media_service.dart';
 import 'media_provider.dart';
 import 'profile_provider.dart';
 import 'widgets/photo_gallery.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Pantalla de perfil del usuario — ver y editar datos.
 class ProfileScreen extends StatefulWidget {
@@ -41,7 +42,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: Icon(PhosphorIcons.pencilSimple(PhosphorIconsStyle.bold)),
             onPressed: profile != null
                 ? () => _showEditSheet(context, profileProvider)
                 : null,
@@ -130,7 +131,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // Galería de fotos
                       _SectionCard(
                         title: 'Galería',
-                        icon: Icons.photo_library_outlined,
+                        icon: PhosphorIcons.imagesSquare(PhosphorIconsStyle.regular),
                         theme: theme,
                         child: const PhotoGallery(),
                       ),
@@ -140,7 +141,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // Diagnósticos
                       _SectionCard(
                         title: 'Diagnósticos',
-                        icon: Icons.psychology,
+                        icon: PhosphorIcons.brain(PhosphorIconsStyle.fill),
                         theme: theme,
                         child: Wrap(
                           spacing: 8,
@@ -168,7 +169,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // Info
                       _SectionCard(
                         title: 'Información',
-                        icon: Icons.info_outline,
+                        icon: PhosphorIcons.info(PhosphorIconsStyle.regular),
                         theme: theme,
                         child: Column(
                           children: [
@@ -187,7 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       OutlinedButton.icon(
                         onPressed: () =>
                             context.read<AuthProvider>().signOut(),
-                        icon: const Icon(Icons.logout),
+                        icon: Icon(PhosphorIcons.signOut(PhosphorIconsStyle.regular)),
                         label: const Text('Cerrar sesión'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: theme.colorScheme.error,
@@ -396,7 +397,7 @@ class _AvatarWithEdit extends StatelessWidget {
               onTap: () => _showAvatarSheet(context, media),
               child: Padding(
                 padding: const EdgeInsets.all(6),
-                child: Icon(Icons.camera_alt,
+                child: Icon(PhosphorIcons.camera(PhosphorIconsStyle.fill),
                     size: 16, color: theme.colorScheme.onPrimary),
               ),
             ),
@@ -427,7 +428,7 @@ class _AvatarWithEdit extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
+              leading: Icon(PhosphorIcons.imagesSquare(PhosphorIconsStyle.regular)),
               title: const Text('Elegir de galería'),
               onTap: () {
                 Navigator.pop(ctx);
@@ -435,7 +436,7 @@ class _AvatarWithEdit extends StatelessWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
+              leading: Icon(PhosphorIcons.camera(PhosphorIconsStyle.regular)),
               title: const Text('Tomar foto'),
               onTap: () {
                 Navigator.pop(ctx);

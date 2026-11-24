@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Dialog que aparece cuando hay un match mutuo.
 class MatchDialog extends StatelessWidget {
   final String? matchedUserName;
+  final String? matchedUserAvatar;
   final VoidCallback onDismiss;
   final VoidCallback? onSendMessage;
 
   const MatchDialog({
     super.key,
     this.matchedUserName,
+    this.matchedUserAvatar,
     required this.onDismiss,
     this.onSendMessage,
   });
@@ -28,12 +31,29 @@ class MatchDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Foto del match
+            if (matchedUserAvatar != null && matchedUserAvatar!.isNotEmpty)
+              CircleAvatar(
+                radius: 56,
+                backgroundImage: NetworkImage(matchedUserAvatar!),
+                backgroundColor:
+                    theme.colorScheme.primary.withValues(alpha: 0.1),
+              )
+            else
+              CircleAvatar(
+                radius: 56,
+                backgroundColor:
+                    theme.colorScheme.primary.withValues(alpha: 0.1),
+                child: Icon(PhosphorIcons.user(PhosphorIconsStyle.fill),
+                    size: 56, color: theme.colorScheme.primary),
+              ),
+            const SizedBox(height: 16),
             Icon(
-              Icons.favorite,
-              size: 64,
+              PhosphorIcons.heart(PhosphorIconsStyle.fill),
+              size: 48,
               color: theme.colorScheme.primary,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               'Match!',
               style: TextStyle(

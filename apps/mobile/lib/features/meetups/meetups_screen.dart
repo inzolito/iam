@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'meetups_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Pantalla de Meetups — encuentros presenciales con matches.
 class MeetupsScreen extends StatefulWidget {
@@ -269,7 +270,7 @@ class _ConfirmIcon extends StatelessWidget {
     return Row(
       children: [
         Icon(
-          confirmed ? Icons.check_circle : Icons.radio_button_unchecked,
+          confirmed ? PhosphorIcons.checkCircle(PhosphorIconsStyle.fill) : PhosphorIcons.circle(PhosphorIconsStyle.regular),
           size: 16,
           color: confirmed ? Colors.green : Colors.grey,
         ),

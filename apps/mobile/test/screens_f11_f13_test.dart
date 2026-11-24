@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iam_mobile/core/services/api_service.dart';
 import 'package:iam_mobile/core/services/media_service.dart';
@@ -289,13 +290,13 @@ void main() {
       ));
       await tester.pump();
 
-      expect(find.byIcon(Icons.add_a_photo_outlined), findsOneWidget);
+      expect(find.byIcon(PhosphorIcons.cameraPlus(PhosphorIconsStyle.regular)), findsOneWidget);
     });
 
     testWidgets('muestra fotos cargadas con contador correcto', (tester) async {
       final api = MockApiService(
         onGet: (p) => {
-          'photos': [_makePhoto('p1'), _makePhoto('p2')],
+          'gallery': [_makePhoto('p1'), _makePhoto('p2')],
         },
       );
       final provider = MediaProvider(api: api, media: MockMediaService());
@@ -313,7 +314,7 @@ void main() {
     testWidgets('muestra badge "Principal" en foto marcada como principal', (tester) async {
       final api = MockApiService(
         onGet: (p) => {
-          'photos': [
+          'gallery': [
             _makePhoto('p1', isPrimary: true),
             _makePhoto('p2'),
           ],
@@ -336,7 +337,7 @@ void main() {
         MediaProvider.maxPhotos,
         (i) => _makePhoto('p$i'),
       );
-      final api = MockApiService(onGet: (p) => {'photos': photos});
+      final api = MockApiService(onGet: (p) => {'gallery': photos});
       final provider = MediaProvider(api: api, media: MockMediaService());
       await provider.loadPhotos();
 
@@ -346,7 +347,7 @@ void main() {
       ));
       await tester.pump();
 
-      expect(find.byIcon(Icons.add_a_photo_outlined), findsNothing);
+      expect(find.byIcon(PhosphorIcons.cameraPlus(PhosphorIconsStyle.regular)), findsNothing);
     });
 
     testWidgets('muestra mensaje de error si ocurre uno', (tester) async {
@@ -382,12 +383,15 @@ void main() {
       await tester.pump();
 
       expect(find.text('Filtros'), findsOneWidget);
+      expect(find.text('Mostrar'), findsOneWidget);
       expect(find.text('Diagnósticos'), findsOneWidget);
-      // Secciones más abajo en el scroll — buscar fuera del viewport
+      // Secciones más abajo en el scroll — hacer scroll para que se construyan
+      await tester.drag(find.byType(ListView), const Offset(0, -600));
+      await tester.pump();
       expect(find.text('Rango de edad', skipOffstage: false), findsOneWidget);
       expect(find.text('Distancia máxima', skipOffstage: false), findsOneWidget);
       expect(find.text('Energía mínima', skipOffstage: false), findsOneWidget);
-      expect(find.text('Ordenar por', skipOffstage: false), findsOneWidget);
+      expect(find.text('Conectar por', skipOffstage: false), findsOneWidget);
     });
 
     testWidgets('muestra chips de diagnóstico', (tester) async {

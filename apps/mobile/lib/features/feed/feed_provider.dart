@@ -31,6 +31,10 @@ class FeedProvider extends ChangeNotifier {
   Map<String, dynamic>? _lastMatch;
   Map<String, dynamic>? get lastMatch => _lastMatch;
 
+  // Perfil con el que se hizo match (para mostrar foto y nombre en el dialog)
+  FeedProfile? _lastMatchProfile;
+  FeedProfile? get lastMatchProfile => _lastMatchProfile;
+
   /// Filtros activos aplicados al feed.
   FeedFilters _filters = FeedFilters.none;
   FeedFilters get filters => _filters;
@@ -158,9 +162,12 @@ class FeedProvider extends ChangeNotifier {
       });
 
       _lastMatch = null;
+      _lastMatchProfile = null;
 
       if (response['matched'] == true) {
         _lastMatch = response['match'] as Map<String, dynamic>?;
+        // Capturar el perfil actual (el que acabamos de likear) para el dialog
+        _lastMatchProfile = currentProfile;
       }
 
       _advanceToNext();
@@ -223,6 +230,7 @@ class FeedProvider extends ChangeNotifier {
   /// Limpiar último match (después de cerrar dialog).
   void clearLastMatch() {
     _lastMatch = null;
+    _lastMatchProfile = null;
     notifyListeners();
   }
 

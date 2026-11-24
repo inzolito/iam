@@ -124,7 +124,12 @@ Funcionalidades sensibles se controlan via tabla `feature_flags` en DB.
 - Normalización interna: lowercase + sin caracteres especiales para evitar duplicados (ej: "rick y morty", "Rick and Morty", "rick and morty" → mismo tag)
 
 ### Temas de UI
-Ver `docs/ux-themes.md`. La UI muta según el/los diagnósticos del usuario.
+**Actualizado 2026-07-07**: se descartó el theming dinámico por diagnóstico.
+La app usa un único tema de marca (azul pastel + acento lavanda), definido en
+`apps/mobile/lib/core/design/design_tokens.dart` (tokens) y
+`core/theme/app_theme.dart` (ThemeData). Cambios de color/spacing/radios se
+hacen en `design_tokens.dart` únicamente. `docs/ux-themes.md` documenta la
+exploración de diseño original (histórica, ya no vigente).
 
 ### Notificaciones — "El Dial"
 - Nivel 1 (Santuario): batch diario a hora definida por usuario

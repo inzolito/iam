@@ -19,12 +19,16 @@ export class NotificationsController {
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
-    return this.notificationsService.getNotifications(req.user.id, {
-      unreadOnly: unread === 'true',
-      type,
-      limit: limit ? parseInt(limit) : 20,
-      offset: offset ? parseInt(offset) : 0,
-    });
+    const notifications = await this.notificationsService.getNotifications(
+      req.user.id,
+      {
+        unreadOnly: unread === 'true',
+        type,
+        limit: limit ? parseInt(limit) : 20,
+        offset: offset ? parseInt(offset) : 0,
+      },
+    );
+    return { notifications };
   }
 
   /**

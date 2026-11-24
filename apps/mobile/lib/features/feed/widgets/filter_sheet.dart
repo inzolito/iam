@@ -8,11 +8,21 @@ import '../feed_filters.dart';
 class FilterSheet extends StatefulWidget {
   final FeedFilters initial;
 
-  const FilterSheet({super.key, required this.initial});
+  /// Si el usuario actual es adolescente (16-17). Determina el piso de edad
+  /// del filtro: los adultos nunca deben poder bajar de 18 (los menores
+  /// solo ven a otros menores, reforzado también en el backend).
+  final bool isTeen;
+
+  const FilterSheet({
+    super.key,
+    required this.initial,
+    this.isTeen = false,
+  });
 
   static Future<FeedFilters?> show(
     BuildContext context, {
     required FeedFilters initial,
+    bool isTeen = false,
   }) {
     return showModalBottomSheet<FeedFilters>(
       context: context,
@@ -20,7 +30,7 @@ class FilterSheet extends StatefulWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => FilterSheet(initial: initial),
+      builder: (_) => FilterSheet(initial: initial, isTeen: isTeen),
     );
   }
 
@@ -30,6 +40,13 @@ class FilterSheet extends StatefulWidget {
 
 class _FilterSheetState extends State<FilterSheet> {
   late FeedFilters _draft;
+
+  /// Piso de edad del filtro: los adultos nunca deben poder ver a menores
+  /// (el backend ya aísla por is_teen, esto solo evita una UI engañosa).
+  double get _minAgeBound => widget.isTeen ? 16 : 18;
+
+  double get _effectiveMinAge =>
+      (_draft.minAge?.toDouble() ?? _minAgeBound).clamp(_minAgeBound, 99);
 
   static const _diagnosisLabels = <String, String>{
     'TEA': 'TEA',
@@ -91,6 +108,24 @@ class _FilterSheetState extends State<FilterSheet> {
                 controller: scrollController,
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 children: [
+                  _SectionTitle('Mostrar', theme: theme),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: FeedFilters.supportedGenders.map((g) {
+                      final selected = _draft.genders.contains(g['key']);
+                      return FilterChip(
+                        label: Text(g['label']!),
+                        selected: selected,
+                        onSelected: (_) => setState(() {
+                          _draft = _draft.toggleGender(g['key']!);
+                        }),
+                      );
+                    }).toList(),
+                  ),
+
+                  const SizedBox(height: 24),
                   _SectionTitle('Diagnósticos', theme: theme),
                   const SizedBox(height: 8),
                   Wrap(
@@ -112,15 +147,15 @@ class _FilterSheetState extends State<FilterSheet> {
                   _SectionTitle('Rango de edad', theme: theme),
                   const SizedBox(height: 8),
                   RangeSlider(
-                    min: 13,
+                    min: _minAgeBound,
                     max: 99,
-                    divisions: 86,
+                    divisions: (99 - _minAgeBound).round(),
                     labels: RangeLabels(
-                      '${(_draft.minAge ?? 18)}',
+                      '${_effectiveMinAge.round()}',
                       '${(_draft.maxAge ?? 65)}',
                     ),
                     values: RangeValues(
-                      (_draft.minAge ?? 18).toDouble(),
+                      _effectiveMinAge,
                       (_draft.maxAge ?? 65).toDouble(),
                     ),
                     onChanged: (range) => setState(() {
@@ -132,7 +167,7 @@ class _FilterSheetState extends State<FilterSheet> {
                   ),
                   Center(
                     child: Text(
-                      '${_draft.minAge ?? 18} — ${_draft.maxAge ?? 65} años',
+                      '${_effectiveMinAge.round()} — ${_draft.maxAge ?? 65} años',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.primary,
                         fontWeight: FontWeight.w600,
@@ -151,7 +186,7 @@ class _FilterSheetState extends State<FilterSheet> {
                         ? 'Sin límite'
                         : '${(_draft.radiusMeters! / 1000).toStringAsFixed(0)} km',
                     value: _draft.radiusMeters == null
-                        ? 50
+                        ? 100
                         : (_draft.radiusMeters! / 1000).clamp(1, 100).toDouble(),
                     onChanged: (v) => setState(() {
                       _draft = _draft.copyWith(
@@ -200,7 +235,7 @@ class _FilterSheetState extends State<FilterSheet> {
                   ),
 
                   const SizedBox(height: 24),
-                  _SectionTitle('Ordenar por', theme: theme),
+                  _SectionTitle('Conectar por', theme: theme),
                   const SizedBox(height: 8),
                   Column(
                     children: FeedSort.values.map((s) {

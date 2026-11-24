@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/config/env.dart';
 import '../../core/providers/auth_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Pantalla de login — Google y Apple Sign In.
 class LoginScreen extends StatelessWidget {
@@ -21,14 +23,10 @@ class LoginScreen extends StatelessWidget {
               const Spacer(flex: 2),
 
               // Logo
-              Text(
-                'IAM',
-                style: TextStyle(
-                  fontSize: 72,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 10,
-                  color: theme.colorScheme.primary,
-                ),
+              Image.asset(
+                'assets/images/logo.png',
+                width: 180,
+                height: 180,
               ),
               const SizedBox(height: 8),
               Text(
@@ -53,7 +51,7 @@ class LoginScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline,
+                      Icon(PhosphorIcons.warningCircle(PhosphorIconsStyle.regular),
                           color: Colors.red, size: 20),
                       const SizedBox(width: 8),
                       Expanded(
@@ -64,7 +62,7 @@ class LoginScreen extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close,
+                        icon: Icon(PhosphorIcons.x(PhosphorIconsStyle.bold),
                             color: Colors.red, size: 18),
                         onPressed: authProvider.clearError,
                       ),
@@ -94,7 +92,7 @@ class LoginScreen extends StatelessWidget {
                   onPressed: authProvider.isLoading
                       ? null
                       : () => authProvider.signInWithApple(),
-                  icon: Icons.apple,
+                  icon: PhosphorIcons.appleLogo(PhosphorIconsStyle.fill),
                   label: 'Continuar con Apple',
                   backgroundColor: Colors.black,
                   foregroundColor: Colors.white,
@@ -126,6 +124,9 @@ class LoginScreen extends StatelessWidget {
   }
 
   String _friendlyError(String error) {
+    // Fuera de prod mostramos el error técnico completo para diagnóstico.
+    if (!Env.isProd) return error;
+
     if (error.contains('LOGIN_CANCELLED')) return 'Login cancelado';
     if (error.contains('NO_ID_TOKEN')) return 'Error de autenticación';
     if (error.contains('network')) return 'Sin conexión a internet';

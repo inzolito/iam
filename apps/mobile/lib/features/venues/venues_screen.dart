@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'venues_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Pantalla de venues — lista de lugares cercanos con filtros.
 class VenuesScreen extends StatefulWidget {
@@ -184,7 +185,7 @@ class _VenueCard extends StatelessWidget {
                       width: 64,
                       height: 64,
                       color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      child: Icon(Icons.place,
+                      child: Icon(PhosphorIcons.mapPin(PhosphorIconsStyle.fill),
                           size: 32, color: theme.colorScheme.primary),
                     ),
             ),
@@ -213,7 +214,7 @@ class _VenueCard extends StatelessWidget {
                   Row(
                     children: [
                       if (venue.sensoryRating != null) ...[
-                        Icon(Icons.spa, size: 14,
+                        Icon(PhosphorIcons.flowerLotus(PhosphorIconsStyle.fill), size: 14,
                             color: theme.colorScheme.primary),
                         const SizedBox(width: 4),
                         Text(
@@ -223,7 +224,7 @@ class _VenueCard extends StatelessWidget {
                         const SizedBox(width: 12),
                       ],
                       if (venue.formattedDistance.isNotEmpty) ...[
-                        Icon(Icons.directions_walk, size: 14,
+                        Icon(PhosphorIcons.personSimpleWalk(PhosphorIconsStyle.regular), size: 14,
                             color: theme.colorScheme.onSurface
                                 .withValues(alpha: 0.5)),
                         const SizedBox(width: 4),
@@ -242,7 +243,7 @@ class _VenueCard extends StatelessWidget {
 
             // Favorito
             Icon(
-              venue.isFavorite ? Icons.favorite : Icons.favorite_border,
+              venue.isFavorite ? PhosphorIcons.heart(PhosphorIconsStyle.fill) : PhosphorIcons.heart(PhosphorIconsStyle.regular),
               color: venue.isFavorite ? Colors.pink : theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
           ],

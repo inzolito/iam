@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../onboarding_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Paso 1: Selección de diagnóstico(s).
 /// El usuario puede seleccionar uno o más. El primero es el primario (define el tema).
@@ -165,7 +166,7 @@ class _DiagnosisCard extends StatelessWidget {
                 ),
               ),
             if (isSelected)
-              Icon(Icons.check_circle, color: theme.colorScheme.primary),
+              Icon(PhosphorIcons.checkCircle(PhosphorIconsStyle.fill), color: theme.colorScheme.primary),
           ],
         ),
       ),

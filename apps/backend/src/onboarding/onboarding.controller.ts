@@ -24,6 +24,7 @@ interface UpdateProfileDto {
   msnStatus?: string;
   energyLevel?: number;
   notifLevel?: number;
+  gender?: string; // 'male' | 'female' | 'other'
 }
 
 interface SetDiagnosesDto {
@@ -38,6 +39,11 @@ interface SetSpinDto {
 interface CreateCustomTagDto {
   displayName: string;
   categoryId: string;
+}
+
+interface UpdateLocationDto {
+  lat: number;
+  lng: number;
 }
 
 @Controller('users/me')
@@ -104,5 +110,23 @@ export class OnboardingController {
   @Post('complete')
   async completeOnboarding(@Req() req: AuthRequest) {
     return this.onboardingService.completeOnboarding(req.user.id);
+  }
+
+  @Patch('location')
+  async updateLocation(
+    @Req() req: AuthRequest,
+    @Body() body: UpdateLocationDto,
+  ) {
+    if (
+      typeof body.lat !== 'number' ||
+      typeof body.lng !== 'number' ||
+      body.lat < -90 ||
+      body.lat > 90 ||
+      body.lng < -180 ||
+      body.lng > 180
+    ) {
+      throw new BadRequestException('LOCATION_INVALID: lat/lng fuera de rango');
+    }
+    return this.onboardingService.updateLocation(req.user.id, body.lat, body.lng);
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'body_doubling_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Pantalla de Body Doubling — sesiones de foco compartido.
 class BodyDoublingScreen extends StatefulWidget {
@@ -34,7 +35,7 @@ class _BodyDoublingScreenState extends State<BodyDoublingScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreateSheet(context, provider),
-        icon: const Icon(Icons.add),
+        icon: Icon(PhosphorIcons.plus(PhosphorIconsStyle.bold)),
         label: const Text('Crear sesión'),
       ),
       body: provider.isLoading
@@ -60,7 +61,7 @@ class _BodyDoublingScreenState extends State<BodyDoublingScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.people_outline,
+                          Icon(PhosphorIcons.usersThree(PhosphorIconsStyle.regular),
                               size: 64,
                               color: theme.colorScheme.onSurface
                                   .withValues(alpha: 0.3)),
@@ -216,13 +217,13 @@ class _SessionCard extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.timer, size: 14,
+                Icon(PhosphorIcons.timer(PhosphorIconsStyle.fill), size: 14,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                 const SizedBox(width: 4),
                 Text('${session.durationMinutes} min',
                     style: const TextStyle(fontSize: 13)),
                 const SizedBox(width: 16),
-                Icon(Icons.people, size: 14,
+                Icon(PhosphorIcons.usersThree(PhosphorIconsStyle.fill), size: 14,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                 const SizedBox(width: 4),
                 Text('${session.currentParticipants}/${session.maxParticipants}',

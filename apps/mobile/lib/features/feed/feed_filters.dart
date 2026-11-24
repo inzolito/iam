@@ -54,6 +54,9 @@ class FeedFilters {
   /// ¿Incluir perfiles adolescentes? Default: null (backend decide por edad del viewer).
   final bool? includeTeens;
 
+  /// Géneros aceptados ('male', 'female', 'other'). Vacío = todos.
+  final Set<String> genders;
+
   /// Orden.
   final FeedSort sort;
 
@@ -65,6 +68,7 @@ class FeedFilters {
     this.tagIds = const {},
     this.minEnergyLevel,
     this.includeTeens,
+    this.genders = const {},
     this.sort = FeedSort.compatibility,
   });
 
@@ -81,6 +85,13 @@ class FeedFilters {
     'OTHER',
   ];
 
+  /// Géneros soportados en la app.
+  static const List<Map<String, String>> supportedGenders = [
+    {'key': 'female', 'label': 'Mujeres'},
+    {'key': 'male', 'label': 'Hombres'},
+    {'key': 'other', 'label': 'Otro'},
+  ];
+
   /// ¿Hay algún filtro no-default aplicado?
   bool get hasActiveFilters =>
       diagnoses.isNotEmpty ||
@@ -90,6 +101,7 @@ class FeedFilters {
       tagIds.isNotEmpty ||
       minEnergyLevel != null ||
       includeTeens != null ||
+      genders.isNotEmpty ||
       sort != FeedSort.compatibility;
 
   /// Cantidad de filtros activos (para badge en UI).
@@ -101,6 +113,7 @@ class FeedFilters {
     if (tagIds.isNotEmpty) count++;
     if (minEnergyLevel != null) count++;
     if (includeTeens != null) count++;
+    if (genders.isNotEmpty) count++;
     if (sort != FeedSort.compatibility) count++;
     return count;
   }
@@ -137,6 +150,9 @@ class FeedFilters {
     if (includeTeens != null) {
       params['includeTeens'] = includeTeens! ? 'true' : 'false';
     }
+    if (genders.isNotEmpty) {
+      params['genders'] = genders.join(',');
+    }
     if (sort != FeedSort.compatibility) {
       params['sort'] = sort.apiValue;
     }
@@ -166,6 +182,7 @@ class FeedFilters {
     Set<String>? tagIds,
     int? minEnergyLevel,
     bool? includeTeens,
+    Set<String>? genders,
     FeedSort? sort,
     bool clearMinAge = false,
     bool clearMaxAge = false,
@@ -184,6 +201,7 @@ class FeedFilters {
           clearMinEnergy ? null : (minEnergyLevel ?? this.minEnergyLevel),
       includeTeens:
           clearIncludeTeens ? null : (includeTeens ?? this.includeTeens),
+      genders: genders ?? this.genders,
       sort: sort ?? this.sort,
     );
   }
@@ -210,6 +228,17 @@ class FeedFilters {
     return copyWith(tagIds: next);
   }
 
+  /// Alterna un género en el filtro.
+  FeedFilters toggleGender(String gender) {
+    final next = Set<String>.from(genders);
+    if (next.contains(gender)) {
+      next.remove(gender);
+    } else {
+      next.add(gender);
+    }
+    return copyWith(genders: next);
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -221,6 +250,7 @@ class FeedFilters {
         _setEquals(tagIds, other.tagIds) &&
         minEnergyLevel == other.minEnergyLevel &&
         includeTeens == other.includeTeens &&
+        _setEquals(genders, other.genders) &&
         sort == other.sort;
   }
 
@@ -233,6 +263,7 @@ class FeedFilters {
         Object.hashAllUnordered(tagIds),
         minEnergyLevel,
         includeTeens,
+        Object.hashAllUnordered(genders),
         sort,
       );
 }

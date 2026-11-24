@@ -119,7 +119,7 @@ export class PhotosController {
   @Patch('gallery/reorder')
   @HttpCode(HttpStatus.OK)
   async reorderGalleryPhotos(
-    @Body() positions: Array<{ id: string; position: number }>,
+    @Body('positions') positions: Array<{ id: string; position: number }>,
     @Request() req: any,
   ): Promise<{ success: boolean }> {
     const userId = req.user.id;

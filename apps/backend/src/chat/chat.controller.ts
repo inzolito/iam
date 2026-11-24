@@ -27,7 +27,8 @@ export class ChatController {
    */
   @Get()
   async getMatches(@Req() req: AuthRequest) {
-    return this.chatService.getMatches(req.user.id);
+    const matches = await this.chatService.getMatches(req.user.id);
+    return { matches };
   }
 
   /**

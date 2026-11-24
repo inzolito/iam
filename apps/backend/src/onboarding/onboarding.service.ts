@@ -80,6 +80,7 @@ export class OnboardingService {
       msnStatus?: string;
       energyLevel?: number;
       notifLevel?: number;
+      gender?: string;
     },
   ) {
     const client = this.supabaseService.getClient();
@@ -156,6 +157,13 @@ export class OnboardingService {
         throw new BadRequestException('NOTIF_LEVEL_INVALID: debe ser 1, 2 o 3');
       }
       updateData.notif_level = updates.notifLevel;
+    }
+
+    if (updates.gender !== undefined) {
+      if (!['male', 'female', 'other'].includes(updates.gender)) {
+        throw new BadRequestException('GENDER_INVALID: debe ser male, female u other');
+      }
+      updateData.gender = updates.gender;
     }
 
     if (Object.keys(updateData).length === 0) {
@@ -257,6 +265,89 @@ export class OnboardingService {
 
   async createCustomTag(displayName: string, categoryId: string) {
     return this.spinService.createCustomTag(displayName, categoryId);
+  }
+
+  /**
+   * Perfil público de un usuario: datos visibles + fotos + SpIn + diagnósticos.
+   */
+  async getPublicProfile(userId: string) {
+    const client = this.supabaseService.getClient();
+
+    const { data: user, error } = await client
+      .from('users')
+      .select(
+        'id, display_name, avatar_url, msn_status, energy_level, birth_date',
+      )
+      .eq('id', userId)
+      .eq('is_active', true)
+      .single();
+
+    if (error || !user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Fotos de galería
+    const { data: gallery } = await client
+      .from('user_photos')
+      .select('id, public_url, position')
+      .eq('user_id', userId)
+      .order('position', { ascending: true });
+
+    // SpIn con nombres
+    const { data: spinRows } = await client
+      .from('user_spin')
+      .select('spin_tags(display_name, slug)')
+      .eq('user_id', userId);
+    const spin = (spinRows ?? [])
+      .map((r: any) => r.spin_tags?.display_name)
+      .filter((n: any): n is string => typeof n === 'string');
+
+    // Diagnósticos
+    const { data: diagRows } = await client
+      .from('user_diagnoses')
+      .select('diagnosis, is_primary')
+      .eq('user_id', userId);
+
+    // Edad a partir de birth_date
+    let age: number | null = null;
+    if (user.birth_date) {
+      age = this.calculateAge(new Date(user.birth_date));
+    }
+
+    return {
+      id: user.id,
+      display_name: user.display_name,
+      avatar_url: user.avatar_url,
+      msn_status: user.msn_status,
+      energy_level: user.energy_level,
+      age,
+      gallery: gallery ?? [],
+      spin,
+      diagnoses: (diagRows ?? []).map((d: any) => ({
+        diagnosis: d.diagnosis,
+        is_primary: d.is_primary,
+      })),
+    };
+  }
+
+  /**
+   * Actualiza la ubicación del usuario (columna PostGIS GEOGRAPHY).
+   * Se guarda como EWKT: SRID=4326;POINT(lng lat).
+   */
+  async updateLocation(userId: string, lat: number, lng: number) {
+    const client = this.supabaseService.getClient();
+
+    const { error } = await client
+      .from('users')
+      .update({ location: `SRID=4326;POINT(${lng} ${lat})` })
+      .eq('id', userId);
+
+    if (error) {
+      this.logger.error(`Error updating location: ${error.message}`);
+      throw new BadRequestException(`Error actualizando ubicación: ${error.message}`);
+    }
+
+    return { ok: true, lat, lng };
   }
 
   async completeOnboarding(userId: string) {

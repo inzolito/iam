@@ -40,14 +40,19 @@ export class MatchingController {
     @Req() req: AuthRequest,
     @Query('radius') radius?: string,
     @Query('page') page?: string,
+    @Query('genders') genders?: string,
   ) {
     const radiusMeters = radius ? parseInt(radius, 10) : undefined;
     const pageNum = page ? Math.max(0, parseInt(page, 10)) : 0;
+    const genderList = genders
+      ? genders.split(',').map((g) => g.trim()).filter(Boolean)
+      : undefined;
 
     const profiles = await this.matchingService.getFeed(
       req.user.id,
       radiusMeters,
       pageNum,
+      genderList,
     );
 
     return { profiles };

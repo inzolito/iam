@@ -1,5 +1,11 @@
 # UX Themes — IAM
 
+> **Actualizado 2026-07-07**: se descartó el theming dinámico por diagnóstico.
+> La app usa un único tema de marca (azul pastel + acento lavanda, ver
+> `apps/mobile/lib/core/design/design_tokens.dart` y `core/theme/app_theme.dart`).
+> El contenido de este documento queda como referencia histórica de la
+> exploración de diseño original — no refleja el comportamiento actual de la app.
+
 La interfaz muta según el/los diagnósticos del usuario. Este documento define los tokens de diseño por tema y la lógica de fusión.
 
 ---

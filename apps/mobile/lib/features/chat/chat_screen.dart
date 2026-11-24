@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
 import 'chat_provider.dart';
 import 'chat_models.dart';
 import '../../core/providers/auth_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Pantalla de chat individual — historial de mensajes + input.
 class ChatScreen extends StatefulWidget {
@@ -54,12 +56,34 @@ class _ChatScreenState extends State<ChatScreen> {
     final conv = chat.conversations
         .where((c) => c.matchId == widget.matchId)
         .toList();
-    final otherName =
-        conv.isNotEmpty ? conv.first.otherUser.displayName : null;
+    final otherUser = conv.isNotEmpty ? conv.first.otherUser : null;
+    final otherName = otherUser?.displayName;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(otherName ?? 'Chat'),
+        title: InkWell(
+          onTap: otherUser != null
+              ? () => context.push('/user/${otherUser.id}')
+              : null,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (otherUser?.avatarUrl != null &&
+                  otherUser!.avatarUrl!.isNotEmpty) ...[
+                CircleAvatar(
+                  radius: 16,
+                  backgroundImage: NetworkImage(otherUser.avatarUrl!),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Text(otherName ?? 'Chat'),
+              if (otherUser != null) ...[
+                const SizedBox(width: 4),
+                Icon(PhosphorIcons.caretRight(PhosphorIconsStyle.bold), size: 20),
+              ],
+            ],
+          ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -173,7 +197,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       color: theme.colorScheme.primary,
                     ),
                   )
-                : Icon(Icons.send, color: theme.colorScheme.primary),
+                : Icon(PhosphorIcons.paperPlaneRight(PhosphorIconsStyle.fill), color: theme.colorScheme.primary),
           ),
         ],
       ),

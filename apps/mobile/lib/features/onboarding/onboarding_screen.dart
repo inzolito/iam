@@ -40,7 +40,7 @@ class OnboardingScreen extends StatelessWidget {
   }
 
   Widget _buildProgress(BuildContext context, OnboardingProvider provider) {
-    final steps = ['Diagnóstico', 'SpIn', 'Perfil'];
+    final steps = ['Cuéntanos de ti', 'SpIn', 'Perfil'];
     final theme = provider.currentTheme;
 
     return Padding(

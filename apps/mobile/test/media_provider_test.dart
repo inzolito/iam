@@ -123,9 +123,9 @@ void main() {
 
     test('loadPhotos carga y ordena por order', () async {
       final api = MockApiService(onGet: (path) {
-        expect(path, '/users/me/photos');
+        expect(path, '/photos/my-photos');
         return {
-          'photos': [
+          'gallery': [
             _photoJson('p2', order: 2),
             _photoJson('p1', order: 1),
             _photoJson('p3', order: 3),
@@ -145,9 +145,9 @@ void main() {
     test('uploadAvatar exitoso setea avatarUrl', () async {
       final api = MockApiService(
         onUpload: (path, {required bytes, required field, required filename, method = 'POST'}) {
-          expect(path, '/users/me/avatar');
-          expect(field, 'avatar');
-          expect(method, 'PATCH');
+          expect(path, '/photos/avatar');
+          expect(field, 'file');
+          expect(method, 'POST');
           return {'avatarUrl': 'https://cdn.example.com/avatar.jpg'};
         },
       );
@@ -194,7 +194,7 @@ void main() {
       final deleted = <String>[];
       final api = MockApiService(
         onGet: (_) => {
-          'photos': [_photoJson('p1', order: 1), _photoJson('p2', order: 2)]
+          'gallery': [_photoJson('p1', order: 1), _photoJson('p2', order: 2)]
         },
         onDelete: (path) {
           deleted.add(path);
@@ -207,7 +207,7 @@ void main() {
       final result = await provider.deletePhoto('p1');
 
       expect(result, true);
-      expect(deleted, ['/users/me/photos/p1']);
+      expect(deleted, ['/photos/gallery/p1']);
       expect(provider.photos.length, 1);
       expect(provider.photos[0].id, 'p2');
     });
@@ -215,7 +215,7 @@ void main() {
     test('setPrimaryPhoto actualiza flags locales', () async {
       final api = MockApiService(
         onGet: (_) => {
-          'photos': [
+          'gallery': [
             _photoJson('p1', order: 1, primary: true),
             _photoJson('p2', order: 2),
           ],
@@ -239,7 +239,7 @@ void main() {
       Map<String, dynamic>? sentBody;
       final api = MockApiService(
         onGet: (_) => {
-          'photos': [
+          'gallery': [
             _photoJson('p1', order: 1),
             _photoJson('p2', order: 2),
             _photoJson('p3', order: 3),
@@ -257,12 +257,14 @@ void main() {
 
       expect(result, true);
       expect(provider.photos.map((p) => p.id).toList(), ['p2', 'p3', 'p1']);
-      expect(sentBody?['order'], ['p2', 'p3', 'p1']);
+      final positions = sentBody?['positions'] as List;
+      expect(positions.map((p) => p['id']).toList(), ['p2', 'p3', 'p1']);
+      expect(positions.map((p) => p['position']).toList(), [0, 1, 2]);
     });
 
     test('canAddMorePhotos falsea al llegar al máximo', () async {
       final photos = List.generate(6, (i) => _photoJson('p$i', order: i));
-      final api = MockApiService(onGet: (_) => {'photos': photos});
+      final api = MockApiService(onGet: (_) => {'gallery': photos});
       final provider = MediaProvider(api: api, media: MockMediaService());
       await provider.loadPhotos();
 
@@ -318,7 +320,7 @@ void main() {
 
     test('uploadPhoto falla si ya hay maxPhotos', () async {
       final photos = List.generate(6, (i) => _photoJson('p$i', order: i));
-      final api = MockApiService(onGet: (_) => {'photos': photos});
+      final api = MockApiService(onGet: (_) => {'gallery': photos});
       final provider = MediaProvider(api: api, media: MockMediaService());
       await provider.loadPhotos();
 
@@ -390,7 +392,7 @@ void main() {
     test('reorderPhotos hace rollback en error', () async {
       final api = MockApiService(
         onGet: (_) => {
-          'photos': [
+          'gallery': [
             _photoJson('p1', order: 1),
             _photoJson('p2', order: 2),
           ],
@@ -485,7 +487,7 @@ void main() {
 
     test('reorderPhotos con índices inválidos devuelve false', () async {
       final api = MockApiService(onGet: (_) => {
-            'photos': [_photoJson('p1', order: 1)],
+            'gallery': [_photoJson('p1', order: 1)],
           });
       final provider = MediaProvider(api: api, media: MockMediaService());
       await provider.loadPhotos();
@@ -498,7 +500,7 @@ void main() {
 
     test('deletePhoto de id inexistente no rompe la lista', () async {
       final api = MockApiService(
-        onGet: (_) => {'photos': [_photoJson('p1', order: 1)]},
+        onGet: (_) => {'gallery': [_photoJson('p1', order: 1)]},
         onDelete: (_) => {},
       );
       final provider = MediaProvider(api: api, media: MockMediaService());
@@ -537,7 +539,7 @@ void main() {
 
     test('pickAndUploadPhoto rechaza cuando galería está llena', () async {
       final photos = List.generate(6, (i) => _photoJson('p$i', order: i));
-      final api = MockApiService(onGet: (_) => {'photos': photos});
+      final api = MockApiService(onGet: (_) => {'gallery': photos});
       final media = MockMediaService()..nextPicked = _fakeImage();
       final provider = MediaProvider(api: api, media: media);
       await provider.loadPhotos();
@@ -566,7 +568,7 @@ void main() {
 
     test('loadPhotos con order igual mantiene inserción estable', () async {
       final api = MockApiService(onGet: (_) => {
-            'photos': [
+            'gallery': [
               _photoJson('p1', order: 0),
               _photoJson('p2', order: 0),
               _photoJson('p3', order: 0),

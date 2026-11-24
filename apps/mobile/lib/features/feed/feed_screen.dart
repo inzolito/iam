@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/services/api_service.dart';
+import '../../core/services/location_service.dart';
 import 'feed_provider.dart';
-import 'widgets/filter_sheet.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/match_dialog.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Pantalla principal del feed — descubrir perfiles y hacer swipe.
 class FeedScreen extends StatefulWidget {
@@ -15,11 +18,55 @@ class FeedScreen extends StatefulWidget {
 }
 
 class _FeedScreenState extends State<FeedScreen> {
+  String? _locationMessage;
+  bool _syncingLocation = false;
+  bool _matchDialogShowing = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<FeedProvider>().loadFeed();
+      _syncLocationAndLoad();
+    });
+  }
+
+  /// Pide ubicación y sincroniza con el backend antes de cargar el feed.
+  Future<void> _syncLocationAndLoad() async {
+    setState(() {
+      _syncingLocation = true;
+      _locationMessage = null;
+    });
+
+    final locationService = LocationService(api: context.read<ApiService>());
+    final result = await locationService.syncLocation();
+
+    if (!mounted) return;
+
+    if (result == LocationSyncResult.ok) {
+      setState(() => _syncingLocation = false);
+      await context.read<FeedProvider>().loadFeed();
+      return;
+    }
+
+    // Mensajes según el motivo del fallo
+    String msg;
+    switch (result) {
+      case LocationSyncResult.serviceDisabled:
+        msg = 'Activa el GPS de tu dispositivo para usar el feed.';
+        break;
+      case LocationSyncResult.permissionDenied:
+        msg = 'Necesitamos tu ubicación para mostrarte personas cerca.';
+        break;
+      case LocationSyncResult.permissionDeniedForever:
+        msg =
+            'Permiso de ubicación bloqueado. Actívalo en Ajustes de la app.';
+        break;
+      default:
+        msg = 'No pudimos obtener tu ubicación. Intenta de nuevo.';
+    }
+    setState(() {
+      _syncingLocation = false;
+      _locationMessage = msg;
     });
   }
 
@@ -28,51 +75,72 @@ class _FeedScreenState extends State<FeedScreen> {
     final theme = Theme.of(context);
     final feed = context.watch<FeedProvider>();
 
-    // Mostrar dialog de match si hay uno
-    if (feed.lastMatch != null) {
+    // Mostrar dialog de match si hay uno (una sola vez)
+    if (feed.lastMatch != null && !_matchDialogShowing) {
+      _matchDialogShowing = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showMatchDialog(context, feed);
       });
     }
 
-    final filterCount = feed.filters.activeCount;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'IAM',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            letterSpacing: 4,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Badge(
-              isLabelVisible: filterCount > 0,
-              label: Text('$filterCount'),
-              child: const Icon(Icons.tune),
-            ),
-            tooltip: 'Filtros',
-            onPressed: () => _openFilterSheet(context, feed),
-          ),
-        ],
-      ),
-      body: _buildBody(context, feed, theme),
-    );
-  }
-
-  Future<void> _openFilterSheet(BuildContext context, FeedProvider feed) async {
-    final result = await FilterSheet.show(context, initial: feed.filters);
-    if (result != null) {
-      await feed.applyFilters(result);
-    }
+    return _buildBody(context, feed, theme);
   }
 
   Widget _buildBody(BuildContext context, FeedProvider feed, ThemeData theme) {
+    // Sincronizando ubicación
+    if (_syncingLocation) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Obteniendo tu ubicación...'),
+          ],
+        ),
+      );
+    }
+
+    // Ubicación no disponible / permiso denegado
+    if (_locationMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(PhosphorIcons.mapPinLine(PhosphorIconsStyle.regular),
+                  size: 64,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.4)),
+              const SizedBox(height: 16),
+              Text(
+                'Ubicación requerida',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _locationMessage!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _syncLocationAndLoad,
+                icon: Icon(PhosphorIcons.crosshair(PhosphorIconsStyle.bold)),
+                label: const Text('Activar ubicación'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     // Loading inicial
     if (feed.isLoading && feed.profiles.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -86,7 +154,7 @@ class _FeedScreenState extends State<FeedScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.wifi_off,
+              Icon(PhosphorIcons.wifiSlash(PhosphorIconsStyle.regular),
                   size: 64,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
               const SizedBox(height: 16),
@@ -109,7 +177,7 @@ class _FeedScreenState extends State<FeedScreen> {
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: () => feed.loadFeed(),
-                icon: const Icon(Icons.refresh),
+                icon: Icon(PhosphorIcons.arrowClockwise(PhosphorIconsStyle.bold)),
                 label: const Text('Reintentar'),
               ),
             ],
@@ -126,7 +194,7 @@ class _FeedScreenState extends State<FeedScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.explore_off,
+              Icon(PhosphorIcons.compass(PhosphorIconsStyle.regular),
                   size: 64,
                   color: theme.colorScheme.primary.withValues(alpha: 0.4)),
               const SizedBox(height: 16),
@@ -149,14 +217,14 @@ class _FeedScreenState extends State<FeedScreen> {
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: () => feed.loadFeed(),
-                icon: const Icon(Icons.refresh),
+                icon: Icon(PhosphorIcons.arrowClockwise(PhosphorIconsStyle.bold)),
                 label: const Text('Actualizar'),
               ),
               if (feed.filters.hasActiveFilters) ...[
                 const SizedBox(height: 8),
                 TextButton.icon(
                   onPressed: () => feed.clearFilters(),
-                  icon: const Icon(Icons.filter_alt_off_outlined),
+                  icon: Icon(PhosphorIcons.funnelSimpleX(PhosphorIconsStyle.regular)),
                   label: const Text('Limpiar filtros'),
                 ),
               ],
@@ -182,14 +250,29 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   void _showMatchDialog(BuildContext context, FeedProvider feed) {
+    final matched = feed.lastMatchProfile;
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => MatchDialog(
+      builder: (dialogContext) => MatchDialog(
+        matchedUserName: matched?.displayName,
+        matchedUserAvatar: matched?.avatarUrl,
         onDismiss: () {
+          Navigator.of(dialogContext).pop();
           feed.clearLastMatch();
-          Navigator.of(context).pop();
+          _matchDialogShowing = false;
         },
+        onSendMessage: matched != null
+            ? () {
+                Navigator.of(dialogContext).pop();
+                final matchId = feed.lastMatch?['id'] as String?;
+                feed.clearLastMatch();
+                _matchDialogShowing = false;
+                if (matchId != null) {
+                  context.go('/chat/$matchId');
+                }
+              }
+            : null,
       ),
     );
   }
@@ -206,7 +289,7 @@ class _FeedScreenState extends State<FeedScreen> {
             children: [
               ListTile(
                 leading:
-                    Icon(Icons.block, color: theme.colorScheme.error),
+                    Icon(PhosphorIcons.prohibit(PhosphorIconsStyle.regular), color: theme.colorScheme.error),
                 title: const Text('Bloquear usuario'),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -214,7 +297,7 @@ class _FeedScreenState extends State<FeedScreen> {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.flag,
+                leading: Icon(PhosphorIcons.flag(PhosphorIconsStyle.fill),
                     color: theme.colorScheme.error.withValues(alpha: 0.7)),
                 title: const Text('Reportar'),
                 onTap: () {
@@ -223,7 +306,7 @@ class _FeedScreenState extends State<FeedScreen> {
                 },
               ),
               ListTile(
-                leading: Icon(Icons.close,
+                leading: Icon(PhosphorIcons.x(PhosphorIconsStyle.bold),
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                 title: const Text('Cancelar'),
                 onTap: () => Navigator.pop(ctx),

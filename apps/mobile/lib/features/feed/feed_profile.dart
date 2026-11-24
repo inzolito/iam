@@ -47,6 +47,6 @@ class FeedProfile {
     return '${distance.toInt()} m';
   }
 
-  /// Porcentaje de compatibilidad.
-  String get compatibilityPercent => '${(matchScore * 100).toInt()}%';
+  /// Porcentaje de compatibilidad (matchScore ya viene en escala 0-100).
+  String get compatibilityPercent => '${matchScore.clamp(0, 100).toInt()}%';
 }

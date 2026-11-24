@@ -24,10 +24,12 @@ class UserPhoto {
   factory UserPhoto.fromJson(Map<String, dynamic> json) {
     return UserPhoto(
       id: json['id'] as String? ?? '',
-      url: json['url'] as String? ?? '',
+      url: json['url'] as String? ??
+          json['public_url'] as String? ??
+          '',
       thumbnailUrl:
           json['thumbnail_url'] as String? ?? json['thumbnailUrl'] as String?,
-      order: json['order'] as int? ?? 0,
+      order: json['order'] as int? ?? json['position'] as int? ?? 0,
       isPrimary:
           json['is_primary'] as bool? ?? json['isPrimary'] as bool? ?? false,
       createdAt: json['created_at'] != null
@@ -82,8 +84,9 @@ class MediaProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await _api.get('/users/me/photos');
-      final list = response['photos'] as List<dynamic>? ?? [];
+      final response = await _api.get('/photos/my-photos');
+      _avatarUrl = response['avatar_url'] as String?;
+      final list = response['gallery'] as List<dynamic>? ?? [];
       _photos = list
           .map((p) => UserPhoto.fromJson(p as Map<String, dynamic>))
           .toList()
@@ -124,11 +127,10 @@ class MediaProvider extends ChangeNotifier {
 
     try {
       final response = await _api.uploadFile(
-        '/users/me/avatar',
+        '/photos/avatar',
         bytes: picked.bytes,
-        field: 'avatar',
+        field: 'file',
         filename: picked.filename,
-        method: 'PATCH',
       );
       _avatarUrl = response['avatarUrl'] as String? ??
           response['avatar_url'] as String?;
@@ -184,11 +186,14 @@ class MediaProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // El backend usa "position" 0-4; usamos el primer slot libre.
+      final position = _photos.length;
       final response = await _api.uploadFile(
-        '/users/me/photos',
+        '/photos/gallery',
         bytes: picked.bytes,
-        field: 'photo',
+        field: 'file',
         filename: picked.filename,
+        extraFields: {'position': '$position'},
       );
       final newPhoto = UserPhoto.fromJson(response);
       _photos.add(newPhoto);
@@ -214,7 +219,7 @@ class MediaProvider extends ChangeNotifier {
 
   Future<bool> deletePhoto(String photoId) async {
     try {
-      await _api.delete('/users/me/photos/$photoId');
+      await _api.delete('/photos/gallery/$photoId');
       _photos.removeWhere((p) => p.id == photoId);
       notifyListeners();
       return true;
@@ -245,8 +250,11 @@ class MediaProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _api.patch('/users/me/photos/order', body: {
-        'order': _photos.map((p) => p.id).toList(),
+      await _api.patch('/photos/gallery/reorder', body: {
+        'positions': [
+          for (var i = 0; i < _photos.length; i++)
+            {'id': _photos[i].id, 'position': i},
+        ],
       });
       return true;
     } on ApiException catch (e) {

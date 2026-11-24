@@ -38,6 +38,7 @@ export class MatchingService {
     userId: string,
     radiusMeters = DEFAULT_RADIUS_METERS,
     page = 0,
+    genders?: string[],
   ): Promise<FeedProfile[]> {
     const client = this.supabaseService.getClient();
 
@@ -63,6 +64,13 @@ export class MatchingService {
     if (!userLocation) {
       throw new BadRequestException('INVALID_LOCATION');
     }
+
+    // Get current user's SpIn tags (para calcular compatibilidad real)
+    const { data: mySpin } = await client
+      .from('user_spin')
+      .select('spin_tag_id')
+      .eq('user_id', userId);
+    const mySpinIds = (mySpin ?? []).map((s: any) => s.spin_tag_id);
 
     // Get already swiped users
     const { data: swiped } = await client
@@ -91,8 +99,8 @@ export class MatchingService {
       .select(
         `
         id, display_name, avatar_url, is_teen, energy_level, msn_status,
-        location,
-        user_spin(spin_tag_id)
+        location, gender,
+        user_spin(spin_tag_id, spin_tags(display_name))
       `,
       )
       .neq('id', userId)
@@ -105,6 +113,8 @@ export class MatchingService {
       return [];
     }
 
+    const genderFilter = genders && genders.length > 0 ? new Set(genders) : null;
+
     // Client-side filtering + sorting
     const swipedSet = new Set(swipedIds);
     const profiles: FeedProfile[] = (candidates ?? [])
@@ -114,6 +124,9 @@ export class MatchingService {
 
         // Check if blocked
         if (blockedIds.has(profile.id)) return false;
+
+        // Filtro de género (si el usuario seleccionó preferencias)
+        if (genderFilter && !genderFilter.has(profile.gender)) return false;
 
         // Check radius
         const profileLocation = this.parseLocation(profile.location);
@@ -138,12 +151,19 @@ export class MatchingService {
             )
           : 0;
 
-        const userSpinTags = (profile.user_spin ?? []).map(
+        const candidateSpinIds = (profile.user_spin ?? []).map(
           (u: any) => u.spin_tag_id,
         );
+        // Nombres legibles de los SpIn (para mostrar en la tarjeta)
+        const candidateSpinNames = (profile.user_spin ?? [])
+          .map((u: any) => u.spin_tags?.display_name)
+          .filter((n: any): n is string => typeof n === 'string');
 
-        // Get current user's spin for score calculation
-        const spinScore = this.calculateSpinScoreSync([], userSpinTags);
+        // Compatibilidad: comparar mis SpIn con los del candidato
+        const spinScore = this.calculateSpinScoreSync(
+          mySpinIds,
+          candidateSpinIds,
+        );
         const proximityScore = (1 - distance / radiusMeters) * 100;
         const matchScore = spinScore * 0.7 + proximityScore * 0.3;
 
@@ -154,7 +174,7 @@ export class MatchingService {
           is_teen: profile.is_teen,
           energy_level: profile.energy_level,
           msn_status: profile.msn_status,
-          spin: userSpinTags,
+          spin: candidateSpinNames,
           matchScore,
           distance,
         };
@@ -357,18 +377,52 @@ export class MatchingService {
       };
     }
 
-    // If it's a string (WKT format)
+    // If it's a string
     if (typeof location === 'string') {
-      const match = location.match(/POINT\(([^ ]+) ([^ ]+)\)/);
+      // WKT format: POINT(lng lat)
+      const match = location.match(/POINT\(([^ ]+) ([^ ]+)\)/i);
       if (match) {
         return {
           lng: parseFloat(match[1]),
           lat: parseFloat(match[2]),
         };
       }
+
+      // EWKB hex (formato por defecto de Supabase para columnas GEOGRAPHY)
+      if (/^[0-9A-Fa-f]+$/.test(location) && location.length >= 42) {
+        return this.parseEwkbHex(location);
+      }
     }
 
     return null;
+  }
+
+  /**
+   * Parsea un punto en formato EWKB hexadecimal (little/big endian, con SRID).
+   * Es lo que devuelve Supabase/PostGREST al leer una columna GEOGRAPHY(POINT).
+   */
+  private parseEwkbHex(hex: string): { lat: number; lng: number } | null {
+    try {
+      const buf = Buffer.from(hex, 'hex');
+      const littleEndian = buf.readUInt8(0) === 1;
+      const readU32 = (o: number): number =>
+        littleEndian ? buf.readUInt32LE(o) : buf.readUInt32BE(o);
+      const readF64 = (o: number): number =>
+        littleEndian ? buf.readDoubleLE(o) : buf.readDoubleBE(o);
+
+      const type = readU32(1);
+      const hasSrid = (type & 0x20000000) !== 0;
+      let offset = 5;
+      if (hasSrid) offset += 4; // saltar los 4 bytes de SRID
+
+      const lng = readF64(offset);
+      const lat = readF64(offset + 8);
+      if (Number.isNaN(lng) || Number.isNaN(lat)) return null;
+
+      return { lat, lng };
+    } catch {
+      return null;
+    }
   }
 
   /**

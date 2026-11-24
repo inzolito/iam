@@ -90,9 +90,11 @@ void main() {
       expect(provider.currentTheme.colorScheme.primary, const Color(0xFF7EB8D4));
     });
 
-    test('TDAH diagnosis sets dashboard theme (dark)', () {
+    test('el tema no cambia según el diagnóstico seleccionado', () {
+      // La app usa un único tema de marca; ya no muta por diagnóstico.
+      final before = provider.currentTheme.brightness;
       provider.toggleDiagnosis('TDAH');
-      expect(provider.currentTheme.brightness, Brightness.dark);
+      expect(provider.currentTheme.brightness, before);
     });
 
     test('addTag adds to selected tags', () {
@@ -199,19 +201,23 @@ void main() {
       expect(errorProvider.error, isNotNull);
     });
 
-    test('canComplete requires displayName and birthDate', () {
+    test('canComplete requires displayName, birthDate y gender', () {
       expect(provider.canComplete, false);
 
       provider.setDisplayName('Name');
       expect(provider.canComplete, false);
 
       provider.setBirthDate('2000-01-01');
+      expect(provider.canComplete, false);
+
+      provider.setGender('female');
       expect(provider.canComplete, true);
     });
 
     test('canComplete is false with empty displayName', () {
       provider.setDisplayName('   ');
       provider.setBirthDate('2000-01-01');
+      provider.setGender('female');
       expect(provider.canComplete, false);
     });
   });
@@ -297,12 +303,11 @@ void main() {
       expect(provider.selectedDiagnoses, isEmpty);
     });
 
-    test('theme resets to default when all diagnoses removed', () {
+    test('el tema sigue siendo el mismo tras quitar todos los diagnósticos', () {
+      final before = provider.currentTheme.brightness;
       provider.toggleDiagnosis('TDAH');
-      expect(provider.currentTheme.brightness, Brightness.dark);
-
       provider.toggleDiagnosis('TDAH'); // remove
-      expect(provider.currentTheme.brightness, Brightness.light); // default
+      expect(provider.currentTheme.brightness, before);
     });
   });
 }

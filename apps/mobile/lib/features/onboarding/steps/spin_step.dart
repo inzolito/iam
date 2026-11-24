@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../onboarding_provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Paso 2: Selección de SpIn (Special Interests).
 /// Búsqueda con autocomplete, chips seleccionados, límites visibles.
@@ -78,7 +79,7 @@ class _SpinStepState extends State<SpinStep> {
                   backgroundColor:
                       theme.colorScheme.primary.withValues(alpha: 0.1),
                   deleteIcon: Icon(
-                    Icons.close,
+                    PhosphorIcons.x(PhosphorIconsStyle.bold),
                     size: 18,
                     color: theme.colorScheme.primary,
                   ),
@@ -106,7 +107,7 @@ class _SpinStepState extends State<SpinStep> {
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
               ),
               prefixIcon: Icon(
-                Icons.search,
+                PhosphorIcons.magnifyingGlass(PhosphorIconsStyle.bold),
                 color: theme.colorScheme.primary,
               ),
               filled: true,
@@ -163,13 +164,13 @@ class _SpinStepState extends State<SpinStep> {
                               )
                             : null,
                         trailing: isSelected
-                            ? Icon(Icons.check_circle,
+                            ? Icon(PhosphorIcons.checkCircle(PhosphorIconsStyle.fill),
                                 color: theme.colorScheme.primary)
                             : canAdd
-                                ? Icon(Icons.add_circle_outline,
+                                ? Icon(PhosphorIcons.plusCircle(PhosphorIconsStyle.regular),
                                     color: theme.colorScheme.onSurface
                                         .withValues(alpha: 0.4))
-                                : Icon(Icons.block,
+                                : Icon(PhosphorIcons.prohibit(PhosphorIconsStyle.regular),
                                     color: Colors.red.withValues(alpha: 0.4)),
                         onTap: isSelected
                             ? () => provider.removeTag(tag['id'])

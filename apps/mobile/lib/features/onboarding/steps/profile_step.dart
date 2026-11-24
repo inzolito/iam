@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../onboarding_provider.dart';
 
 /// Paso 3: Configuración del perfil (nombre, username, fecha de nacimiento).
@@ -56,6 +57,11 @@ class _ProfileStepState extends State<ProfileStep> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
           Text(
             'Tu perfil',
             style: TextStyle(
@@ -139,8 +145,31 @@ class _ProfileStepState extends State<ProfileStep> {
               color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
           ),
+          const SizedBox(height: 20),
 
-          const Spacer(),
+          // Gender
+          _buildLabel('Género *', theme),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: const [
+              {'key': 'female', 'label': 'Mujer'},
+              {'key': 'male', 'label': 'Hombre'},
+              {'key': 'other', 'label': 'Otro'},
+            ].map<Widget>((g) {
+              final selected = provider.gender == g['key'];
+              return ChoiceChip(
+                label: Text(g['label']!),
+                selected: selected,
+                onSelected: (_) => provider.setGender(g['key']!),
+              );
+            }).toList(),
+          ),
+                ],
+              ),
+            ),
+          ),
 
           // Error message
           if (provider.error != null)
@@ -175,14 +204,16 @@ class _ProfileStepState extends State<ProfileStep> {
                 child: FilledButton(
                   onPressed: provider.canComplete && !provider.isLoading
                       ? () async {
+                          final authProvider = context.read<AuthProvider>();
                           final success = await provider.submitOnboarding();
                           if (success && context.mounted) {
-                            // Navigate to main app
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('¡Bienvenido a IAM! 🎉'),
                               ),
                             );
+                            // Marca onboarding completo → el router redirige a /feed
+                            await authProvider.completeOnboarding();
                           }
                         }
                       : null,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/services/api_service.dart';
-import '../../core/theme/iam_themes.dart';
+import '../../core/theme/app_theme.dart';
 
 /// Estado del onboarding — maneja diagnósticos, SpIn y perfil.
 class OnboardingProvider extends ChangeNotifier {
@@ -30,9 +30,10 @@ class OnboardingProvider extends ChangeNotifier {
   String? _username;
   String? _displayName;
   String? _birthDate;
+  String? _gender;
 
-  // Tema
-  ThemeData _currentTheme = IamThemes.defaultTheme();
+  // Tema: único para todos los usuarios (marca IAM), no muta por diagnóstico
+  final ThemeData _currentTheme = AppTheme.light();
   ThemeData get currentTheme => _currentTheme;
   Map<String, dynamic>? _themeConfig;
   Map<String, dynamic>? get themeConfig => _themeConfig;
@@ -70,38 +71,13 @@ class OnboardingProvider extends ChangeNotifier {
       _selectedDiagnoses.add(diagnosis);
       _primaryDiagnosis ??= diagnosis;
     }
-    _updateTheme();
     notifyListeners();
   }
 
   void setPrimaryDiagnosis(String diagnosis) {
     if (_selectedDiagnoses.contains(diagnosis)) {
       _primaryDiagnosis = diagnosis;
-      _updateTheme();
       notifyListeners();
-    }
-  }
-
-  void _updateTheme() {
-    if (_primaryDiagnosis == null) {
-      _currentTheme = IamThemes.defaultTheme();
-      return;
-    }
-    switch (_primaryDiagnosis) {
-      case 'TEA':
-        _currentTheme = IamThemes.tea();
-        break;
-      case 'TDAH':
-        _currentTheme = IamThemes.tdah();
-        break;
-      case 'AACC':
-        _currentTheme = IamThemes.aacc();
-        break;
-      case 'DISLEXIA':
-        _currentTheme = IamThemes.dislexia();
-        break;
-      default:
-        _currentTheme = IamThemes.defaultTheme();
     }
   }
 
@@ -175,11 +151,17 @@ class OnboardingProvider extends ChangeNotifier {
   void setUsername(String value) => _username = value;
   void setDisplayName(String value) => _displayName = value;
   void setBirthDate(String value) => _birthDate = value;
+  String? get gender => _gender;
+  void setGender(String value) {
+    _gender = value;
+    notifyListeners();
+  }
 
   bool get canComplete =>
       _displayName != null &&
       _displayName!.trim().isNotEmpty &&
-      _birthDate != null;
+      _birthDate != null &&
+      _gender != null;
 
   // ── Navegación ──
 
@@ -227,6 +209,9 @@ class OnboardingProvider extends ChangeNotifier {
       }
       if (_birthDate != null) {
         profileData['birthDate'] = _birthDate;
+      }
+      if (_gender != null) {
+        profileData['gender'] = _gender;
       }
       if (profileData.isNotEmpty) {
         await _api.patch('/users/me/profile', body: profileData);

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'chat_provider.dart';
 import 'chat_models.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Lista de conversaciones activas (matches).
 class ChatListScreen extends StatefulWidget {
@@ -48,7 +49,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline,
+            Icon(PhosphorIcons.warningCircle(PhosphorIconsStyle.regular),
                 size: 48,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
             const SizedBox(height: 16),
@@ -72,7 +73,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.chat_bubble_outline,
+              Icon(PhosphorIcons.chatCircle(PhosphorIconsStyle.regular),
                   size: 64,
                   color: theme.colorScheme.primary.withValues(alpha: 0.4)),
               const SizedBox(height: 16),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 import '../config/env.dart';
 
 /// Cliente HTTP para comunicarse con el backend NestJS.
@@ -87,12 +88,37 @@ class ApiService {
     }
 
     request.files.add(
-      http.MultipartFile.fromBytes(field, bytes, filename: filename),
+      http.MultipartFile.fromBytes(
+        field,
+        bytes,
+        filename: filename,
+        // El backend valida el MIME; sin esto viaja como
+        // application/octet-stream y lo rechaza.
+        contentType: _mediaTypeFor(filename),
+      ),
     );
 
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
     return _handleResponse(response);
+  }
+
+  /// Infiere el MediaType a partir de la extensión del archivo.
+  MediaType _mediaTypeFor(String filename) {
+    final ext = filename.toLowerCase().split('.').last;
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+        return MediaType('image', 'jpeg');
+      case 'png':
+        return MediaType('image', 'png');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'heic':
+        return MediaType('image', 'heic');
+      default:
+        return MediaType('image', 'jpeg');
+    }
   }
 
   Map<String, dynamic> _handleResponse(http.Response response) {

@@ -4,7 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
-import 'core/theme/iam_themes.dart';
+import 'core/theme/app_theme.dart';
 import 'core/services/api_service.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/auth_service.dart';
@@ -26,7 +26,14 @@ import 'features/settings/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    // En web sin firebase_options.dart, o si falla la inicialización,
+    // continuamos sin Firebase (push notifications no funcionarán).
+    // ignore: avoid_print
+    print('⚠️ Firebase init failed (continuando sin Firebase): $e');
+  }
   runApp(const IamApp());
 }
 
@@ -129,15 +136,12 @@ class _IamAppState extends State<IamApp> {
           create: (ctx) => SettingsProvider(api: ctx.read<ApiService>()),
         ),
       ],
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, _) {
-          // Tema dinámico basado en diagnóstico guardado
-          final theme = _resolveTheme(authProvider);
-
+      child: Builder(
+        builder: (context) {
           return MaterialApp.router(
             title: 'IAM',
             debugShowCheckedModeBanner: false,
-            theme: theme,
+            theme: AppTheme.light(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             routerConfig: _appRouter.router,
@@ -145,23 +149,5 @@ class _IamAppState extends State<IamApp> {
         },
       ),
     );
-  }
-
-  ThemeData _resolveTheme(AuthProvider authProvider) {
-    final diagnosis = authProvider.user?.diagnosis;
-    if (diagnosis == null) return IamThemes.defaultTheme();
-
-    switch (diagnosis) {
-      case 'TEA':
-        return IamThemes.tea();
-      case 'TDAH':
-        return IamThemes.tdah();
-      case 'AACC':
-        return IamThemes.aacc();
-      case 'DISLEXIA':
-        return IamThemes.dislexia();
-      default:
-        return IamThemes.defaultTheme();
-    }
   }
 }

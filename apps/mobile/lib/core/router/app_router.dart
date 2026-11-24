@@ -16,6 +16,7 @@ import '../../features/body_doubling/body_doubling_screen.dart';
 import '../../features/meetups/meetups_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../features/settings/settings_screen.dart';
+import '../../features/profile/public_profile_screen.dart';
 
 /// Rutas de la aplicación con redirección según estado de auth.
 class AppRouter {
@@ -88,6 +89,13 @@ class AppRouter {
             builder: (context, state) => const SettingsScreen(),
           ),
         ],
+      ),
+      // Perfil público (pantalla completa, fuera del shell)
+      GoRoute(
+        path: '/user/:id',
+        builder: (context, state) => PublicProfileScreen(
+          userId: state.pathParameters['id']!,
+        ),
       ),
     ],
     redirect: (context, state) {

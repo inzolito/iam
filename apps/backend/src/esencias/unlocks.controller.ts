@@ -12,7 +12,8 @@ export class UnlocksController {
    */
   @Get('rules')
   async getAllUnlockRules() {
-    return this.unlocksService.getUnlockRules();
+    const rules = await this.unlocksService.getUnlockRules();
+    return { rules };
   }
 
   /**
@@ -21,7 +22,8 @@ export class UnlocksController {
    */
   @Get('rules/:diagnosis')
   async getUnlockRulesByDiagnosis(@Param('diagnosis') diagnosis: string) {
-    return this.unlocksService.getUnlockRules(diagnosis);
+    const rules = await this.unlocksService.getUnlockRules(diagnosis);
+    return { rules };
   }
 
   /**

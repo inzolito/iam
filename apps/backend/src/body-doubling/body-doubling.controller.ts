@@ -49,10 +49,11 @@ export class BodyDoublingController {
     @Query('activity') activityType?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.bodyDoublingService.getAvailableSessions(
+    const sessions = await this.bodyDoublingService.getAvailableSessions(
       activityType,
       limit ? parseInt(limit) : 20,
     );
+    return { sessions };
   }
 
   /**
@@ -61,7 +62,8 @@ export class BodyDoublingController {
    */
   @Get('my-sessions')
   async getMySessions(@Request() req: any) {
-    return this.bodyDoublingService.getMySessions(req.user.id);
+    const sessions = await this.bodyDoublingService.getMySessions(req.user.id);
+    return { sessions };
   }
 
   /**

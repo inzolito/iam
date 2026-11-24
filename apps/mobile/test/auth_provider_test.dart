@@ -413,7 +413,8 @@ void main() {
         'display_name': 'Test User',
         'avatar_url': 'https://example.com/avatar.png',
         'diagnosis': 'TDAH',
-        'onboarding_complete': true,
+        'onboarding_completed': true,
+        'is_teen': false,
       });
 
       expect(user.id, 'u1');
@@ -422,6 +423,7 @@ void main() {
       expect(user.avatarUrl, 'https://example.com/avatar.png');
       expect(user.diagnosis, 'TDAH');
       expect(user.onboardingComplete, true);
+      expect(user.isTeen, false);
     });
   });
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import 'package:iam_mobile/core/providers/auth_provider.dart';
 import 'package:iam_mobile/core/services/api_service.dart';
@@ -48,6 +49,12 @@ class MockApiService extends ApiService {
   Future<Map<String, dynamic>> post(String path,
       {Map<String, dynamic>? body}) async {
     if (_onPost != null) return _onPost!(path, body: body);
+    return {};
+  }
+
+  @override
+  Future<Map<String, dynamic>> patch(String path,
+      {Map<String, dynamic>? body}) async {
     return {};
   }
 }
@@ -155,7 +162,7 @@ void main() {
       expect(find.byType(Scaffold), findsOneWidget);
     });
 
-    testWidgets('muestra label del paso 0 (Diagnóstico)', (tester) async {
+    testWidgets('muestra label del paso 0 (Cuéntanos de ti)', (tester) async {
       final provider = OnboardingProvider(MockApiService());
 
       await tester.pumpWidget(_wrap(
@@ -163,7 +170,7 @@ void main() {
         [ChangeNotifierProvider<OnboardingProvider>.value(value: provider)],
       ));
 
-      expect(find.text('Diagnóstico'), findsOneWidget);
+      expect(find.text('Cuéntanos de ti'), findsOneWidget);
     });
 
     testWidgets('progress bar tiene 3 segmentos para 3 pasos', (tester) async {
@@ -188,7 +195,7 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('F2 SplashScreen', () {
-    testWidgets('renderiza con logo IAM y progress indicator', (tester) async {
+    testWidgets('renderiza el logo con animación de entrada', (tester) async {
       final auth = AuthProvider(
         authService: MockAuthService(),
         storage: MockStorageService(),
@@ -199,9 +206,17 @@ void main() {
         [ChangeNotifierProvider<AuthProvider>.value(value: auth)],
       ));
 
-      expect(find.text('IAM'), findsOneWidget);
-      expect(find.text('I Am Me'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
+      // MaterialApp añade sus propias FadeTransition para rutas; solo
+      // verificamos que exista al menos una envolviendo el logo (la nuestra).
+      expect(
+        find.ancestor(of: find.byType(Image), matching: find.byType(FadeTransition)),
+        findsWidgets,
+      );
+      expect(
+        find.ancestor(of: find.byType(Image), matching: find.byType(ScaleTransition)),
+        findsWidgets,
+      );
     });
   });
 
@@ -217,7 +232,7 @@ void main() {
         [ChangeNotifierProvider<AuthProvider>.value(value: auth)],
       ));
 
-      expect(find.text('IAM'), findsOneWidget);
+      expect(find.byType(Image), findsOneWidget);
       expect(find.text('Conexiones neurodiversas'), findsOneWidget);
       expect(find.text('Continuar con Google'), findsOneWidget);
     });
@@ -312,20 +327,9 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('F4 FeedScreen', () {
-    testWidgets('renderiza AppBar con título IAM y botón de filtros',
-        (tester) async {
-      final provider = FeedProvider(
-        api: MockApiService(onGet: (p) => {'profiles': []}),
-      );
-
-      await tester.pumpWidget(_wrap(
-        const FeedScreen(),
-        [ChangeNotifierProvider<FeedProvider>.value(value: provider)],
-      ));
-
-      expect(find.text('IAM'), findsOneWidget);
-      expect(find.byIcon(Icons.tune), findsOneWidget);
-    });
+    // Nota: el AppBar (logo + botón de filtros) ahora vive en HomeShell,
+    // que envuelve a todas las pestañas — ya no es responsabilidad de
+    // FeedScreen. Esa cobertura debería vivir en un test de HomeShell.
 
     testWidgets('muestra mensaje vacío cuando no hay perfiles',
         (tester) async {
@@ -335,9 +339,12 @@ void main() {
 
       await tester.pumpWidget(_wrap(
         const FeedScreen(),
-        [ChangeNotifierProvider<FeedProvider>.value(value: provider)],
+        [
+          ChangeNotifierProvider<FeedProvider>.value(value: provider),
+          Provider<ApiService>.value(value: api),
+        ],
       ));
-      await tester.pump();
+      for (var i = 0; i < 15; i++) { await tester.pump(const Duration(milliseconds: 100)); }
 
       expect(find.text('No hay mas perfiles'), findsOneWidget);
       expect(find.text('Actualizar'), findsOneWidget);
@@ -353,13 +360,17 @@ void main() {
 
       await tester.pumpWidget(_wrap(
         const FeedScreen(),
-        [ChangeNotifierProvider<FeedProvider>.value(value: provider)],
+        [
+          ChangeNotifierProvider<FeedProvider>.value(value: provider),
+          Provider<ApiService>.value(value: api),
+        ],
       ));
-      await tester.pump();
+      for (var i = 0; i < 15; i++) { await tester.pump(const Duration(milliseconds: 100)); }
 
       expect(find.text('No se pudo cargar el feed'), findsOneWidget);
       expect(find.text('Reintentar'), findsOneWidget);
-      expect(find.byIcon(Icons.wifi_off), findsOneWidget);
+      expect(find.byIcon(PhosphorIcons.wifiSlash(PhosphorIconsStyle.regular)),
+          findsOneWidget);
     });
 
     testWidgets('muestra perfil cuando hay profiles cargados', (tester) async {
@@ -373,27 +384,15 @@ void main() {
 
       await tester.pumpWidget(_wrap(
         const FeedScreen(),
-        [ChangeNotifierProvider<FeedProvider>.value(value: provider)],
+        [
+          ChangeNotifierProvider<FeedProvider>.value(value: provider),
+          Provider<ApiService>.value(value: api),
+        ],
       ));
-      await tester.pump();
+      for (var i = 0; i < 15; i++) { await tester.pump(const Duration(milliseconds: 100)); }
 
       // Con un perfil cargado, no debería mostrar el mensaje "No hay mas perfiles"
       expect(find.text('No hay mas perfiles'), findsNothing);
-    });
-
-    testWidgets('botón de filtros no muestra badge sin filtros activos',
-        (tester) async {
-      final provider = FeedProvider(
-        api: MockApiService(onGet: (p) => {'profiles': []}),
-      );
-
-      await tester.pumpWidget(_wrap(
-        const FeedScreen(),
-        [ChangeNotifierProvider<FeedProvider>.value(value: provider)],
-      ));
-
-      final badge = tester.widget<Badge>(find.byType(Badge).first);
-      expect(badge.isLabelVisible, false);
     });
   });
 
