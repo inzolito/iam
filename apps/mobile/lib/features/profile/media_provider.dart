@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/config/env.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/media_service.dart';
 
@@ -22,13 +23,15 @@ class UserPhoto {
   });
 
   factory UserPhoto.fromJson(Map<String, dynamic> json) {
+    final rawUrl = json['url'] as String? ??
+        json['public_url'] as String? ??
+        '';
+    final rawThumb =
+        json['thumbnail_url'] as String? ?? json['thumbnailUrl'] as String?;
     return UserPhoto(
       id: json['id'] as String? ?? '',
-      url: json['url'] as String? ??
-          json['public_url'] as String? ??
-          '',
-      thumbnailUrl:
-          json['thumbnail_url'] as String? ?? json['thumbnailUrl'] as String?,
+      url: Env.resolveMediaUrl(rawUrl),
+      thumbnailUrl: rawThumb != null ? Env.resolveMediaUrl(rawThumb) : null,
       order: json['order'] as int? ?? json['position'] as int? ?? 0,
       isPrimary:
           json['is_primary'] as bool? ?? json['isPrimary'] as bool? ?? false,
@@ -85,7 +88,8 @@ class MediaProvider extends ChangeNotifier {
 
     try {
       final response = await _api.get('/photos/my-photos');
-      _avatarUrl = response['avatar_url'] as String?;
+      final rawAvatar = response['avatar_url'] as String?;
+      _avatarUrl = rawAvatar != null ? Env.resolveMediaUrl(rawAvatar) : null;
       final list = response['gallery'] as List<dynamic>? ?? [];
       _photos = list
           .map((p) => UserPhoto.fromJson(p as Map<String, dynamic>))
@@ -132,8 +136,9 @@ class MediaProvider extends ChangeNotifier {
         field: 'file',
         filename: picked.filename,
       );
-      _avatarUrl = response['avatarUrl'] as String? ??
+      final rawAvatar = response['avatarUrl'] as String? ??
           response['avatar_url'] as String?;
+      _avatarUrl = rawAvatar != null ? Env.resolveMediaUrl(rawAvatar) : null;
       _uploadProgress = 1.0;
       _isUploading = false;
       notifyListeners();
@@ -186,8 +191,12 @@ class MediaProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // El backend usa "position" 0-4; usamos el primer slot libre.
-      final position = _photos.length;
+      // El backend usa "position" 0-4; buscamos el primer slot libre.
+      final usedSlots = _photos.map((p) => p.order).toSet();
+      final position = [0, 1, 2, 3, 4].firstWhere(
+        (i) => !usedSlots.contains(i),
+        orElse: () => _photos.length,
+      );
       final response = await _api.uploadFile(
         '/photos/gallery',
         bytes: picked.bytes,

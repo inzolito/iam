@@ -45,7 +45,13 @@ class PhotoGallery extends StatelessWidget {
           crossAxisSpacing: 8,
           mainAxisSpacing: 8,
           children: [
-            ...media.photos.map((p) => _PhotoTile(photo: p, theme: theme)),
+            for (var i = 0; i < media.photos.length; i++)
+              _PhotoTile(
+                photo: media.photos[i],
+                index: i,
+                allPhotos: media.photos,
+                theme: theme,
+              ),
             if (media.canAddMorePhotos)
               _AddPhotoTile(
                 onTap: () => _showPickerSheet(context, media),
@@ -112,23 +118,33 @@ class PhotoGallery extends StatelessWidget {
 
 class _PhotoTile extends StatelessWidget {
   final UserPhoto photo;
+  final int index;
+  final List<UserPhoto> allPhotos;
   final ThemeData theme;
 
-  const _PhotoTile({required this.photo, required this.theme});
+  const _PhotoTile({
+    required this.photo,
+    required this.index,
+    required this.allPhotos,
+    required this.theme,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.network(
-            photo.thumbnailUrl ?? photo.url,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: Icon(PhosphorIcons.imageBroken(PhosphorIconsStyle.regular)),
+        GestureDetector(
+          onTap: () => _openViewer(context),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              photo.thumbnailUrl ?? photo.url,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: Icon(PhosphorIcons.imageBroken(PhosphorIconsStyle.regular)),
+              ),
             ),
           ),
         ),
@@ -169,6 +185,17 @@ class _PhotoTile extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  void _openViewer(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black,
+      builder: (_) => _FullScreenGalleryViewer(
+        photos: allPhotos,
+        initialIndex: index,
+      ),
     );
   }
 
@@ -230,6 +257,76 @@ class _AddPhotoTile extends StatelessWidget {
         child: Center(
           child: Icon(PhosphorIcons.cameraPlus(PhosphorIconsStyle.regular),
               color: theme.colorScheme.primary, size: 32),
+        ),
+      ),
+    );
+  }
+}
+
+class _FullScreenGalleryViewer extends StatefulWidget {
+  final List<UserPhoto> photos;
+  final int initialIndex;
+
+  const _FullScreenGalleryViewer({
+    required this.photos,
+    required this.initialIndex,
+  });
+
+  @override
+  State<_FullScreenGalleryViewer> createState() =>
+      _FullScreenGalleryViewerState();
+}
+
+class _FullScreenGalleryViewerState extends State<_FullScreenGalleryViewer> {
+  late final PageController _controller;
+  late int _current;
+
+  @override
+  void initState() {
+    super.initState();
+    _current = widget.initialIndex;
+    _controller = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text('${_current + 1} / ${widget.photos.length}'),
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(PhosphorIcons.x(PhosphorIconsStyle.bold)),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: PageView.builder(
+        controller: _controller,
+        itemCount: widget.photos.length,
+        onPageChanged: (i) => setState(() => _current = i),
+        itemBuilder: (_, i) => InteractiveViewer(
+          minScale: 1,
+          maxScale: 4,
+          child: Center(
+            child: Image.network(
+              widget.photos[i].url,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const Icon(
+                Icons.broken_image_outlined,
+                color: Colors.white54,
+                size: 48,
+              ),
+            ),
+          ),
         ),
       ),
     );

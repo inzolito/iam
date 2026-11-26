@@ -1,3 +1,5 @@
+import '../../core/config/env.dart';
+
 /// Perfil completo del usuario.
 class UserProfile {
   final String id;
@@ -8,6 +10,7 @@ class UserProfile {
   final bool isTeen;
   final String? avatarUrl;
   final String? msnStatus;
+  final String? gender;
   final int energyLevel;
   final int notifLevel;
   final bool isActive;
@@ -23,6 +26,7 @@ class UserProfile {
     this.isTeen = false,
     this.avatarUrl,
     this.msnStatus,
+    this.gender,
     this.energyLevel = 1,
     this.notifLevel = 1,
     this.isActive = true,
@@ -38,8 +42,11 @@ class UserProfile {
       displayName: json['display_name'] as String?,
       birthDate: json['birth_date'] as String?,
       isTeen: json['is_teen'] as bool? ?? false,
-      avatarUrl: json['avatar_url'] as String?,
+      avatarUrl: json['avatar_url'] != null
+          ? Env.resolveMediaUrl(json['avatar_url'] as String)
+          : null,
       msnStatus: json['msn_status'] as String?,
+      gender: json['gender'] as String?,
       energyLevel: json['energy_level'] as int? ?? 1,
       notifLevel: json['notif_level'] as int? ?? 1,
       isActive: json['is_active'] as bool? ?? true,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/services/api_service.dart';
+import '../../core/widgets/profile_section_widgets.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Vista del perfil público de otro usuario (fotos, descripción, SpIn, diagnósticos).
@@ -71,6 +72,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     final p = _profile!;
     final name = p['display_name'] as String? ?? '';
     final age = p['age'] as int?;
+    final distanceMeters = (p['distance_meters'] as num?)?.toDouble();
     final msn = p['msn_status'] as String?;
     final avatar = p['avatar_url'] as String?;
     final gallery = (p['gallery'] as List<dynamic>? ?? [])
@@ -79,8 +81,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         .toList();
     final spin = (p['spin'] as List<dynamic>? ?? []).cast<String>();
     final diagnoses = (p['diagnoses'] as List<dynamic>? ?? [])
-        .map((d) => (d as Map<String, dynamic>)['diagnosis'] as String?)
-        .whereType<String>()
+        .map((d) {
+          final m = d as Map<String, dynamic>;
+          final code = m['diagnosis'] as String?;
+          if (code == null) return null;
+          return ProfileDiagnosisBadgeData(
+            code: code,
+            isPrimary: m['is_primary'] as bool? ?? false,
+          );
+        })
+        .whereType<ProfileDiagnosisBadgeData>()
         .toList();
 
     // Fotos: avatar primero, luego galería
@@ -130,6 +140,32 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   color: theme.colorScheme.primary,
                 ),
               ),
+              if (distanceMeters != null) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      PhosphorIcons.mapPin(PhosphorIconsStyle.fill),
+                      size: 16,
+                      color: theme.colorScheme.secondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      distanceMeters >= 1000
+                          ? 'A ${(distanceMeters / 1000).toStringAsFixed(1)} km de ti'
+                          : distanceMeters < 100
+                              ? 'Muy cerca de ti (< 100 m)'
+                              : 'A ${distanceMeters.round()} m de ti',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface
+                            .withValues(alpha: 0.75),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
 
               // Descripción (msn_status)
@@ -145,55 +181,19 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                 const SizedBox(height: 20),
               ],
 
-              // Diagnósticos
+              // Neurodivergencia (componente compartido)
               if (diagnoses.isNotEmpty) ...[
-                _sectionTitle('Neurodivergencia', theme),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: diagnoses
-                      .map((d) => Chip(
-                            label: Text(_diagnosisLabels[d] ?? d),
-                            backgroundColor: theme.colorScheme.secondary
-                                .withValues(alpha: 0.15),
-                          ))
-                      .toList(),
-                ),
-                const SizedBox(height: 20),
+                ProfileDiagnosesSection(diagnoses: diagnoses),
+                const SizedBox(height: 16),
               ],
 
-              // SpIn (intereses)
-              if (spin.isNotEmpty) ...[
-                _sectionTitle('Intereses (SpIn)', theme),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: spin
-                      .map((s) => Chip(
-                            label: Text(s),
-                            backgroundColor: theme.colorScheme.primary
-                                .withValues(alpha: 0.1),
-                          ))
-                      .toList(),
-                ),
-              ],
+              // SpIn (intereses) (componente compartido)
+              if (spin.isNotEmpty)
+                ProfileSpinSection(tags: spin),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _sectionTitle(String text, ThemeData theme) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-        color: theme.colorScheme.onSurface,
-      ),
     );
   }
 }

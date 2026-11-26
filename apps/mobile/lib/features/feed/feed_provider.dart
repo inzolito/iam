@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/services/api_service.dart';
 import 'feed_filters.dart';
@@ -39,7 +41,34 @@ class FeedProvider extends ChangeNotifier {
   FeedFilters _filters = FeedFilters.none;
   FeedFilters get filters => _filters;
 
+  static const _filtersStorageKey = 'feed_filters_v1';
+  bool _filtersLoaded = false;
+
   FeedProvider({required ApiService api}) : _api = api;
+
+  Future<void> _ensureFiltersLoaded() async {
+    if (_filtersLoaded) return;
+    _filtersLoaded = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_filtersStorageKey);
+      if (raw != null && raw.isNotEmpty) {
+        _filters =
+            FeedFilters.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      }
+    } catch (_) {
+      // Ignorar en entornos sin SharedPreferences (ej. tests)
+    }
+  }
+
+  Future<void> _saveFilters() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_filtersStorageKey, jsonEncode(_filters.toJson()));
+    } catch (_) {
+      // Ignorar en entornos sin SharedPreferences
+    }
+  }
 
   /// Construye la query string combinando filtros + paginación + radius legacy.
   String _buildQuery({int? radius, int page = 0}) {
@@ -56,6 +85,7 @@ class FeedProvider extends ChangeNotifier {
 
   /// Cargar perfiles del feed (primera página).
   Future<void> loadFeed({int? radius}) async {
+    await _ensureFiltersLoaded();
     _isLoading = true;
     _error = null;
     _page = 0;
@@ -125,7 +155,9 @@ class FeedProvider extends ChangeNotifier {
     }
     if (newFilters == _filters) return true; // no-op
     _filters = newFilters;
+    _filtersLoaded = true;
     notifyListeners();
+    await _saveFilters();
     await loadFeed();
     return true;
   }
@@ -134,7 +166,9 @@ class FeedProvider extends ChangeNotifier {
   Future<void> clearFilters() async {
     if (!_filters.hasActiveFilters) return;
     _filters = FeedFilters.none;
+    _filtersLoaded = true;
     notifyListeners();
+    await _saveFilters();
     await loadFeed();
   }
 

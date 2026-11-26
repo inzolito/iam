@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OnboardingService } from './onboarding.service';
 
@@ -9,7 +9,7 @@ export class ProfilesController {
   constructor(private readonly onboardingService: OnboardingService) {}
 
   @Get(':id')
-  async getPublicProfile(@Param('id') id: string) {
-    return this.onboardingService.getPublicProfile(id);
+  async getPublicProfile(@Req() req: any, @Param('id') id: string) {
+    return this.onboardingService.getPublicProfile(id, req.user?.id);
   }
 }

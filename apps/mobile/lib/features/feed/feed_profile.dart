@@ -1,3 +1,5 @@
+import '../../core/config/env.dart';
+
 /// Perfil mostrado en el feed de descubrimiento.
 class FeedProfile {
   final String id;
@@ -7,6 +9,7 @@ class FeedProfile {
   final int energyLevel;
   final String? msnStatus;
   final List<String> spin;
+  final List<String> diagnoses;
   final double matchScore;
   final double distance;
 
@@ -18,19 +21,25 @@ class FeedProfile {
     this.energyLevel = 1,
     this.msnStatus,
     this.spin = const [],
+    this.diagnoses = const [],
     this.matchScore = 0,
     this.distance = 0,
   });
 
   factory FeedProfile.fromJson(Map<String, dynamic> json) {
+    final rawAvatar = json['avatar_url'] as String?;
     return FeedProfile(
       id: json['id'] as String,
       displayName: json['display_name'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
+      avatarUrl: rawAvatar != null ? Env.resolveMediaUrl(rawAvatar) : null,
       isTeen: json['is_teen'] as bool? ?? false,
       energyLevel: json['energy_level'] as int? ?? 1,
       msnStatus: json['msn_status'] as String?,
       spin: (json['spin'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      diagnoses: (json['diagnoses'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],

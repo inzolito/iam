@@ -270,13 +270,13 @@ export class OnboardingService {
   /**
    * Perfil público de un usuario: datos visibles + fotos + SpIn + diagnósticos.
    */
-  async getPublicProfile(userId: string) {
+  async getPublicProfile(userId: string, viewerId?: string) {
     const client = this.supabaseService.getClient();
 
     const { data: user, error } = await client
       .from('users')
       .select(
-        'id, display_name, avatar_url, msn_status, energy_level, birth_date',
+        'id, display_name, avatar_url, msn_status, energy_level, birth_date, location',
       )
       .eq('id', userId)
       .eq('is_active', true)
@@ -284,6 +284,28 @@ export class OnboardingService {
 
     if (error || !user) {
       throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Calcular proximidad respecto al usuario que consulta (si ambos tienen ubicación)
+    let distanceMeters: number | null = null;
+    if (viewerId && viewerId !== userId && user.location) {
+      const { data: viewer } = await client
+        .from('users')
+        .select('location')
+        .eq('id', viewerId)
+        .single();
+      const targetLoc = this.parsePointLocation(user.location);
+      const viewerLoc = this.parsePointLocation(viewer?.location);
+      if (targetLoc && viewerLoc) {
+        distanceMeters = Math.round(
+          this.haversineMeters(
+            viewerLoc.lat,
+            viewerLoc.lng,
+            targetLoc.lat,
+            targetLoc.lng,
+          ),
+        );
+      }
     }
 
     // Fotos de galería
@@ -321,6 +343,7 @@ export class OnboardingService {
       msn_status: user.msn_status,
       energy_level: user.energy_level,
       age,
+      distance_meters: distanceMeters,
       gallery: gallery ?? [],
       spin,
       diagnoses: (diagRows ?? []).map((d: any) => ({
@@ -328,6 +351,70 @@ export class OnboardingService {
         is_primary: d.is_primary,
       })),
     };
+  }
+
+  private parsePointLocation(
+    loc: unknown,
+  ): { lat: number; lng: number } | null {
+    if (!loc) return null;
+    if (typeof loc === 'string') {
+      const match = loc.match(/POINT\(([-\d.]+)\s+([-\d.]+)\)/i);
+      if (match) {
+        return { lng: parseFloat(match[1]), lat: parseFloat(match[2]) };
+      }
+      // EWKB hex (formato por defecto de Supabase/PostgREST para columnas GEOGRAPHY)
+      if (/^[0-9A-Fa-f]+$/.test(loc) && loc.length >= 42) {
+        return this.parseEwkbHex(loc);
+      }
+    } else if (
+      typeof loc === 'object' &&
+      loc !== null &&
+      'coordinates' in loc &&
+      Array.isArray((loc as any).coordinates)
+    ) {
+      const coords = (loc as any).coordinates;
+      return { lng: Number(coords[0]), lat: Number(coords[1]) };
+    }
+    return null;
+  }
+
+  private parseEwkbHex(hex: string): { lat: number; lng: number } | null {
+    try {
+      const buf = Buffer.from(hex, 'hex');
+      const littleEndian = buf.readUInt8(0) === 1;
+      const readU32 = (o: number): number =>
+        littleEndian ? buf.readUInt32LE(o) : buf.readUInt32BE(o);
+      const readF64 = (o: number): number =>
+        littleEndian ? buf.readDoubleLE(o) : buf.readDoubleBE(o);
+
+      const type = readU32(1);
+      const hasSrid = (type & 0x20000000) !== 0;
+      let offset = 5;
+      if (hasSrid) offset += 4;
+
+      const lng = readF64(offset);
+      const lat = readF64(offset + 8);
+      if (Number.isNaN(lng) || Number.isNaN(lat)) return null;
+      return { lat, lng };
+    } catch {
+      return null;
+    }
+  }
+
+  private haversineMeters(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number,
+  ): number {
+    const R = 6371000;
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
   /**
@@ -385,6 +472,64 @@ export class OnboardingService {
     }
 
     return data;
+  }
+
+  async getAppPreferences(userId: string) {
+    const client = this.supabaseService.getClient();
+    const { data } = await client
+      .from('user_preferences')
+      .select('other_notes')
+      .eq('user_id', userId)
+      .single();
+
+    const defaults = {
+      pushEnabled: true,
+      emailEnabled: true,
+      showInFeed: true,
+      shareLocation: true,
+      language: 'es',
+    };
+
+    if (!data?.other_notes) return defaults;
+    try {
+      const parsed = JSON.parse(data.other_notes);
+      return { ...defaults, ...parsed };
+    } catch {
+      return defaults;
+    }
+  }
+
+  async updateAppPreferences(
+    userId: string,
+    prefs: {
+      pushEnabled?: boolean;
+      emailEnabled?: boolean;
+      showInFeed?: boolean;
+      shareLocation?: boolean;
+      language?: string;
+    },
+  ) {
+    const current = await this.getAppPreferences(userId);
+    const merged = { ...current, ...prefs };
+    const client = this.supabaseService.getClient();
+
+    const { error } = await client
+      .from('user_preferences')
+      .upsert(
+        {
+          user_id: userId,
+          other_notes: JSON.stringify(merged),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' },
+      );
+
+    if (error) {
+      this.logger.error(`Error saving app preferences: ${error.message}`);
+      throw new BadRequestException('Error guardando preferencias');
+    }
+
+    return merged;
   }
 
   /**

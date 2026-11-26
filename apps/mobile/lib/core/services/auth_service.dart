@@ -74,7 +74,9 @@ class AuthService {
               serverClientId: Env.googleServerClientId.isNotEmpty
                   ? Env.googleServerClientId
                   : null,
-            );
+            ) {
+    _api.setOnUnauthorized(refreshSession);
+  }
 
   // ── Google Sign In ──
 
@@ -202,6 +204,9 @@ class AuthService {
       return null;
     }
   }
+
+  /// Refresca el accessToken usando el refreshToken guardado.
+  Future<bool> refreshSession() => _tryRefreshToken();
 
   Future<bool> _tryRefreshToken() async {
     final refreshToken = await _storage.getRefreshToken();

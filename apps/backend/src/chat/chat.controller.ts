@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -69,5 +70,17 @@ export class ChatController {
   ) {
     const count = await this.chatService.markAsRead(matchId, req.user.id);
     return { markedRead: count };
+  }
+
+  /**
+   * DELETE /matches/:id — Unmatch (archive match and close chat).
+   */
+  @Delete(':id')
+  async unmatch(
+    @Req() req: AuthRequest,
+    @Param('id') matchId: string,
+  ) {
+    await this.chatService.unmatch(matchId, req.user.id);
+    return { unmatched: true };
   }
 }

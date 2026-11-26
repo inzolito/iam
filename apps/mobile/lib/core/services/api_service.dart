@@ -7,6 +7,8 @@ import '../config/env.dart';
 class ApiService {
   final String _baseUrl;
   String? _accessToken;
+  Future<bool> Function()? _onUnauthorized;
+  Future<bool>? _refreshInFlight;
 
   ApiService({String? baseUrl})
       : _baseUrl = baseUrl ?? Env.effectiveApiBaseUrl;
@@ -15,15 +17,35 @@ class ApiService {
     _accessToken = token;
   }
 
+  /// Callback invocado una vez ante 401 para refrescar el JWT y reintentar.
+  void setOnUnauthorized(Future<bool> Function() handler) {
+    _onUnauthorized = handler;
+  }
+
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
         if (_accessToken != null) 'Authorization': 'Bearer $_accessToken',
       };
 
+  Future<http.Response> _sendWithRetry(
+    Future<http.Response> Function() send,
+  ) async {
+    var response = await send();
+    if (response.statusCode == 401 && _onUnauthorized != null) {
+      _refreshInFlight ??= _onUnauthorized!().whenComplete(() {
+        _refreshInFlight = null;
+      });
+      final refreshed = await _refreshInFlight!;
+      if (refreshed) {
+        response = await send();
+      }
+    }
+    return response;
+  }
+
   Future<Map<String, dynamic>> get(String path) async {
-    final response = await http.get(
-      Uri.parse('$_baseUrl$path'),
-      headers: _headers,
+    final response = await _sendWithRetry(
+      () => http.get(Uri.parse('$_baseUrl$path'), headers: _headers),
     );
     return _handleResponse(response);
   }
@@ -32,10 +54,13 @@ class ApiService {
     String path, {
     Map<String, dynamic>? body,
   }) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl$path'),
-      headers: _headers,
-      body: body != null ? jsonEncode(body) : null,
+    final encoded = body != null ? jsonEncode(body) : null;
+    final response = await _sendWithRetry(
+      () => http.post(
+        Uri.parse('$_baseUrl$path'),
+        headers: _headers,
+        body: encoded,
+      ),
     );
     return _handleResponse(response);
   }
@@ -44,18 +69,20 @@ class ApiService {
     String path, {
     Map<String, dynamic>? body,
   }) async {
-    final response = await http.patch(
-      Uri.parse('$_baseUrl$path'),
-      headers: _headers,
-      body: body != null ? jsonEncode(body) : null,
+    final encoded = body != null ? jsonEncode(body) : null;
+    final response = await _sendWithRetry(
+      () => http.patch(
+        Uri.parse('$_baseUrl$path'),
+        headers: _headers,
+        body: encoded,
+      ),
     );
     return _handleResponse(response);
   }
 
   Future<Map<String, dynamic>> delete(String path) async {
-    final response = await http.delete(
-      Uri.parse('$_baseUrl$path'),
-      headers: _headers,
+    final response = await _sendWithRetry(
+      () => http.delete(Uri.parse('$_baseUrl$path'), headers: _headers),
     );
     return _handleResponse(response);
   }

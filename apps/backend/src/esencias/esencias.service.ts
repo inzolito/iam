@@ -104,17 +104,36 @@ export class EsenciasService {
       throw new BadRequestException('TRANSACTION_FAILED');
     }
 
-    // Update balance
-    const { data: updated, error: updateError } = await client
+    // Leer balance actual y actualizar con enteros reales
+    const { data: currentBal } = await client
       .from('user_balance')
-      .update({
-        esencias_balance: `esencias_balance + ${amount}`,
-        total_earned: `total_earned + ${amount}`,
-        updated_at: new Date().toISOString(),
-      })
+      .select('esencias_balance, total_earned')
       .eq('user_id', userId)
-      .select('esencias_balance')
       .single();
+
+    const nextBalance = (currentBal?.esencias_balance ?? 0) + amount;
+    const nextEarned = (currentBal?.total_earned ?? 0) + amount;
+
+    const { data: updated, error: updateError } = currentBal
+      ? await client
+          .from('user_balance')
+          .update({
+            esencias_balance: nextBalance,
+            total_earned: nextEarned,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId)
+          .select('esencias_balance')
+          .single()
+      : await client
+          .from('user_balance')
+          .insert({
+            user_id: userId,
+            esencias_balance: nextBalance,
+            total_earned: nextEarned,
+          })
+          .select('esencias_balance')
+          .single();
 
     if (updateError || !updated) {
       this.logger.error(

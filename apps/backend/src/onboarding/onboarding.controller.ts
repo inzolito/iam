@@ -107,6 +107,26 @@ export class OnboardingController {
     return this.onboardingService.createCustomTag(body.displayName, body.categoryId);
   }
 
+  @Get('preferences')
+  async getAppPreferences(@Req() req: AuthRequest) {
+    return this.onboardingService.getAppPreferences(req.user.id);
+  }
+
+  @Patch('preferences')
+  async updateAppPreferences(
+    @Req() req: AuthRequest,
+    @Body()
+    body: {
+      pushEnabled?: boolean;
+      emailEnabled?: boolean;
+      showInFeed?: boolean;
+      shareLocation?: boolean;
+      language?: string;
+    },
+  ) {
+    return this.onboardingService.updateAppPreferences(req.user.id, body);
+  }
+
   @Post('complete')
   async completeOnboarding(@Req() req: AuthRequest) {
     return this.onboardingService.completeOnboarding(req.user.id);

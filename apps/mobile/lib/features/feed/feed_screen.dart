@@ -26,7 +26,10 @@ class _FeedScreenState extends State<FeedScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _syncLocationAndLoad();
+      final feed = context.read<FeedProvider>();
+      if (feed.profiles.isEmpty) {
+        _syncLocationAndLoad();
+      }
     });
   }
 

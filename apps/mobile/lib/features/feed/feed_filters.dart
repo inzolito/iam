@@ -72,6 +72,44 @@ class FeedFilters {
     this.sort = FeedSort.compatibility,
   });
 
+  Map<String, dynamic> toJson() => {
+        'diagnoses': diagnoses.toList(),
+        'minAge': minAge,
+        'maxAge': maxAge,
+        'radiusMeters': radiusMeters,
+        'tagIds': tagIds.toList(),
+        'minEnergyLevel': minEnergyLevel,
+        'includeTeens': includeTeens,
+        'genders': genders.toList(),
+        'sort': sort.apiValue,
+      };
+
+  factory FeedFilters.fromJson(Map<String, dynamic> json) {
+    final sortStr = json['sort'] as String?;
+    final sort = sortStr == 'distance'
+        ? FeedSort.distance
+        : sortStr == 'recent'
+            ? FeedSort.recent
+            : FeedSort.compatibility;
+    return FeedFilters(
+      diagnoses: ((json['diagnoses'] as List<dynamic>?) ?? [])
+          .map((e) => e.toString())
+          .toSet(),
+      minAge: json['minAge'] as int?,
+      maxAge: json['maxAge'] as int?,
+      radiusMeters: json['radiusMeters'] as int?,
+      tagIds: ((json['tagIds'] as List<dynamic>?) ?? [])
+          .map((e) => e.toString())
+          .toSet(),
+      minEnergyLevel: json['minEnergyLevel'] as int?,
+      includeTeens: json['includeTeens'] as bool?,
+      genders: ((json['genders'] as List<dynamic>?) ?? [])
+          .map((e) => e.toString())
+          .toSet(),
+      sort: sort,
+    );
+  }
+
   /// Default sin filtros.
   static const FeedFilters none = FeedFilters();
 

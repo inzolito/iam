@@ -242,6 +242,23 @@ export class ChatService {
   }
 
   /**
+   * Unmatch (archive) an active match for a participant.
+   */
+  async unmatch(matchId: string, userId: string): Promise<void> {
+    await this.verifyMatchParticipant(matchId, userId);
+    const client = this.supabaseService.getClient();
+    const { error } = await client
+      .from('matches')
+      .update({ status: 'archived' })
+      .eq('id', matchId);
+
+    if (error) {
+      this.logger.error(`Error unmatching ${matchId}: ${error.message}`);
+      throw new BadRequestException('UNMATCH_FAILED');
+    }
+  }
+
+  /**
    * Basic HTML sanitization to prevent XSS.
    */
   private sanitizeContent(content: string): string {

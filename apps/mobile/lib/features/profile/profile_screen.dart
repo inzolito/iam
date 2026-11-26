@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/design/design_tokens.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/media_service.dart';
+import '../../core/widgets/profile_section_widgets.dart';
 import 'media_provider.dart';
 import 'profile_provider.dart';
 import 'widgets/photo_gallery.dart';
-import 'package:phosphor_flutter/phosphor_flutter.dart';
 
-/// Pantalla de perfil del usuario — ver y editar datos.
+/// Pantalla de perfil del usuario — ver y editar datos completos.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -17,6 +19,15 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  static const _allDiagnoses = [
+    'TEA',
+    'TDAH',
+    'AACC',
+    'DISLEXIA',
+    'AUTOIDENTIFIED',
+    'OTHER',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -24,6 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final provider = context.read<ProfileProvider>();
       provider.loadProfile();
       provider.loadDiagnoses();
+      provider.loadSpinTags();
       context.read<MediaProvider>().loadPhotos();
     });
   }
@@ -43,6 +55,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           IconButton(
             icon: Icon(PhosphorIcons.pencilSimple(PhosphorIconsStyle.bold)),
+            tooltip: 'Editar perfil',
             onPressed: profile != null
                 ? () => _showEditSheet(context, profileProvider)
                 : null,
@@ -64,7 +77,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: () => profileProvider.loadProfile(),
+                        onPressed: () {
+                          profileProvider.loadProfile();
+                          profileProvider.loadDiagnoses();
+                          profileProvider.loadSpinTags();
+                          context.read<MediaProvider>().loadPhotos();
+                        },
                         child: const Text('Reintentar'),
                       ),
                     ],
@@ -72,11 +90,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: () async {
-                    await profileProvider.loadProfile();
-                    await profileProvider.loadDiagnoses();
+                    await Future.wait([
+                      profileProvider.loadProfile(),
+                      profileProvider.loadDiagnoses(),
+                      profileProvider.loadSpinTags(),
+                      context.read<MediaProvider>().loadPhotos(),
+                    ]);
                   },
                   child: ListView(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(DesignTokens.spaceLG),
                     children: [
                       // Avatar con botón editar
                       Center(
@@ -85,14 +107,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           theme: theme,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
 
-                      // Nombre
+                      // Nombre + @username
                       Center(
                         child: Text(
                           profile.displayName ?? 'Sin nombre',
                           style: const TextStyle(
-                              fontSize: 24, fontWeight: FontWeight.bold),
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       if (profile.username != null) ...[
@@ -101,79 +125,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: Text(
                             '@${profile.username}',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 15,
                               color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.5),
+                                  .withValues(alpha: 0.55),
                             ),
                           ),
                         ),
                       ],
 
-                      // MSN Status
-                      if (profile.msnStatus != null &&
-                          profile.msnStatus!.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        Center(
-                          child: Text(
-                            profile.msnStatus!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontStyle: FontStyle.italic,
-                              color: theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.6),
-                            ),
+                      const SizedBox(height: 20),
+
+                      // Sobre mí / Descripción
+                      _SectionCard(
+                        title: 'Sobre mí',
+                        icon: PhosphorIcons.quotes(PhosphorIconsStyle.regular),
+                        theme: theme,
+                        actionLabel: 'Editar',
+                        onAction: () => _showEditSheet(context, profileProvider),
+                        child: Text(
+                          (profile.msnStatus != null &&
+                                  profile.msnStatus!.trim().isNotEmpty)
+                              ? profile.msnStatus!
+                              : 'Cuéntales a otros sobre ti, tus intereses o cómo prefieres comunicarte...',
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.45,
+                            fontStyle: (profile.msnStatus == null ||
+                                    profile.msnStatus!.trim().isEmpty)
+                                ? FontStyle.italic
+                                : FontStyle.normal,
+                            color: (profile.msnStatus == null ||
+                                    profile.msnStatus!.trim().isEmpty)
+                                ? theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.45)
+                                : theme.colorScheme.onSurface
+                                    .withValues(alpha: 0.85),
                           ),
                         ),
-                      ],
+                      ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 16),
 
                       // Galería de fotos
                       _SectionCard(
                         title: 'Galería',
-                        icon: PhosphorIcons.imagesSquare(PhosphorIconsStyle.regular),
+                        icon: PhosphorIcons.imagesSquare(
+                            PhosphorIconsStyle.regular),
                         theme: theme,
                         child: const PhotoGallery(),
                       ),
 
                       const SizedBox(height: 16),
 
-                      // Diagnósticos
-                      _SectionCard(
-                        title: 'Diagnósticos',
-                        icon: PhosphorIcons.brain(PhosphorIconsStyle.fill),
-                        theme: theme,
-                        child: Wrap(
-                          spacing: 8,
-                          children: profileProvider.diagnoses.isEmpty
-                              ? [
-                                  Text('Sin diagnóstico',
-                                      style: TextStyle(
-                                          color: theme.colorScheme.onSurface
-                                              .withValues(alpha: 0.4)))
-                                ]
-                              : profileProvider.diagnoses
-                                  .map((d) => Chip(
-                                        label: Text(d.diagnosis),
-                                        backgroundColor: d.isPrimary
-                                            ? theme.colorScheme.primary
-                                                .withValues(alpha: 0.2)
-                                            : null,
-                                      ))
-                                  .toList(),
-                        ),
+                      // Neurodivergencia (editable, componente compartido)
+                      ProfileDiagnosesSection(
+                        diagnoses: profileProvider.diagnoses
+                            .map((d) => ProfileDiagnosisBadgeData(
+                                  code: d.diagnosis,
+                                  isPrimary: d.isPrimary,
+                                ))
+                            .toList(),
+                        emptyText:
+                            'Toca Editar para agregar tus diagnósticos',
+                        actionLabel: 'Editar',
+                        onAction: () =>
+                            _showDiagnosesSheet(context, profileProvider),
                       ),
 
                       const SizedBox(height: 16),
 
-                      // Info
-                      _SectionCard(
+                      // Intereses Especiales (SpIn) (componente compartido)
+                      ProfileSpinSection(
+                        tags: profileProvider.spinTags,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Información
+                      ProfileSectionCard(
                         title: 'Información',
                         icon: PhosphorIcons.info(PhosphorIconsStyle.regular),
-                        theme: theme,
+                        actionLabel: 'Editar',
+                        onAction: () => _showEditSheet(context, profileProvider),
                         child: Column(
                           children: [
                             _InfoRow('Email', profile.email, theme),
+                            _InfoRow('Género', _genderLabel(profile.gender),
+                                theme),
                             _InfoRow('Energía',
                                 _energyLabel(profile.energyLevel), theme),
                             _InfoRow('Notificaciones',
@@ -182,18 +220,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 28),
 
                       // Cerrar sesión
                       OutlinedButton.icon(
                         onPressed: () =>
                             context.read<AuthProvider>().signOut(),
-                        icon: Icon(PhosphorIcons.signOut(PhosphorIconsStyle.regular)),
+                        icon: Icon(
+                            PhosphorIcons.signOut(PhosphorIconsStyle.regular)),
                         label: const Text('Cerrar sesión'),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: theme.colorScheme.error,
-                          side:
-                              BorderSide(color: theme.colorScheme.error),
+                          side: BorderSide(color: theme.colorScheme.error),
                         ),
                       ),
                     ],
@@ -207,6 +245,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final nameCtrl = TextEditingController(text: profile.displayName ?? '');
     final usernameCtrl = TextEditingController(text: profile.username ?? '');
     final statusCtrl = TextEditingController(text: profile.msnStatus ?? '');
+    var selectedEnergy = profile.energyLevel.clamp(1, 3);
+    var selectedGender = profile.gender;
 
     showModalBottomSheet(
       context: context,
@@ -215,58 +255,215 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        final theme = Theme.of(ctx);
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text('Editar perfil',
-                  style: theme.textTheme.titleLarge),
-              const SizedBox(height: 16),
-              TextField(
-                controller: nameCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Nombre'),
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final theme = Theme.of(ctx);
+            return SingleChildScrollView(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: usernameCtrl,
-                decoration:
-                    const InputDecoration(labelText: 'Username'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Editar perfil', style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: 'Nombre'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: usernameCtrl,
+                    decoration: const InputDecoration(labelText: 'Username'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: statusCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Descripción / Sobre mí',
+                      hintText: 'Cuenta sobre ti, intereses o cómo prefieres conversar...',
+                    ),
+                    maxLines: 3,
+                    maxLength: 160,
+                  ),
+                  const SizedBox(height: 12),
+                  Text('Nivel de energía hoy',
+                      style: theme.textTheme.labelLarge),
+                  const SizedBox(height: 8),
+                  SegmentedButton<int>(
+                    segments: const [
+                      ButtonSegment(value: 1, label: Text('Baja')),
+                      ButtonSegment(value: 2, label: Text('Media')),
+                      ButtonSegment(value: 3, label: Text('Alta')),
+                    ],
+                    selected: {selectedEnergy},
+                    onSelectionChanged: (v) =>
+                        setModalState(() => selectedEnergy = v.first),
+                  ),
+                  const SizedBox(height: 14),
+                  Text('Género', style: theme.textTheme.labelLarge),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      ChoiceChip(
+                        label: const Text('Mujer'),
+                        selected: selectedGender == 'female',
+                        onSelected: (_) =>
+                            setModalState(() => selectedGender = 'female'),
+                      ),
+                      ChoiceChip(
+                        label: const Text('Hombre'),
+                        selected: selectedGender == 'male',
+                        onSelected: (_) =>
+                            setModalState(() => selectedGender = 'male'),
+                      ),
+                      ChoiceChip(
+                        label: const Text('Otro'),
+                        selected: selectedGender == 'other',
+                        onSelected: (_) =>
+                            setModalState(() => selectedGender = 'other'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: provider.isSaving
+                        ? null
+                        : () async {
+                            final result = await provider.updateProfile(
+                              displayName: nameCtrl.text.trim(),
+                              username: usernameCtrl.text.trim(),
+                              msnStatus: statusCtrl.text.trim(),
+                              energyLevel: selectedEnergy,
+                              gender: selectedGender,
+                            );
+                            if (result && ctx.mounted) {
+                              Navigator.pop(ctx);
+                            }
+                          },
+                    child: const Text('Guardar'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: statusCtrl,
-                decoration: const InputDecoration(
-                    labelText: 'Estado MSN', hintText: 'Escuchando...'),
-                maxLength: 160,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () async {
-                  final result = await provider.updateProfile(
-                    displayName: nameCtrl.text.trim(),
-                    username: usernameCtrl.text.trim(),
-                    msnStatus: statusCtrl.text.trim(),
-                  );
-                  if (result && ctx.mounted) {
-                    Navigator.pop(ctx);
-                  }
-                },
-                child: const Text('Guardar'),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
+  }
+
+  void _showDiagnosesSheet(BuildContext context, ProfileProvider provider) {
+    final selected =
+        provider.diagnoses.map((d) => d.diagnosis).toSet();
+    var primary = provider.primaryDiagnosis ??
+        (selected.isNotEmpty ? selected.first : 'TEA');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final theme = Theme.of(ctx);
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Editar diagnósticos',
+                      style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Selecciona uno o más. El primero o marcado con ★ será el principal.',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _allDiagnoses.map((diag) {
+                      final isSelected = selected.contains(diag);
+                      return FilterChip(
+                        label: Text(diag),
+                        selected: isSelected,
+                        onSelected: (val) {
+                          setModalState(() {
+                            if (val) {
+                              selected.add(diag);
+                              if (selected.length == 1) primary = diag;
+                            } else if (selected.length > 1) {
+                              selected.remove(diag);
+                              if (primary == diag) primary = selected.first;
+                            }
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  if (selected.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text('Diagnóstico principal',
+                        style: theme.textTheme.labelLarge),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: selected.map((diag) {
+                        return ChoiceChip(
+                          label: Text('$diag ★'),
+                          selected: primary == diag,
+                          onSelected: (_) =>
+                              setModalState(() => primary = diag),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: selected.isEmpty || provider.isSaving
+                        ? null
+                        : () async {
+                            final ok = await provider.updateDiagnoses(
+                              selected.toList(),
+                              primary,
+                            );
+                            if (ok && ctx.mounted) Navigator.pop(ctx);
+                          },
+                    child: const Text('Guardar diagnósticos'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  String _genderLabel(String? gender) {
+    switch (gender) {
+      case 'female':
+        return 'Mujer';
+      case 'male':
+        return 'Hombre';
+      case 'other':
+        return 'Otro';
+      default:
+        return 'Sin especificar';
+    }
   }
 
   String _energyLabel(int level) {
@@ -301,12 +498,16 @@ class _SectionCard extends StatelessWidget {
   final IconData icon;
   final ThemeData theme;
   final Widget child;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   const _SectionCard({
     required this.title,
     required this.icon,
     required this.theme,
     required this.child,
+    this.actionLabel,
+    this.onAction,
   });
 
   @override
@@ -320,13 +521,23 @@ class _SectionCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(icon,
-                    size: 20,
-                    color: theme.colorScheme.primary),
+                Icon(icon, size: 20, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
-                Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600, fontSize: 16)),
+                Expanded(
+                  child: Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 16)),
+                ),
+                if (actionLabel != null && onAction != null)
+                  TextButton(
+                    onPressed: onAction,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(0, 32),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(actionLabel!),
+                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -353,8 +564,7 @@ class _AvatarWithEdit extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 48,
-          backgroundColor:
-              theme.colorScheme.primary.withValues(alpha: 0.2),
+          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.2),
           backgroundImage:
               avatarUrl != null ? NetworkImage(avatarUrl) : null,
           child: avatarUrl == null
@@ -428,7 +638,8 @@ class _AvatarWithEdit extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ListTile(
-              leading: Icon(PhosphorIcons.imagesSquare(PhosphorIconsStyle.regular)),
+              leading: Icon(
+                  PhosphorIcons.imagesSquare(PhosphorIconsStyle.regular)),
               title: const Text('Elegir de galería'),
               onTap: () {
                 Navigator.pop(ctx);
@@ -466,8 +677,7 @@ class _InfoRow extends StatelessWidget {
         children: [
           Text(label,
               style: TextStyle(
-                  color: theme.colorScheme.onSurface
-                      .withValues(alpha: 0.6))),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6))),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),

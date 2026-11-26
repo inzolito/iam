@@ -534,11 +534,12 @@ describe('PhotosService', () => {
         }),
       });
 
+      const mockFileStorage = createMockFileStorage();
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           PhotosService,
           { provide: SupabaseService, useValue: mockSupabase },
-          { provide: FileStorageService, useValue: createMockFileStorage() },
+          { provide: FileStorageService, useValue: mockFileStorage },
         ],
       }).compile();
 
@@ -552,7 +553,7 @@ describe('PhotosService', () => {
         service.uploadGalleryPhoto(mockUserId, file, 2),
       ]);
 
-      expect(mockSupabase.uploadFile).toHaveBeenCalledTimes(3);
+      expect(mockFileStorage.uploadFile).toHaveBeenCalledTimes(3);
     });
 
     it('file exactly 5MB is accepted', async () => {

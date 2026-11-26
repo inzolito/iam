@@ -39,11 +39,13 @@ class LocationService {
       return LocationSyncResult.permissionDeniedForever;
     }
 
-    // 3. Obtener posición y enviarla al backend
+    // 3. Obtener posición (última conocida instantánea o GPS medio con timeout)
     try {
-      final pos = await Geolocator.getCurrentPosition(
+      var pos = await Geolocator.getLastKnownPosition();
+      pos ??= await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
+          accuracy: LocationAccuracy.medium,
+          timeLimit: Duration(seconds: 8),
         ),
       );
 

@@ -62,4 +62,15 @@ class Env {
     }
     return '$supabaseUrl/functions/v1';
   }
+
+  /// Resuelve URLs relativas de storage local en dev (ej: `/uploads/...`)
+  /// anteponiendo el origin del backend NestJS.
+  static String resolveMediaUrl(String url) {
+    if (url.isEmpty || url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    final base = effectiveApiBaseUrl;
+    final origin = base.endsWith('/v1') ? base.substring(0, base.length - 3) : base;
+    return url.startsWith('/') ? '$origin$url' : '$origin/$url';
+  }
 }

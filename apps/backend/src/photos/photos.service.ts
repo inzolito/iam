@@ -46,7 +46,13 @@ export class PhotosService {
   private readonly MAX_GALLERY_TOTAL = 10 * 1024 * 1024; // 10MB
   private readonly MAX_USER_TOTAL = 25 * 1024 * 1024; // 25MB
   private readonly MAX_GALLERY_PHOTOS = 5;
-  private readonly ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png'];
+  private readonly ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+  private extensionForMime(mimeType: string): string {
+    if (mimeType === 'image/png') return 'png';
+    if (mimeType === 'image/webp') return 'webp';
+    return 'jpg';
+  }
 
   constructor(
     private readonly supabaseService: SupabaseService,
@@ -64,7 +70,8 @@ export class PhotosService {
     this.validateFile(file);
 
     const client = this.supabaseService.getClient();
-    const storagePath = `avatars/${userId}/avatar-${Date.now()}`;
+    const ext = this.extensionForMime(file.mimetype);
+    const storagePath = `avatars/${userId}/avatar-${Date.now()}.${ext}`;
 
     try {
       const publicUrl = await this.fileStorage.uploadFile(
@@ -200,10 +207,11 @@ export class PhotosService {
       );
     }
 
-    const storagePath = `gallery/${userId}/photo-${position}-${Date.now()}`;
+    const ext = this.extensionForMime(file.mimetype);
+    const storagePath = `gallery/${userId}/photo-${position}-${Date.now()}.${ext}`;
 
     try {
-      const publicUrl = await this.supabaseService.uploadFile(
+      const publicUrl = await this.fileStorage.uploadFile(
         'gallery',
         storagePath,
         file.buffer,

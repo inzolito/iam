@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/profile_section_widgets.dart';
 import '../feed_profile.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -89,30 +90,47 @@ class ProfileCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
-                          Icon(PhosphorIcons.mapPin(PhosphorIconsStyle.fill),
-                              size: 14,
-                              color: Colors.white.withValues(alpha: 0.8)),
-                          const SizedBox(width: 4),
-                          Text(
-                            profile.formattedDistance,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              fontSize: 14,
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  PhosphorIcons.mapPin(PhosphorIconsStyle.fill),
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'A ${profile.formattedDistance} de ti',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 12),
                           Icon(PhosphorIcons.heart(PhosphorIconsStyle.fill),
                               size: 14,
-                              color: Colors.white.withValues(alpha: 0.8)),
+                              color: Colors.white.withValues(alpha: 0.9)),
                           const SizedBox(width: 4),
                           Text(
                             profile.compatibilityPercent,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.8),
+                              color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ],
@@ -136,11 +154,11 @@ class ProfileCard extends StatelessWidget {
             ),
           ),
 
-          // MSN status + SpIn tags
+          // MSN status + Neurodivergencia + SpIn tags
           Expanded(
             flex: 1,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -158,25 +176,20 @@ class ProfileCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                   ],
+                  if (profile.diagnoses.isNotEmpty) ...[
+                    ProfileDiagnosesSection(
+                      compact: true,
+                      diagnoses: profile.diagnoses
+                          .map((d) => ProfileDiagnosisBadgeData(code: d))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   if (profile.spin.isNotEmpty)
-                    Expanded(
-                      child: Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: profile.spin
-                            .take(5)
-                            .map((tag) => Chip(
-                                  label: Text(tag,
-                                      style: const TextStyle(fontSize: 11)),
-                                  materialTapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                  padding: EdgeInsets.zero,
-                                  visualDensity: VisualDensity.compact,
-                                  backgroundColor: theme.colorScheme.primary
-                                      .withValues(alpha: 0.1),
-                                ))
-                            .toList(),
-                      ),
+                    ProfileSpinSection(
+                      compact: true,
+                      tags: profile.spin,
+                      maxTags: 5,
                     ),
                 ],
               ),

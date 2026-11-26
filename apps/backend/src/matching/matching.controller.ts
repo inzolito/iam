@@ -41,18 +41,38 @@ export class MatchingController {
     @Query('radius') radius?: string,
     @Query('page') page?: string,
     @Query('genders') genders?: string,
+    @Query('diagnoses') diagnoses?: string,
+    @Query('minAge') minAge?: string,
+    @Query('maxAge') maxAge?: string,
+    @Query('tags') tags?: string,
+    @Query('minEnergy') minEnergy?: string,
+    @Query('sort') sort?: string,
   ) {
     const radiusMeters = radius ? parseInt(radius, 10) : undefined;
     const pageNum = page ? Math.max(0, parseInt(page, 10)) : 0;
-    const genderList = genders
-      ? genders.split(',').map((g) => g.trim()).filter(Boolean)
-      : undefined;
+    const parseCsv = (val?: string) =>
+      val ? val.split(',').map((v) => v.trim()).filter(Boolean) : undefined;
+
+    const genderList = parseCsv(genders);
+    const diagnosisList = parseCsv(diagnoses);
+    const tagList = parseCsv(tags);
+    const minAgeNum = minAge ? parseInt(minAge, 10) : undefined;
+    const maxAgeNum = maxAge ? parseInt(maxAge, 10) : undefined;
+    const minEnergyNum = minEnergy ? parseInt(minEnergy, 10) : undefined;
 
     const profiles = await this.matchingService.getFeed(
       req.user.id,
       radiusMeters,
       pageNum,
       genderList,
+      {
+        diagnoses: diagnosisList,
+        minAge: Number.isFinite(minAgeNum) ? minAgeNum : undefined,
+        maxAge: Number.isFinite(maxAgeNum) ? maxAgeNum : undefined,
+        tagIds: tagList,
+        minEnergyLevel: Number.isFinite(minEnergyNum) ? minEnergyNum : undefined,
+        sort: sort === 'distance' || sort === 'recent' ? sort : 'compatibility',
+      },
     );
 
     return { profiles };

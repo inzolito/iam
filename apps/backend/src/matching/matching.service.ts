@@ -15,10 +15,21 @@ interface UserProfile {
   location?: { lat: number; lng: number } | null;
 }
 
+export interface FeedFilterOptions {
+  diagnoses?: string[];
+  minAge?: number;
+  maxAge?: number;
+  tagIds?: string[];
+  minEnergyLevel?: number;
+  sort?: 'compatibility' | 'distance' | 'recent';
+}
+
 interface FeedProfile extends UserProfile {
   spin: string[];
+  diagnoses?: string[];
   matchScore?: number;
   distance?: number;
+  updatedAt?: string;
 }
 
 @Injectable()
@@ -39,6 +50,7 @@ export class MatchingService {
     radiusMeters = DEFAULT_RADIUS_METERS,
     page = 0,
     genders?: string[],
+    filters?: FeedFilterOptions,
   ): Promise<FeedProfile[]> {
     const client = this.supabaseService.getClient();
 
@@ -99,7 +111,8 @@ export class MatchingService {
       .select(
         `
         id, display_name, avatar_url, is_teen, energy_level, msn_status,
-        location, gender,
+        location, gender, birth_date, updated_at,
+        user_diagnoses(diagnosis),
         user_spin(spin_tag_id, spin_tags(display_name))
       `,
       )
@@ -114,6 +127,14 @@ export class MatchingService {
     }
 
     const genderFilter = genders && genders.length > 0 ? new Set(genders) : null;
+    const diagFilter =
+      filters?.diagnoses && filters.diagnoses.length > 0
+        ? new Set(filters.diagnoses)
+        : null;
+    const tagFilter =
+      filters?.tagIds && filters.tagIds.length > 0
+        ? new Set(filters.tagIds)
+        : null;
 
     // Client-side filtering + sorting
     const swipedSet = new Set(swipedIds);
@@ -127,6 +148,38 @@ export class MatchingService {
 
         // Filtro de género (si el usuario seleccionó preferencias)
         if (genderFilter && !genderFilter.has(profile.gender)) return false;
+
+        // Filtro de diagnósticos
+        if (diagFilter) {
+          const userDiags = (profile.user_diagnoses ?? []).map(
+            (d: any) => d.diagnosis,
+          );
+          if (!userDiags.some((d: string) => diagFilter.has(d))) return false;
+        }
+
+        // Filtro de edad (calculada desde birth_date)
+        if (filters?.minAge !== undefined || filters?.maxAge !== undefined) {
+          const age = this.calculateAge(profile.birth_date);
+          if (age === null) return false;
+          if (filters.minAge !== undefined && age < filters.minAge) return false;
+          if (filters.maxAge !== undefined && age > filters.maxAge) return false;
+        }
+
+        // Filtro de nivel mínimo de energía
+        if (
+          filters?.minEnergyLevel !== undefined &&
+          (profile.energy_level ?? 0) < filters.minEnergyLevel
+        ) {
+          return false;
+        }
+
+        // Filtro de SpIn tags
+        if (tagFilter) {
+          const userTagIds = (profile.user_spin ?? []).map(
+            (u: any) => u.spin_tag_id,
+          );
+          if (!userTagIds.some((id: string) => tagFilter.has(id))) return false;
+        }
 
         // Check radius
         const profileLocation = this.parseLocation(profile.location);
@@ -167,6 +220,10 @@ export class MatchingService {
         const proximityScore = (1 - distance / radiusMeters) * 100;
         const matchScore = spinScore * 0.7 + proximityScore * 0.3;
 
+        const candidateDiagnoses = (profile.user_diagnoses ?? [])
+          .map((d: any) => d.diagnosis)
+          .filter((d: any): d is string => typeof d === 'string');
+
         return {
           id: profile.id,
           display_name: profile.display_name,
@@ -175,14 +232,37 @@ export class MatchingService {
           energy_level: profile.energy_level,
           msn_status: profile.msn_status,
           spin: candidateSpinNames,
+          diagnoses: candidateDiagnoses,
           matchScore,
           distance,
+          updatedAt: profile.updated_at,
         };
       })
-      .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
+      .sort((a, b) => {
+        if (filters?.sort === 'distance') {
+          return (a.distance ?? 0) - (b.distance ?? 0);
+        }
+        if (filters?.sort === 'recent') {
+          return (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '');
+        }
+        return (b.matchScore ?? 0) - (a.matchScore ?? 0);
+      })
       .slice(page * FEED_PAGE_SIZE, (page + 1) * FEED_PAGE_SIZE);
 
     return profiles;
+  }
+
+  private calculateAge(birthDate?: string | null): number | null {
+    if (!birthDate) return null;
+    const dob = new Date(birthDate);
+    if (Number.isNaN(dob.getTime())) return null;
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+    return age;
   }
 
   /**

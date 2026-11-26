@@ -18,6 +18,9 @@ class ProfileProvider extends ChangeNotifier {
       _primaryDiagnosis ??
       _diagnoses.where((d) => d.isPrimary).map((d) => d.diagnosis).firstOrNull;
 
+  List<String> _spinTags = [];
+  List<String> get spinTags => _spinTags;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -70,6 +73,60 @@ class ProfileProvider extends ChangeNotifier {
     }
   }
 
+  /// Cargar SpIn tags del usuario.
+  Future<void> loadSpinTags() async {
+    try {
+      final response = await _api.get('/users/me/spin');
+      final list = response['tags'] as List<dynamic>? ??
+          response['spin'] as List<dynamic>? ??
+          [];
+      _spinTags = list
+          .map((t) {
+            if (t is String) return t;
+            if (t is Map<String, dynamic>) {
+              return t['display_name'] as String? ??
+                  t['name'] as String? ??
+                  '';
+            }
+            return '';
+          })
+          .where((s) => s.isNotEmpty)
+          .toList();
+      notifyListeners();
+    } catch (_) {
+      // Silenciar
+    }
+  }
+
+  /// Actualizar diagnósticos del usuario.
+  Future<bool> updateDiagnoses(List<String> diagnoses, String primary) async {
+    if (diagnoses.isEmpty) return false;
+    _isSaving = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _api.post('/users/me/diagnoses', body: {
+        'diagnoses': diagnoses,
+        'primary': primary,
+      });
+      await loadDiagnoses();
+      _isSaving = false;
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      _isSaving = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString();
+      _isSaving = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   // ── Update ──
 
   /// Actualizar campos del perfil.
@@ -77,6 +134,7 @@ class ProfileProvider extends ChangeNotifier {
     String? displayName,
     String? username,
     String? msnStatus,
+    String? gender,
     int? energyLevel,
     int? notifLevel,
   }) async {
@@ -89,6 +147,7 @@ class ProfileProvider extends ChangeNotifier {
       if (displayName != null) body['displayName'] = displayName;
       if (username != null) body['username'] = username;
       if (msnStatus != null) body['msnStatus'] = msnStatus;
+      if (gender != null) body['gender'] = gender;
       if (energyLevel != null) body['energyLevel'] = energyLevel;
       if (notifLevel != null) body['notifLevel'] = notifLevel;
 
