@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/providers/auth_provider.dart';
+import '../../core/widgets/iam_svg_picture.dart';
 import 'settings_provider.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
@@ -38,6 +39,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           return ListView(
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: IamHeroLogoBanner(height: 240),
+              ),
               _SectionHeader(label: 'Notificaciones', theme: theme),
               SwitchListTile(
                 title: const Text('Notificaciones push'),

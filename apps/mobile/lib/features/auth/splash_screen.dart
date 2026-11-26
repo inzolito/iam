@@ -3,14 +3,13 @@ import 'package:provider/provider.dart';
 
 import '../../core/design/design_tokens.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/widgets/iam_svg_picture.dart';
 
 /// Pantalla de carga inicial — verifica sesión y redirige.
 ///
-/// Fondo sólido (no degradado) + logo con entrada fade/scale, sin spinner
-/// visible — estilo Tinder/Bumble/Hinge. El logo tiene tonos de azul
-/// variados (no monocromático), por eso el fondo es claro y sólido: un
-/// color muy saturado arriesgaría perder contraste con las partes más
-/// claras del logo.
+/// Usa el lienzo [DesignTokens.heroBackground] (`#89DDF5`, idéntico al fondo
+/// de `logoOpcion1`) para que el logo blanco con sonrisa se funda de forma
+/// continua con toda la pantalla y haga una transición fluida hacia [LoginScreen].
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -51,20 +50,40 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
-      backgroundColor: DesignTokens.blue50,
-      body: Center(
-        child: FadeTransition(
-          opacity: _fade,
-          child: ScaleTransition(
-            scale: _scale,
-            child: Image.asset(
-              'assets/images/logo.png',
-              width: 240,
-              height: 240,
+      backgroundColor: DesignTokens.heroBackground,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Align(
+            alignment: const Alignment(0, -0.36),
+            child: FadeTransition(
+              opacity: _fade,
+              child: ScaleTransition(
+                scale: _scale,
+                child: IamSvgPicture.asset(
+                  DesignTokens.wordmarkSvgAsset,
+                  width: 230,
+                ),
+              ),
             ),
           ),
-        ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: screenHeight * 0.42,
+            child: FadeTransition(
+              opacity: _fade,
+              child: IamSvgPicture.asset(
+                DesignTokens.crowdSvgAsset,
+                fit: BoxFit.cover,
+                alignment: Alignment.bottomCenter,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

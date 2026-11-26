@@ -34,3 +34,7 @@ dist/
 # Test coverage
 coverage/
 lcov.info
+
+# Python virtualenvs & cache
+.venv/
+**/__pycache__/

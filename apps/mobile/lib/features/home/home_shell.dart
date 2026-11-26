@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import '../notifications/notifications_provider.dart';
 import '../feed/feed_provider.dart';
 import '../feed/widgets/filter_sheet.dart';
+import '../../core/design/design_tokens.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/widgets/iam_svg_picture.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 /// Shell con navegación inferior — contenedor principal de la app.
@@ -65,7 +67,10 @@ class HomeShell extends StatelessWidget {
   PreferredSizeWidget _buildAppBar(
       BuildContext context, ThemeData theme, int unread, FeedProvider? feed) {
     return AppBar(
-      title: Image.asset('assets/images/logo.png', height: 32),
+      title: IamSvgPicture.asset(
+        DesignTokens.headerWordmarkSvgAsset,
+        height: 30,
+      ),
       centerTitle: true,
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -118,40 +123,43 @@ class HomeShell extends StatelessWidget {
   void _showMoreSheet(BuildContext context, ThemeData theme) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-            Text('Comunidad', style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            )),
-            const SizedBox(height: 16),
-            ..._extraRoutes.map((route) => _ExtraRouteTile(
-                  route: route,
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    context.push(route.path);
-                  },
-                  theme: theme,
-                )),
-          ],
+              const SizedBox(height: 20),
+              Text('Comunidad', style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              )),
+              const SizedBox(height: 16),
+              ..._extraRoutes.map((route) => _ExtraRouteTile(
+                    route: route,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      context.push(route.path);
+                    },
+                    theme: theme,
+                  )),
+            ],
+          ),
         ),
       ),
     );

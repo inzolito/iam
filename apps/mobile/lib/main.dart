@@ -5,6 +5,7 @@ import 'l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'core/theme/app_theme.dart';
+import 'core/widgets/iam_svg_picture.dart';
 import 'core/services/api_service.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/auth_service.dart';
@@ -26,6 +27,7 @@ import 'features/settings/settings_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await IamSvgPicture.preloadAll();
   try {
     await Firebase.initializeApp();
   } catch (e) {

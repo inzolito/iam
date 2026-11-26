@@ -14,6 +14,8 @@ void main() {
       expect(theme.colorScheme.primary, DesignTokens.blue400);
       expect(theme.colorScheme.secondary, DesignTokens.lavender400);
       expect(theme.scaffoldBackgroundColor, DesignTokens.background);
+      expect(DesignTokens.heroBackground, DesignTokens.activePalette.heroBackground);
+      expect(DesignTokens.logoAsset, DesignTokens.activePalette.logoAsset);
     });
 
     test('botones tienen forma pill (StadiumBorder)', () {
