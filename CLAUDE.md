@@ -6,9 +6,9 @@ Este archivo es mi manual de operaciones. Lo leo al inicio de cada sesión para 
 
 ## LEER ESTO PRIMERO — Estado del Proyecto
 
-**Última actualización: 2026-06-13**
+**Última actualización: 2026-11-26**
 
-Antes de hacer cualquier cosa, revisar `git log --oneline -10` para ver el avance reciente.
+Antes de hacer cualquier cosa, revisar `git log --oneline -10`, `CHANGELOG.md`, `docs/planning.md` y `docs/issues.md` para conocer el estado exacto sin re-explorar el repo.
 
 ### Completado
 - **Backend**: 14 módulos implementados, 485 tests pasando (21 suites, 0 skipped). Conectado a Supabase prod.
@@ -25,6 +25,10 @@ Antes de hacer cualquier cosa, revisar `git log --oneline -10` para ver el avanc
 
 ### Regla de sesión
 No asumir nada sin leer el código. No avanzar a una etapa nueva si la anterior tiene tests rojos o pendientes abiertos.
+
+### Ambiente de pruebas (Seed + Reset en 1 comando)
+- `cd apps/backend && npm run seed:test-users`: siembra de forma idempotente 60 perfiles completos (`@iam.test`: 30 mujeres + 30 hombres, 2–4 fotos c/u, diagnósticos, SpIns y ubicación cercana al usuario real).
+- `cd apps/backend && npm run reset:test-interactions`: limpia `swipes`, `matches`, `messages`, `meetup_confirmations`, `notifications`, `blocks` y `reports` de los usuarios `@iam.test`, dejando los 60 perfiles intactos (añadir `-- --no-likes` para no re-sembrar likes entrantes).
 
 ---
 
@@ -124,11 +128,10 @@ Funcionalidades sensibles se controlan via tabla `feature_flags` en DB.
 - Normalización interna: lowercase + sin caracteres especiales para evitar duplicados (ej: "rick y morty", "Rick and Morty", "rick and morty" → mismo tag)
 
 ### Temas de UI
-**Actualizado 2026-07-07**: se descartó el theming dinámico por diagnóstico.
-La app usa un único tema de marca (azul pastel + acento lavanda), definido en
-`apps/mobile/lib/core/design/design_tokens.dart` (tokens) y
-`core/theme/app_theme.dart` (ThemeData). Cambios de color/spacing/radios se
-hacen en `design_tokens.dart` únicamente. `docs/ux-themes.md` documenta la
+**Actualizado 2026-11-26**: se descartó el theming dinámico por diagnóstico.
+La app usa un único tema de marca basado en `logoOpcion2` vectorizado en 3 capas SVG con paleta **Celeste Sereno** (`#6BB9E8` fondo + `#FFFFFF` tipografía `iam_wordmark.svg` + `#EEB274` silueta central y 5 capas celestes `#4682A9..#8EC6ED` en `iam_crowd.svg`, más `iam_header_wordmark.svg` con la `i` en `#EEB274` y `am` en `#6BB9E8`), gobernado por `BrandPalette` (`BrandPalette.celesteSereno` activo, regenerable con `tools/brand/vectorize_logo.py`) en
+`apps/mobile/lib/core/design/design_tokens.dart` y `core/theme/app_theme.dart`. Cambios de paleta/color/logo/spacing/radios se
+hacen en `design_tokens.dart` (y `tools/brand/vectorize_logo.py` para los SVG/Adaptive Icon). `docs/ux-themes.md` documenta la
 exploración de diseño original (histórica, ya no vigente).
 
 ### Notificaciones — "El Dial"

@@ -2,7 +2,7 @@
 
 ## Visión General
 
-App Flutter para conexiones neurodiversas. Temas adaptativos por diagnóstico (TEA, TDAH, AACC, Dislexia), autenticación OAuth (Google/Apple), onboarding con selección de diagnóstico e intereses especiales (SpIn).
+App Flutter para conexiones neurodiversas. Tema único de marca basado en `logoOpcion2` vectorizado en 3 capas SVG con paleta Celeste Sereno (`#6BB9E8` + `#EEB274` + `#4682A9..#8EC6ED`), gobernado de forma centralizada por `BrandPalette` (`BrandPalette.celesteSereno` activo) y `DesignTokens` en `lib/core/design/design_tokens.dart`. Autenticación OAuth (Google/Apple), onboarding con selección de diagnóstico e intereses especiales (SpIn).
 
 **Stack**: Flutter 3.x · Provider · GoRouter · FlutterSecureStorage · Google Sign In · Apple Sign In
 
