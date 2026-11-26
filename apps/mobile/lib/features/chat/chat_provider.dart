@@ -1,11 +1,28 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/services/api_service.dart';
 import 'chat_models.dart';
 
 /// Provider de chat — conversaciones y mensajes.
 class ChatProvider extends ChangeNotifier {
+  static const _viewedStoriesKey = 'iam_viewed_story_ids';
   final ApiService _api;
+
+  // ── Historias ──
+  List<UserStoryGroup> _storyGroups = [];
+  List<UserStoryGroup> get storyGroups => _storyGroups;
+
+  final Set<String> _viewedStoryIds = {};
+  bool _viewedLoaded = false;
+
+  bool isStoryGroupViewed(UserStoryGroup group) {
+    if (group.stories.isEmpty) return false;
+    return group.stories.every((s) => _viewedStoryIds.contains(s.id));
+  }
+
+  bool _isUploadingStory = false;
+  bool get isUploadingStory => _isUploadingStory;
 
   // ── Conversaciones ──
   List<ChatConversation> _conversations = [];
@@ -65,6 +82,105 @@ class ChatProvider extends ChangeNotifier {
   /// Total de mensajes no leídos en todas las conversaciones.
   int get totalUnreadCount =>
       _conversations.fold(0, (sum, c) => sum + c.unreadCount);
+
+  // ── Historias ──
+
+  Future<void> loadStories() async {
+    await _ensureViewedLoaded();
+    try {
+      final response = await _api.get('/stories');
+      final list = response['stories'] as List<dynamic>? ?? [];
+      _storyGroups = list
+          .map((g) => UserStoryGroup.fromJson(g as Map<String, dynamic>))
+          .toList();
+      notifyListeners();
+    } catch (_) {
+      // Silenciar si aún no hay historias o falla secundario
+    }
+  }
+
+  Future<void> _ensureViewedLoaded() async {
+    if (_viewedLoaded) return;
+    _viewedLoaded = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getStringList(_viewedStoriesKey);
+      if (saved != null) {
+        _viewedStoryIds.addAll(saved);
+      }
+    } catch (_) {
+      // En tests sin binding de SharedPreferences, continúa en memoria.
+    }
+  }
+
+  Future<void> markStoryViewed(String storyId) async {
+    if (_viewedStoryIds.contains(storyId)) return;
+    _viewedStoryIds.add(storyId);
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_viewedStoriesKey, _viewedStoryIds.toList());
+    } catch (_) {}
+  }
+
+  /// Romper match (archiva el match en backend y lo quita de conversaciones).
+  Future<bool> unmatch(String matchId) async {
+    try {
+      await _api.delete('/matches/$matchId');
+      _conversations.removeWhere((c) => c.matchId == matchId);
+      if (_activeMatchId == matchId) {
+        _activeMatchId = null;
+        _messages = [];
+      }
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> uploadStory({
+    required List<int> bytes,
+    required String filename,
+    String? caption,
+  }) async {
+    _isUploadingStory = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      await _api.uploadFile(
+        '/stories',
+        bytes: bytes,
+        field: 'file',
+        filename: filename,
+        extraFields:
+            caption != null && caption.trim().isNotEmpty
+                ? {'caption': caption.trim()}
+                : null,
+      );
+      await loadStories();
+      _isUploadingStory = false;
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _error = e.message;
+      _isUploadingStory = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString();
+      _isUploadingStory = false;
+      notifyListeners();
+      return false;
+    }
+  }
 
   // ── Mensajes ──
 

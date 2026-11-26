@@ -20,6 +20,7 @@ import { MeetupsModule } from './meetups';
 import { NotificationsModule } from './notifications';
 import { AdminModule } from './admin';
 import { PhotosModule } from './photos/photos.module';
+import { StoriesModule } from './stories/stories.module';
 import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
 
 @Module({
@@ -59,6 +60,7 @@ import { FeatureFlagsModule } from './feature-flags/feature-flags.module';
     NotificationsModule,
     AdminModule,
     PhotosModule,
+    StoriesModule,
     FeatureFlagsModule,
   ],
   providers: [

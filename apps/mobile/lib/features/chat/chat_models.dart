@@ -1,3 +1,5 @@
+import '../../core/config/env.dart';
+
 /// Mensaje de chat.
 class ChatMessage {
   final String id;
@@ -45,10 +47,11 @@ class ChatUser {
   });
 
   factory ChatUser.fromJson(Map<String, dynamic> json) {
+    final rawAvatar = json['avatar_url'] as String?;
     return ChatUser(
       id: json['id'] as String,
       displayName: json['display_name'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
+      avatarUrl: rawAvatar != null ? Env.resolveMediaUrl(rawAvatar) : null,
     );
   }
 }
@@ -81,4 +84,61 @@ class ChatConversation {
   }
 
   bool get hasUnread => unreadCount > 0;
+}
+
+/// Historia efímera (24h) de un usuario.
+class StoryItem {
+  final String id;
+  final String imageUrl;
+  final String? caption;
+  final DateTime createdAt;
+
+  const StoryItem({
+    required this.id,
+    required this.imageUrl,
+    this.caption,
+    required this.createdAt,
+  });
+
+  factory StoryItem.fromJson(Map<String, dynamic> json) {
+    return StoryItem(
+      id: json['id'] as String,
+      imageUrl: Env.resolveMediaUrl(json['image_url'] as String? ?? ''),
+      caption: json['caption'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+    );
+  }
+}
+
+/// Grupo de historias por usuario.
+class UserStoryGroup {
+  final String userId;
+  final String displayName;
+  final String? avatarUrl;
+  final bool isOwn;
+  final List<StoryItem> stories;
+
+  const UserStoryGroup({
+    required this.userId,
+    required this.displayName,
+    this.avatarUrl,
+    this.isOwn = false,
+    required this.stories,
+  });
+
+  factory UserStoryGroup.fromJson(Map<String, dynamic> json) {
+    final rawAvatar = json['avatar_url'] as String?;
+    final list = json['stories'] as List<dynamic>? ?? [];
+    return UserStoryGroup(
+      userId: json['user_id'] as String,
+      displayName: json['display_name'] as String? ?? 'Usuario',
+      avatarUrl: rawAvatar != null ? Env.resolveMediaUrl(rawAvatar) : null,
+      isOwn: json['is_own'] as bool? ?? false,
+      stories: list
+          .map((s) => StoryItem.fromJson(s as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }

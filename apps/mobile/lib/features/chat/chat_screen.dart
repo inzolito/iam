@@ -86,6 +86,59 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(PhosphorIcons.dotsThreeVertical(PhosphorIconsStyle.bold)),
+            onSelected: (value) async {
+              if (value == 'profile' && otherUser != null) {
+                context.push('/user/${otherUser.id}');
+              } else if (value == 'unmatch') {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: Text('¿Deshacer match${otherName != null ? ' con $otherName' : ''}?'),
+                    content: const Text(
+                      'Esta acción cerrará el chat y ya no podrán escribirse.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: TextButton.styleFrom(
+                          foregroundColor: theme.colorScheme.error,
+                        ),
+                        child: const Text('Deshacer match'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true && context.mounted) {
+                  final ok = await chat.unmatch(widget.matchId);
+                  if (ok && context.mounted) {
+                    context.go('/chat');
+                  }
+                }
+              }
+            },
+            itemBuilder: (_) => [
+              if (otherUser != null)
+                const PopupMenuItem(
+                  value: 'profile',
+                  child: Text('Ver perfil'),
+                ),
+              PopupMenuItem(
+                value: 'unmatch',
+                child: Text(
+                  'Deshacer match',
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
